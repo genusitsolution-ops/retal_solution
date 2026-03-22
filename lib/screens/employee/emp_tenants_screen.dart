@@ -100,7 +100,7 @@ class _EmpTenantsScreenState extends State<EmpTenantsScreen> {
                 itemBuilder: (_, i) {
                   final t = _tenants[i];
                   final pending =
-                      double.tryParse(t['pending'].toString()) ?? 0;
+                      double.tryParse(t['pending'].toString()) ?? 0.0;
                   final initials = (t['full_name'] ?? 'T')
                       .split(' ')
                       .take(2)

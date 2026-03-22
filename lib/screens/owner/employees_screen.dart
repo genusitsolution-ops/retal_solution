@@ -121,7 +121,7 @@ class _EmployeeCard extends StatelessWidget {
         .join();
 
     final collections =
-        double.tryParse(emp['collections_this_month'].toString()) ?? 0;
+        double.tryParse(emp['collections_this_month'].toString()) ?? 0.0;
     final assigned = emp['assigned_properties'] ?? 0;
 
     final colors = [

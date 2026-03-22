@@ -10,109 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '17'
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.2'
-          channel: 'stable'
-
-      - name: Fix gradle files
+      - name: Setup Flutter
         run: |
-          # Fix gradle.properties
-          cat > android/gradle.properties << 'PROPS'
-          org.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m
-          org.gradle.daemon=false
-          android.useAndroidX=true
-          android.enableJetifier=true
-          kotlin.incremental=false
-          PROPS
-
-          # Fix gradle wrapper version
-          cat > android/gradle/wrapper/gradle-wrapper.properties << 'WRAP'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-all.zip
-          WRAP
-
-          # Fix app build.gradle
-          cat > android/app/build.gradle << 'APPGRADLE'
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-          android {
-              namespace "com.genusit.prms"
-              compileSdk 34
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_17
-                  targetCompatibility JavaVersion.VERSION_17
-              }
-              kotlinOptions { jvmTarget = '17' }
-              defaultConfig {
-                  applicationId "com.genusit.prms"
-                  minSdk 21
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0.0"
-              }
-              buildTypes {
-                  release { signingConfig signingConfigs.debug }
-              }
-          }
-          flutter { source '../..' }
-          APPGRADLE
-
-          # Fix root build.gradle
-          cat > android/build.gradle << 'ROOTGRADLE'
-          buildscript {
-              ext.kotlin_version = '1.8.22'
-              repositories { google(); mavenCentral() }
-              dependencies {
-                  classpath 'com.android.tools.build:gradle:8.0.2'
-                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-              }
-          }
-          allprojects { repositories { google(); mavenCentral() } }
-          ROOTGRADLE
-
-          # Fix settings.gradle
-          cat > android/settings.gradle << 'SETTINGS'
-          pluginManagement {
-              def flutterSdkPath = System.getenv("FLUTTER_ROOT") ?: "/opt/hostedtoolcache/flutter/3.22.2-stable/x64"
-              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
-          }
-          plugins {
-              id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-              id "com.android.application" version "8.0.2" apply false
-              id "org.jetbrains.kotlin.android" version "1.8.22" apply false
-          }
-          include ":app"
-          SETTINGS
-
-          chmod +x android/gradlew 2>/dev/null || true
-          echo "=== Gradle files fixed ==="
-          cat android/gradle.properties
+          git clone --depth 1 --branch 3.22.2 \
+            https://github.com/flutter/flutter.git $HOME/flutter
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
 
       - name: Flutter pub get
-        run: flutter pub get
+        run: |
+          export PATH="$HOME/flutter/bin:$PATH"
+          flutter pub get
 
       - name: Build APK
-        run: flutter build apk --debug
+        run: |
+          export PATH="$HOME/flutter/bin:$PATH"
+          cd android && chmod +x gradlew && cd ..
+          flutter build apk --debug \
+            --dart-define=FLUTTER_BUILD_MODE=debug
         env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g"
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=512m -Dkotlin.incremental=false"
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: PRMS-APK
           path: build/app/outputs/flutter-apk/app-debug.apk

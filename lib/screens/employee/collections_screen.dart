@@ -151,7 +151,7 @@ class _CollectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final amount =
-        double.tryParse(c['amount'].toString()) ?? 0;
+        double.tryParse(c['amount'].toString()) ?? 0.0;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(

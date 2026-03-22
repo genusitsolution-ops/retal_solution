@@ -106,9 +106,9 @@ class _TenantInvoicesScreenState extends State<TenantInvoicesScreen> {
                 itemBuilder: (_, i) {
                   final inv = _invoices[i];
                   final amount =
-                      double.tryParse(inv['amount'].toString()) ?? 0;
+                      double.tryParse(inv['amount'].toString()) ?? 0.0;
                   final paid =
-                      double.tryParse(inv['paid_amount'].toString()) ?? 0;
+                      double.tryParse(inv['paid_amount'].toString()) ?? 0.0;
                   final isPaid = inv['status'] == 'paid';
                   final color = isPaid
                       ? AppTheme.statusPaid

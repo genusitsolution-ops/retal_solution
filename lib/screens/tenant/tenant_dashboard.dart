@@ -357,7 +357,7 @@ class _TenantDashboardState extends State<TenantDashboard> {
                                           CrossAxisAlignment.end,
                                       children: [
                                         Text(
-                                          '₹${NumberFormat('#,##,###').format(double.tryParse(inv['amount'].toString()) ?? 0)}',
+                                          '₹${NumberFormat('#,##,###').format(double.tryParse(inv['amount'].toString()) ?? 0.0)}',
                                           style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.bold,

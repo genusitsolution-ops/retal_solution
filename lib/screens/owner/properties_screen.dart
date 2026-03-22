@@ -195,7 +195,7 @@ class _PropertyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOccupied = property['status'] == 'occupied';
-    final rent = double.tryParse(property['base_rent'].toString()) ?? 0;
+    final rent = double.tryParse(property['base_rent'].toString()) ?? 0.0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

@@ -201,9 +201,9 @@ class _InvoiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final amount =
-        double.tryParse(invoice['amount'].toString()) ?? 0;
+        double.tryParse(invoice['amount'].toString()) ?? 0.0;
     final paid =
-        double.tryParse(invoice['paid_amount'].toString()) ?? 0;
+        double.tryParse(invoice['paid_amount'].toString()) ?? 0.0;
     final pending = amount - paid;
     final progress = amount > 0 ? paid / amount : 0.0;
 
@@ -326,8 +326,8 @@ class _InvoiceCard extends StatelessWidget {
 
   void _showPaymentDialog(BuildContext context, Map invoice) {
     final amtCtrl = TextEditingController(
-        text: (double.tryParse(invoice['amount'].toString()) ?? 0 -
-                double.tryParse(invoice['paid_amount'].toString()) ?? 0)
+        text: (double.tryParse(invoice['amount'].toString()) ?? 0.0 -
+                double.tryParse(invoice['paid_amount'].toString()) ?? 0.0
             .toString());
     String method = 'cash';
     showModalBottomSheet(

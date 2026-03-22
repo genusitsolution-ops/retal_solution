@@ -96,7 +96,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
 
   String _currency(dynamic val) {
     if (val == null) return '₹0';
-    final n = double.tryParse(val.toString()) ?? 0;
+    final n = double.tryParse(val.toString()) ?? 0.0;
     return '₹${NumberFormat('#,##,###').format(n)}';
   }
 
@@ -368,7 +368,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                             subtitle:
                                 '${inv['invoice_number'] ?? ''} • Due: ${inv['due_date'] ?? ''}',
                             trailing:
-                                '₹${NumberFormat('#,##,###').format(double.tryParse(inv['amount'].toString()) ?? 0)}',
+                                '₹${NumberFormat('#,##,###').format(double.tryParse(inv['amount'].toString()) ?? 0.0)}',
                             trailingSubtitle: null,
                             trailingColor:
                                 inv['status'] == 'paid'
