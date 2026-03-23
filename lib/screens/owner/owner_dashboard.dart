@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/common_widgets.dart';
 import 'invoices_screen.dart';
+import 'reports_screen.dart';
 import 'properties_screen.dart';
 import 'tenants_screen.dart';
 
@@ -38,7 +39,18 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     if (res.success && res.data != null) {
       final data = res.data as Map<String, dynamic>;
       setState(() {
-        _stats = data['stats'] ?? data['summary'] ?? {};
+        // Try all possible field name formats from API
+      final rawStats = data['stats'] ?? data['summary'] ?? data ?? {};
+      _stats = {
+        'total_properties': rawStats['total_properties'] ?? rawStats['properties'] ?? rawStats['property_count'] ?? 0,
+        'occupied_properties': rawStats['occupied_properties'] ?? rawStats['occupied'] ?? rawStats['occupied_count'] ?? 0,
+        'total_tenants': rawStats['total_tenants'] ?? rawStats['tenants'] ?? rawStats['tenant_count'] ?? 0,
+        'monthly_revenue': rawStats['billed_this_month'] ?? rawStats['monthly_revenue'] ?? rawStats['total_billed'] ?? rawStats['billed'] ?? 0,
+        'collected_this_month': rawStats['collected_this_month'] ?? rawStats['collected'] ?? rawStats['monthly_collected'] ?? 0,
+        'pending_amount': rawStats['pending_amount'] ?? rawStats['pending_invoices_amount'] ?? rawStats['pending'] ?? 0,
+        'total_employees': rawStats['active_agents'] ?? rawStats['total_employees'] ?? rawStats['employees'] ?? rawStats['agent_count'] ?? 0,
+        'open_queries': rawStats['open_queries'] ?? rawStats['queries'] ?? 0,
+      };
         _recentInvoices = data['recent_invoices'] ?? data['invoices'] ?? [];
         _loading = false;
       });
@@ -160,12 +172,12 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                   delegate: SliverChildListDelegate([
                     // Revenue card
                     WideStatCard(
-                      title: 'Monthly Revenue',
-                      value: _cur(_stats['monthly_revenue'] ?? _stats['total_revenue'] ?? 0),
+                      title: 'Billed This Month',
+                      value: _cur(_stats['monthly_revenue']),
                       icon: Icons.account_balance_wallet,
                       startColor: AppTheme.primary,
                       endColor: AppTheme.primaryLight,
-                      trend: 'Collected: ${_cur(_stats['collected_this_month'] ?? _stats['collected'] ?? 0)}',
+                      trend: 'Collected: ${_cur(_stats['collected_this_month'])}',
                     ),
                     const SizedBox(height: 16),
                     GridView.count(
@@ -206,6 +218,23 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                         ),
                       ],
                     ),
+                    // Open queries card
+                    if ((_stats['open_queries'] ?? 0).toString() != '0')
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accent.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.accent.withOpacity(0.3)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.help_outline, color: AppTheme.accent, size: 20),
+                          const SizedBox(width: 10),
+                          Text('Open Queries: ${_stats['open_queries']}',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+                        ]),
+                      ),
                     const SizedBox(height: 20),
                     // Quick Actions
                     const SectionHeader(title: 'Quick Actions'),
@@ -220,7 +249,8 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                       _QA(icon: Icons.receipt_long, label: 'Invoices', color: AppTheme.accentOrange,
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InvoicesScreen()))),
                       const SizedBox(width: 10),
-                      _QA(icon: Icons.bar_chart, label: 'Reports', color: AppTheme.accentPurple, onTap: () {}),
+                      _QA(icon: Icons.bar_chart, label: 'Reports', color: AppTheme.accentPurple, 
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()))),
                     ]),
                     const SizedBox(height: 20),
                     SectionHeader(

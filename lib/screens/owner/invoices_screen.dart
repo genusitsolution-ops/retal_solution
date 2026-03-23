@@ -1,3 +1,4 @@
+import 'package:url_launcher/url_launcher.dart';
 // lib/screens/owner/invoices_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -87,10 +88,60 @@ class _InvoicesScreenState extends State<InvoicesScreen>
     );
   }
 
+  void _sendWhatsApp(Map inv) async {
+    final phone = inv['tenant_phone'] ?? inv['phone'] ?? '';
+    final amount = inv['amount'] ?? inv['total_amount'] ?? 0;
+    final paid = inv['paid_amount'] ?? 0;
+    final pending = (double.tryParse(amount.toString()) ?? 0) - (double.tryParse(paid.toString()) ?? 0);
+    final invoiceNo = inv['invoice_number'] ?? '';
+    final tenant = inv['tenant_name'] ?? '';
+    final property = inv['property_code'] ?? '';
+    final dueDate = inv['due_date'] ?? '';
+    final msg = Uri.encodeComponent(
+      'Dear $tenant,
+
+'
+      'Invoice: *$invoiceNo*
+'
+      'Property: *$property*
+'
+      'Total Amount: *₹$amount*
+'
+      'Amount Paid: *₹$paid*
+'
+      '${pending > 0 ? "Pending: *₹${pending.toStringAsFixed(0)}*
+" : "Status: *FULLY PAID ✓*
+"}'
+      'Due Date: *$dueDate*
+
+'
+      'Please pay the pending amount on time.
+'
+      '- PRMS Management'
+    );
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Phone number not available for this tenant')));
+      return;
+    }
+    final url = Uri.parse('https://wa.me/91$phone?text=$msg');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('WhatsApp not available')));
+    }
+  }
+
   void _showPayment(Map inv) {
-    final amount = (double.tryParse(inv['amount']?.toString() ?? '0') ?? 0.0) -
-        (double.tryParse(inv['paid_amount']?.toString() ?? '0') ?? 0.0);
-    final amtCtrl = TextEditingController(text: amount.toStringAsFixed(0));
+    // Get total amount - try multiple field names
+    final totalAmt = double.tryParse(
+      (inv['amount'] ?? inv['total_amount'] ?? inv['bill_amount'] ?? inv['rent_amount'] ?? '0').toString()) ?? 0.0;
+    final paidAmt = double.tryParse(
+      (inv['paid_amount'] ?? inv['amount_paid'] ?? '0').toString()) ?? 0.0;
+    // Pending = total - paid, but minimum 0
+    final pendingAmt = (totalAmt - paidAmt).clamp(0.0, totalAmt > 0 ? totalAmt : double.infinity);
+    final amtCtrl = TextEditingController(text: pendingAmt > 0 ? pendingAmt.toStringAsFixed(0) : totalAmt.toStringAsFixed(0));
     String method = 'cash';
     showModalBottomSheet(
       context: context,
@@ -107,12 +158,35 @@ class _InvoicesScreenState extends State<InvoicesScreen>
             const SizedBox(height: 16),
             const Text('Record Payment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Text(inv['tenant_name'] ?? '', style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            // Show balance info
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.statusPending.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.statusPending.withOpacity(0.3)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.account_balance_wallet, color: AppTheme.statusPending, size: 18),
+                const SizedBox(width: 8),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Invoice: ${inv['invoice_number'] ?? ''}',
+                      style: const TextStyle(fontSize: 11, color: AppTheme.textGrey)),
+                  Text(
+                    'Pending: ₹${pendingAmt > 0 ? NumberFormat('#,##,###').format(pendingAmt) : NumberFormat('#,##,###').format(totalAmt)}',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.statusPending),
+                  ),
+                ]),
+              ]),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: amtCtrl,
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(
-                labelText: 'Amount (₹)',
+                labelText: 'Amount to Pay (₹)',
+                hintText: 'Enter amount ≤ pending balance',
                 prefixIcon: Icon(Icons.currency_rupee, color: AppTheme.primary),
               ),
             ),
@@ -165,7 +239,8 @@ class _InvList extends StatelessWidget {
   final List invoices;
   final VoidCallback onRefresh;
   final Function(Map) onPay;
-  const _InvList({required this.invoices, required this.onRefresh, required this.onPay});
+  final Function(Map) onWhatsApp;
+  const _InvList({required this.invoices, required this.onRefresh, required this.onPay, required this.onWhatsApp});
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +252,7 @@ class _InvList extends StatelessWidget {
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: invoices.length,
-        itemBuilder: (_, i) => _InvCard(invoice: invoices[i], onPay: onPay),
+        itemBuilder: (_, i) => _InvCard(invoice: invoices[i], onPay: onPay, onWhatsApp: onWhatsApp),
       ),
     );
   }
@@ -186,7 +261,8 @@ class _InvList extends StatelessWidget {
 class _InvCard extends StatelessWidget {
   final Map invoice;
   final Function(Map) onPay;
-  const _InvCard({required this.invoice, required this.onPay});
+  final Function(Map) onWhatsApp;
+  const _InvCard({required this.invoice, required this.onPay, required this.onWhatsApp});
 
   Color get _color {
     switch (invoice['status']) {
@@ -199,10 +275,13 @@ class _InvCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amount = double.tryParse(invoice['amount']?.toString() ?? '0') ?? 0.0;
-    final paid = double.tryParse(invoice['paid_amount']?.toString() ?? '0') ?? 0.0;
-    final pending = amount - paid;
-    final progress = amount > 0 ? paid / amount : 0.0;
+    // Handle multiple possible field names from API
+    final amount = double.tryParse(
+      (invoice['amount'] ?? invoice['total_amount'] ?? invoice['bill_amount'] ?? invoice['rent_amount'] ?? '0').toString()) ?? 0.0;
+    final paid = double.tryParse(
+      (invoice['paid_amount'] ?? invoice['amount_paid'] ?? '0').toString()) ?? 0.0;
+    final pending = (amount - paid).clamp(0.0, double.infinity);
+    final progress = amount > 0 ? (paid / amount).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -251,23 +330,36 @@ class _InvCard extends StatelessWidget {
                   color: pending > 0 ? _color : AppTheme.statusPaid),
             ),
           ]),
-          if (invoice['status'] != 'paid') ...[
-            const SizedBox(height: 10),
-            SizedBox(
+          const SizedBox(height: 10),
+          Row(children: [
+            if (invoice['status'] != 'paid')
+              Expanded(child: SizedBox(
+                height: 36,
+                child: ElevatedButton.icon(
+                  onPressed: () => onPay(invoice),
+                  icon: const Icon(Icons.payment, size: 14),
+                  label: const Text('Record Payment', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              )),
+            if (invoice['status'] != 'paid') const SizedBox(width: 8),
+            Expanded(child: SizedBox(
               height: 36,
-              child: ElevatedButton.icon(
-                onPressed: () => onPay(invoice),
-                icon: const Icon(Icons.payment, size: 14),
-                label: const Text('Record Payment', style: TextStyle(fontSize: 12)),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 36),
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
+              child: OutlinedButton.icon(
+                onPressed: () => onWhatsApp(invoice),
+                icon: const Icon(Icons.chat, size: 14, color: Color(0xFF25D366)),
+                label: const Text('WhatsApp', style: TextStyle(fontSize: 12, color: Color(0xFF25D366))),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF25D366)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
-            ),
-          ],
+            )),
+          ]),
         ]),
       ),
     );

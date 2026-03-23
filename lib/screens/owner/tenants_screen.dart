@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 // lib/screens/owner/tenants_screen.dart
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
@@ -149,20 +151,27 @@ class _TenantsScreenState extends State<TenantsScreen> {
                                 Row(children: [
                                   const Icon(Icons.apartment_outlined, size: 12, color: AppTheme.textGrey),
                                   const SizedBox(width: 3),
-                                  Text(t['property_code'] ?? t['allocated_property'] ?? 'Not allocated',
-                                      style: const TextStyle(fontSize: 12)),
-                                  const SizedBox(width: 8),
+                                  Flexible(child: Text(
+                                    t['property_code'] ?? t['allocated_property'] ?? 'Not allocated',
+                                    style: const TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  )),
+                                ]),
+                                const SizedBox(height: 2),
+                                Row(children: [
                                   const Icon(Icons.phone_outlined, size: 12, color: AppTheme.textGrey),
                                   const SizedBox(width: 3),
-                                  Text(t['phone'] ?? '', style: const TextStyle(fontSize: 12)),
+                                  Text(t['phone'] ?? '', style: const TextStyle(fontSize: 12, color: AppTheme.textGrey)),
                                 ]),
                               ]),
                               trailing: Column(mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.end, children: [
-                                StatusBadge(status: t['status'] ?? 'active'),
+                                StatusBadge(status: t['status'] ?? t['allocation_status'] ?? 'active'),
                                 const SizedBox(height: 4),
-                                Text('₹${t['rent'] ?? t['base_rent'] ?? 0}/mo',
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                                Text(
+                                  '₹${t['rent'] ?? t['base_rent'] ?? t['rent_amount'] ?? t['monthly_rent'] ?? t['amount'] ?? 0}/mo',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                                ),
                               ]),
                               onTap: () => _showDetail(t),
                               onLongPress: () => _showOptions(t),
@@ -252,6 +261,8 @@ class _TenantFormState extends State<_TenantForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name, _phone, _email, _aadhaar, _username, _password;
   bool _saving = false;
+  File? _aadhaarFile;
+  String? _aadhaarFileName;
   bool get _isEdit => widget.tenant != null;
 
   @override
@@ -324,6 +335,61 @@ class _TenantFormState extends State<_TenantForm> {
             _field(_email, 'Email', Icons.email, keyboard: TextInputType.emailAddress),
             const SizedBox(height: 12),
             _field(_aadhaar, 'Aadhaar Number', Icons.badge, keyboard: TextInputType.number),
+            const SizedBox(height: 12),
+            // Aadhaar document upload
+            GestureDetector(
+              onTap: () async {
+                final picker = ImagePicker();
+                showModalBottomSheet(
+                  context: context,
+                  builder: (_) => Column(mainAxisSize: MainAxisSize.min, children: [
+                    ListTile(
+                      leading: const Icon(Icons.camera_alt, color: AppTheme.primary),
+                      title: const Text('Take Photo'),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        final img = await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
+                        if (img != null) setState(() { _aadhaarFile = File(img.path); _aadhaarFileName = img.name; });
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.photo_library, color: AppTheme.primary),
+                      title: const Text('Choose from Gallery'),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+                        if (img != null) setState(() { _aadhaarFile = File(img.path); _aadhaarFileName = img.name; });
+                      },
+                    ),
+                  ]),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F2F5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: _aadhaarFile != null
+                      ? Border.all(color: AppTheme.statusPaid, width: 1.5)
+                      : null,
+                ),
+                child: Row(children: [
+                  Icon(_aadhaarFile != null ? Icons.check_circle : Icons.upload_file,
+                      color: _aadhaarFile != null ? AppTheme.statusPaid : AppTheme.primary, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(
+                    _aadhaarFile != null ? 'Aadhaar: $_aadhaarFileName' : 'Upload Aadhaar Document (Photo/PDF)',
+                    style: TextStyle(fontSize: 13,
+                        color: _aadhaarFile != null ? AppTheme.statusPaid : AppTheme.textGrey),
+                  )),
+                  if (_aadhaarFile != null)
+                    GestureDetector(
+                      onTap: () => setState(() { _aadhaarFile = null; _aadhaarFileName = null; }),
+                      child: const Icon(Icons.close, size: 16, color: AppTheme.textGrey),
+                    ),
+                ]),
+              ),
+            ),
             const SizedBox(height: 12),
             _field(_username, 'Username (for login)', Icons.account_circle, required: !_isEdit),
             const SizedBox(height: 12),
