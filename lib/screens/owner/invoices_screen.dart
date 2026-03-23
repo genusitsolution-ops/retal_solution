@@ -89,42 +89,34 @@ class _InvoicesScreenState extends State<InvoicesScreen>
   }
 
   void _sendWhatsApp(Map inv) async {
-    final phone = inv['tenant_phone'] ?? inv['phone'] ?? '';
-    final amount = inv['amount'] ?? inv['total_amount'] ?? 0;
-    final paid = inv['paid_amount'] ?? 0;
-    final pending = (double.tryParse(amount.toString()) ?? 0) - (double.tryParse(paid.toString()) ?? 0);
-    final invoiceNo = inv['invoice_number'] ?? '';
-    final tenant = inv['tenant_name'] ?? '';
-    final property = inv['property_code'] ?? '';
-    final dueDate = inv['due_date'] ?? '';
-    final msg = Uri.encodeComponent(
-      'Dear $tenant,
+    final phone = (inv['tenant_phone'] ?? inv['phone'] ?? '').toString();
+    final invoiceNo = (inv['invoice_number'] ?? '').toString();
+    final tenant = (inv['tenant_name'] ?? '').toString();
+    final property = (inv['property_code'] ?? '').toString();
+    final dueDate = (inv['due_date'] ?? '').toString();
+    final totalAmt = double.tryParse((inv['amount'] ?? inv['total_amount'] ?? '0').toString()) ?? 0.0;
+    final paidAmt = double.tryParse((inv['paid_amount'] ?? '0').toString()) ?? 0.0;
+    final pendingAmt = (totalAmt - paidAmt).clamp(0.0, double.infinity);
 
-'
-      'Invoice: *$invoiceNo*
-'
-      'Property: *$property*
-'
-      'Total Amount: *₹$amount*
-'
-      'Amount Paid: *₹$paid*
-'
-      '${pending > 0 ? "Pending: *₹${pending.toStringAsFixed(0)}*
-" : "Status: *FULLY PAID ✓*
-"}'
-      'Due Date: *$dueDate*
+    final statusLine = pendingAmt > 0
+        ? 'Pending Amount: Rs.${pendingAmt.toStringAsFixed(0)}'
+        : 'Status: FULLY PAID';
 
-'
-      'Please pay the pending amount on time.
-'
-      '- PRMS Management'
-    );
+    final msgText = 'Dear $tenant,'
+        '\n\nInvoice: $invoiceNo'
+        '\nProperty: $property'
+        '\nTotal: Rs.${totalAmt.toStringAsFixed(0)}'
+        '\nPaid: Rs.${paidAmt.toStringAsFixed(0)}'
+        '\n$statusLine'
+        '\nDue Date: $dueDate'
+        '\n\nThank you. - PRMS Management';
+
     if (phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Phone number not available for this tenant')));
+          const SnackBar(content: Text('Phone number not available')));
       return;
     }
-    final url = Uri.parse('https://wa.me/91$phone?text=$msg');
+    final url = Uri.parse('https://wa.me/91$phone?text=${Uri.encodeComponent(msgText)}');
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
@@ -133,6 +125,7 @@ class _InvoicesScreenState extends State<InvoicesScreen>
     }
   }
 
+  
   void _showPayment(Map inv) {
     // Get total amount - try multiple field names
     final totalAmt = double.tryParse(
