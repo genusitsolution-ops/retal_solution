@@ -109,8 +109,7 @@ class _InvoicesScreenState extends State<InvoicesScreen>
 '
       'Amount Paid: *₹$paid*
 '
-      '${pending > 0 ? "Pending: *₹${pending.toStringAsFixed(0)}*
-" : "Status: *FULLY PAID ✓*
+'${pending > 0 ? "Pending: *Rs.${pending.toStringAsFixed(0)}*\n" : "Status: *FULLY PAID*\n"}'
 "}'
       'Due Date: *$dueDate*
 
