@@ -2,7 +2,7 @@
 
 class ApiConfig {
   static const String baseUrl =
-      'https://genusitsolution.com/rentalsolutionfinal/api/v1';
+      'https://www.genusitsolution.com/rentalsolutionfinal/api/v1';
   static const String loginUrl = '$baseUrl/auth/login.php';
   static const String logoutUrl = '$baseUrl/auth/logout.php';
 
