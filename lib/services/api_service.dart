@@ -1,7 +1,6 @@
 // lib/services/api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../config/constants.dart';
 
 class ApiResponse {
   final bool success;
@@ -23,9 +22,9 @@ class ApiService {
   ApiService._internal();
 
   String? _token;
-
   void setToken(String token) => _token = token;
   void clearToken() => _token = null;
+  String? get token => _token;
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
@@ -36,20 +35,11 @@ class ApiService {
   Future<ApiResponse> post(String url, Map<String, dynamic> body) async {
     try {
       final response = await http
-          .post(
-            Uri.parse(url),
-            headers: _headers,
-            body: jsonEncode(body),
-          )
+          .post(Uri.parse(url), headers: _headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 30));
-
-      return _parseResponse(response);
+      return _parse(response);
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: _friendlyError(e.toString()),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: _err(e), statusCode: 0);
     }
   }
 
@@ -58,34 +48,20 @@ class ApiService {
       final response = await http
           .get(Uri.parse(url), headers: _headers)
           .timeout(const Duration(seconds: 30));
-
-      return _parseResponse(response);
+      return _parse(response);
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: _friendlyError(e.toString()),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: _err(e), statusCode: 0);
     }
   }
 
   Future<ApiResponse> put(String url, Map<String, dynamic> body) async {
     try {
       final response = await http
-          .put(
-            Uri.parse(url),
-            headers: _headers,
-            body: jsonEncode(body),
-          )
+          .put(Uri.parse(url), headers: _headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 30));
-
-      return _parseResponse(response);
+      return _parse(response);
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: _friendlyError(e.toString()),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: _err(e), statusCode: 0);
     }
   }
 
@@ -94,24 +70,19 @@ class ApiService {
       final response = await http
           .delete(Uri.parse(url), headers: _headers)
           .timeout(const Duration(seconds: 30));
-
-      return _parseResponse(response);
+      return _parse(response);
     } catch (e) {
-      return ApiResponse(
-        success: false,
-        message: _friendlyError(e.toString()),
-        statusCode: 0,
-      );
+      return ApiResponse(success: false, message: _err(e), statusCode: 0);
     }
   }
 
-  ApiResponse _parseResponse(http.Response response) {
+  ApiResponse _parse(http.Response response) {
     try {
       final body = jsonDecode(response.body);
-      final success = body['status'] == 'success' ||
+      final ok = body['status'] == 'success' ||
           (response.statusCode >= 200 && response.statusCode < 300);
       return ApiResponse(
-        success: success,
+        success: ok,
         message: body['message'] ?? '',
         data: body['data'],
         statusCode: response.statusCode,
@@ -119,19 +90,17 @@ class ApiService {
     } catch (_) {
       return ApiResponse(
         success: false,
-        message: 'Invalid server response',
+        message: 'Invalid server response (${response.statusCode})',
         statusCode: response.statusCode,
       );
     }
   }
 
-  String _friendlyError(String error) {
-    if (error.contains('SocketException') || error.contains('network')) {
-      return 'No internet connection. Please check your network.';
-    }
-    if (error.contains('TimeoutException')) {
-      return 'Request timed out. Please try again.';
-    }
+  String _err(dynamic e) {
+    final s = e.toString();
+    if (s.contains('SocketException') || s.contains('network'))
+      return 'No internet connection';
+    if (s.contains('TimeoutException')) return 'Request timed out';
     return 'Connection failed. Please try again.';
   }
 }
