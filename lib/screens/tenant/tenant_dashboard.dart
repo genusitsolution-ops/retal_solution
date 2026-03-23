@@ -200,7 +200,7 @@ class _TenantDashboardState extends State<TenantDashboard> {
                               color: inv['status'] == 'paid' ? AppTheme.statusPaid : AppTheme.statusPending,
                               width: 4,
                             )),
-                            boxShadow: const [BoxShadow(color: Colors.black08, blurRadius: 6, offset: Offset(0, 2))],
+                            boxShadow: const [BoxShadow(color: Colors.black, blurRadius: 6, offset: Offset(0, 2))],
                           ),
                           child: Row(children: [
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
