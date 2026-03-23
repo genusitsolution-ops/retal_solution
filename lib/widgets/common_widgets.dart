@@ -287,7 +287,7 @@ class AppListTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
-                color: Colors.black08,
+                color: Colors.black,
                 blurRadius: 6,
                 offset: Offset(0, 2))
           ],
