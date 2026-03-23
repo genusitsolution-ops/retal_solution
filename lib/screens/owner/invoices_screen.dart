@@ -98,6 +98,7 @@ class _InvoicesScreenState extends State<InvoicesScreen>
     final paidAmt = double.tryParse((inv['paid_amount'] ?? '0').toString()) ?? 0.0;
     final pendingAmt = (totalAmt - paidAmt).clamp(0.0, double.infinity);
 
+<<<<<<< HEAD
     final statusLine = pendingAmt > 0
         ? 'Pending Amount: Rs.${pendingAmt.toStringAsFixed(0)}'
         : 'Status: FULLY PAID';
@@ -110,6 +111,20 @@ class _InvoicesScreenState extends State<InvoicesScreen>
         '\n$statusLine'
         '\nDue Date: $dueDate'
         '\n\nThank you. - PRMS Management';
+=======
+'
+      'Invoice: *$invoiceNo*
+'
+      'Property: *$property*
+'
+      'Total Amount: *₹$amount*
+'
+      'Amount Paid: *₹$paid*
+'
+'${pending > 0 ? "Pending: *Rs.${pending.toStringAsFixed(0)}*\n" : "Status: *FULLY PAID*\n"}'
+"}'
+      'Due Date: *$dueDate*
+>>>>>>> dafcc648f7c323095c2c587f087a31a60c505c53
 
     if (phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
