@@ -4,32 +4,34 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'config/theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/language_provider.dart';
 import 'services/storage_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Lock to portrait
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-
-  // Status bar style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ),
   );
-
-  // Init storage
   await StorageService().init();
 
+  // Init language from saved preference
+  final langProvider = LanguageProvider();
+  await langProvider.init();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: langProvider),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
       child: const PRMSApp(),
     ),
   );
@@ -40,6 +42,8 @@ class PRMSApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild when language changes
+    context.watch<LanguageProvider>();
     return MaterialApp(
       title: 'PRMS',
       debugShowCheckedModeBanner: false,
