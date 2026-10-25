@@ -29,6 +29,7 @@ android {
         val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://www.genusitsolution.com/rentalsolutionfinal/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
         vectorDrawables { useSupportLibrary = true }
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Only the three supported app languages are packaged
         resourceConfigurations += listOf("en", "hi", "mr")
     }
@@ -107,4 +108,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }
