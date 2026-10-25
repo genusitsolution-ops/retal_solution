@@ -1,3 +1,43 @@
+# Update 2026-10-25 (later) — HTTP 301 root cause confirmed, architecture upgrade, verified build
+
+## HTTP 301: confirmed on the live server
+A GitHub Actions job sent the login request to the live server using a made-up account:
+
+| Request | Server answer |
+|---|---|
+| `POST https://genusitsolution.com/rentalsolutionfinal/api/v1/auth/login.php` | **301 → `https://www.genusitsolution.com/rentalsolutionfinal/api/v1/auth/login.php`** (HTML "Moved Permanently") |
+| `POST https://www.genusitsolution.com/rentalsolutionfinal/api/v1/auth/login.php` | 401 `{"status":"error","code":"INVALID_CREDENTIALS","message":"Invalid credentials or account inactive."}` |
+
+The server forces the `www` host. The app called the bare domain, so every request got a 301, and the app
+showed "HTTP 301". The fix: the app now uses `https://www.genusitsolution.com/rentalsolutionfinal/api/v1/`, the
+address the server itself redirects to. The safe-redirect handling stays as a safety net.
+No server change is required. The optional `.htaccess` exclusion below is still good practice for API clients.
+
+## Architecture upgrade (app 1.2.0)
+The app now uses Retrofit 2, Coroutines, StateFlow/SharedFlow, Hilt and MVVM + Clean Architecture
+(`domain` / `data` / `app` modules). Screens, roles, API calls and business rules are unchanged.
+See **ARCHITECTURE.md** for the layer diagram, the 38 ViewModels and the regression checklist.
+
+## Verification (GitHub Actions, branch `android-native` of genusitsolution-ops/retal_solution)
+- **Unit tests:** 19 run, 0 failed.
+  - `:domain`: 8 (money, validators, login/logout rules, complaint reply rules).
+  - `:data`: 11 (the real Retrofit/OkHttp stack against MockWebServer: request format, headers, Bearer token,
+    Idempotency-Key, error mapping, redirect policy).
+- **Builds:** `:app:assembleDebug` succeeds, which covers Hilt/KSP code generation and every Compose screen.
+  `:app:lintDebug` passes.
+- **Emulator (Android 10):**
+  - the app starts on the login screen;
+  - a sign-in with a made-up account reaches `www…/auth/login.php` and shows the server's
+    "Invalid credentials or account inactive." (no "HTTP 301", no network error);
+  - EN / हिं / मरा switch correctly;
+  - no crash in logcat.
+- **Lint fix:** found a pre-existing problem. `java.time` (dates) isn't available on Android 7.0/7.1 (minSdk 24),
+  so core-library desugaring is now enabled.
+- **Not tested:** signing in as a real owner, agent or tenant, and screens after login with real data.
+  Those need real test accounts on your phone; use the regression checklist in ARCHITECTURE.md.
+
+---
+
 # Update 2026-10-25 — "HTTP 301" on login
 
 ## What the screenshot proves
