@@ -122,3 +122,17 @@ Super Admin is unchanged: it is told to use the web panel, and its token is revo
   - the HTTP 301 fix (".php"-strip and www redirects are followed with the same method and body; the
     idempotency key survives a redirect; the web login page, other hosts, plain HTTP, other ports, 303 and
     redirect loops are refused).
+
+## 1.3.0 additions (25 Oct 2026)
+
+| Feature | Where | Verified |
+|---|---|---|
+| Clickable dashboards: owner (rooms → Rooms, tenants → Tenants, due bills → bills filtered to "All due", open complaints → Complaints filtered to Open, collected wallet → Payments, chart → Reports); agent (wallet → My collections, rooms/tenants → My tenants); tenant (total due → My bills) | `OwnerHome.kt`, `EmployeeScreens.kt`, `TenantScreens.kt`, routes `owner/bills/{status}` and `owner/queries?status=` in `AppRoot.kt` | CI build. Needs a real login for an emulator walk-through |
+| WhatsApp receipt in the app language: the message is built on the phone from the receipt data with EN/HI/MR labels (before, the server's pre-built `share_text` was sent unchanged) | `domain/util/ReceiptMessage.kt`, `ui/common/ReceiptShare.kt` | `ReceiptMessageTest`: EN, HI and MR text from the 25 Oct receipt; UTF-8 `wa.me` link round-trips; phone normalization |
+| ID document capture + OCR in Add/Edit Tenant: consent checkbox → camera or gallery → photo compressed (longest side 1600 px, JPEG 80) with EXIF rotation → ML Kit on-device OCR (retries at 90°/270°) → Aadhaar (Verhoeff checksum) / PAN parsing → review dialog (editable; values that would replace typed text start unticked) | `platform/DocumentScanner.kt`, `domain/util/DocumentParser.kt`, `ui/owner/DocumentCapture.kt` | `DocumentParserTest` (6 tests) and the on-device `DocumentScannerTest` (4 tests, real ML Kit on the CI emulator) |
+| Design refresh: elevated cards with ripple and press feedback, open-hint chevrons, indigo→violet wallet card, animated chart, cross-faded loading/error states, illustrated empty states, nav transitions | `ui/common/Components.kt`, `Rows.kt`, `theme/Theme.kt`, `AppRoot.kt` | CI build + emulator screenshots |
+
+**Waiting for the PHP source and database schema:**
+- uploading the document photo to the server (the compressed photo is ready and kept only in the private cache);
+- test-data cleanup;
+- Super Admin payment QR and owner payment claims.
