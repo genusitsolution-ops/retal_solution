@@ -1,0 +1,28 @@
+# Use this workflow when PRMSApp itself is the root of the GitHub repository.
+# (android.yml expects the app inside android/PRMSApp of the full project repo.)
+name: Android debug APK (standalone repo)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v3
+      - name: Core unit tests
+        run: ./gradlew :core:test --stacktrace
+      - name: Debug APK (uses the live server URL from gradle.properties)
+        run: ./gradlew :app:assembleDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prms-debug-apk
+          path: app/build/outputs/apk/debug/*.apk

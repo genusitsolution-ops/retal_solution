@@ -1,0 +1,98 @@
+import java.util.Properties
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+}
+
+// Release signing comes ONLY from the project owner's own keystore.properties (never committed)
+// or from CI secrets. No signing credentials are included in this project.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun signingValue(key: String, env: String): String? = keystoreProps.getProperty(key) ?: System.getenv(env)
+
+android {
+    namespace = "com.genusit.prms"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.genusit.prms"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 2
+        versionName = "1.1.0"
+        val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://genusitsolution.com/rentalsolutionfinal/api/v1/"
+        buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
+        vectorDrawables { useSupportLibrary = true }
+        // Only the three supported app languages are packaged
+        resourceConfigurations += listOf("en", "hi", "mr")
+    }
+
+    signingConfigs {
+        create("release") {
+            val storePath = signingValue("storeFile", "PRMS_KEYSTORE_PATH")
+            if (storePath != null) {
+                storeFile = file(storePath)
+                storePassword = signingValue("storePassword", "PRMS_KEYSTORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "PRMS_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "PRMS_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            val debugUrl = (project.findProperty("prms.apiBaseUrlDebug") as String?)?.takeIf { it.isNotBlank() }
+            if (debugUrl != null) {
+                buildConfigField("String", "API_BASE_URL", "\"$debugUrl\"")
+                // Emulator/LAN addresses do not work on a real phone – say so loudly.
+                if (Regex("://(10\\.0\\.2\\.2|127\\.0\\.0\\.1|localhost)").containsMatchIn(debugUrl)) {
+                    logger.warn("WARNING: this DEBUG APK will call $debugUrl – that only works in the Android emulator, NOT on a phone.")
+                }
+            }
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            val rel = signingConfigs.getByName("release")
+            if (rel.storeFile != null) signingConfig = rel
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = "17" }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+}
+
+dependencies {
+    implementation(project(":core"))
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.kotlinx.coroutines.android)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    testImplementation(libs.junit)
+}

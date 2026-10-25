@@ -1,0 +1,6 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- simple house + rupee mark -->
+    <path android:fillColor="#FFFFFF" android:pathData="M54,30 L80,52 L74,52 L74,78 L34,78 L34,52 L28,52 Z"/>
+    <path android:fillColor="#4F46E5" android:pathData="M46,56 h16 v3 h-6.2 c1.4,0.8 2.3,2 2.6,3.6 h3.6 v3 h-3.6 c-0.6,3.4 -3.4,5.4 -7.6,5.6 l8.6,6.4 h-5.2 l-8.4,-6.4 v-2.8 h3.8 c2.4,0 4,-1 4.4,-2.8 H46 v-3 h8.2 c-0.6,-1.3 -2,-2 -4,-2 H46 Z"/>
+</vector>
