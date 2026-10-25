@@ -106,13 +106,16 @@ fun ScreenScaffold(
 @Composable
 fun <T> StateContent(state: UiState<T>, onRetry: () -> Unit, modifier: Modifier = Modifier, content: @Composable (T) -> Unit) {
     // short cross-fade between loading / error / content (keyed by the kind of state, not the data)
-    Crossfade(targetState = state, contentKey = { it::class }, animationSpec = tween(220), label = "state") { s ->
-        when (s) {
-            is UiState.Loading -> LoadingBox(modifier)
-            is UiState.Error -> ErrorBox(s.error, onRetry, modifier)
-            is UiState.Data -> Box(modifier.fillMaxSize()) {
-                content(s.value)
-                if (s.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = Palette.Brand, trackColor = Palette.BrandSoft)
+    val kind = when (state) { is UiState.Loading -> 0; is UiState.Error -> 1; is UiState.Data -> 2 }
+    Crossfade(targetState = kind, animationSpec = tween(220), label = "state") { k ->
+        when (k) {
+            0 -> LoadingBox(modifier)
+            1 -> (state as? UiState.Error)?.let { ErrorBox(it.error, onRetry, modifier) }
+            else -> (state as? UiState.Data)?.let { s ->
+                Box(modifier.fillMaxSize()) {
+                    content(s.value)
+                    if (s.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = Palette.Brand, trackColor = Palette.BrandSoft)
+                }
             }
         }
     }
