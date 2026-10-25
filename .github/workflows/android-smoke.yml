@@ -1,0 +1,67 @@
+# Runs the debug app on an Android emulator and checks the live login endpoint.
+# Uses only a made-up account; no real credentials are involved.
+name: Android smoke test (emulator)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ android-native ]
+
+permissions:
+  contents: write   # draft (team-only) release with the screenshots
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Live server check (login endpoint, made-up account)
+        run: |
+          for host in genusitsolution.com www.genusitsolution.com; do
+            url="https://$host/rentalsolutionfinal/api/v1/auth/login.php"
+            out=$(curl -s -o /tmp/body -w '%{http_code} %{redirect_url}' -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' \
+                  -d '{"username":"ci_smoke_no_such_user","password":"x","lang":"en"}' "$url")
+            body=$(head -c 220 /tmp/body | tr -d '\n\r')
+            echo "::notice title=POST $url::HTTP ${out}  body: ${body}"
+          done
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v3
+      - name: Build debug APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run on emulator (Android 10)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash .github/scripts/smoke.sh
+
+      - name: Report
+        if: always()
+        run: |
+          [ -s shots/pid.txt ] && echo "::notice title=App process::running (pid $(cat shots/pid.txt)) after sign-in and language switches" || echo "::error title=App process::not running – possible crash"
+          grep -q "FATAL EXCEPTION" shots/logcat.txt && echo "::error title=Crash::$(grep -A3 'FATAL EXCEPTION' shots/logcat.txt | tr '\n' ' ' | head -c 400)" || echo "::notice title=Crash check::no FATAL EXCEPTION in logcat"
+          for f in shots/*.txt; do [ "$f" = shots/logcat.txt ] && continue; echo "::notice title=$(basename $f)::$(tr '\n' '|' < $f | head -c 600)"; done
+          grep -E "PrmsApi|okhttp" shots/logcat.txt | head -8 | while read -r l; do echo "::notice title=network log::$l"; done
+
+      - name: Screenshots as draft release (team-only)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "android-smoke-${{ github.run_number }}" shots/*.png shots/*.txt --draft --target "${{ github.sha }}" \
+            --title "Android smoke test ${{ github.run_number }}" --notes "Emulator screenshots from ${{ github.sha }}"
