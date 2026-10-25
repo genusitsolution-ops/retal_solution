@@ -1,5 +1,9 @@
 package com.genusit.prms.ui.employee
 
+import com.genusit.prms.ui.owner.paymentModes
+import com.genusit.prms.ui.common.ScreenEvent
+import com.genusit.prms.ui.common.EventEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,15 +44,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.model.PaymentResult
-import com.genusit.prms.core.model.TenantRow
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.model.PaymentResult
+import com.genusit.prms.domain.model.TenantRow
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.common.ActionState
 import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.EmptyState
 import com.genusit.prms.ui.common.IconBadge
 import com.genusit.prms.ui.common.InvoiceRow
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.PaymentRow
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
@@ -60,17 +63,16 @@ import com.genusit.prms.ui.common.UiState
 import com.genusit.prms.ui.common.WalletCard
 import com.genusit.prms.ui.common.dateText
 import com.genusit.prms.ui.common.errorText
-import com.genusit.prms.ui.common.rememberAction
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.owner.PaymentForm
 import com.genusit.prms.ui.owner.SearchField
 import com.genusit.prms.ui.theme.Palette
 
 @Composable
 fun EmployeeHomeScreen(collect: (tenantId: Int, invoiceId: Int) -> Unit, openReceipt: (String) -> Unit, openNotifications: () -> Unit) {
-    val vm = rememberLoader("emp-dashboard") { employeeDashboard() }
+    val model: AgentHomeViewModel = hiltViewModel()
+    val vm = model.dashboard
     val state by vm.state.collectAsStateWithLifecycle()
-    val name = LocalAppContainer.current.session.session.collectAsStateWithLifecycle().value?.name.orEmpty()
+    val name by model.userName.collectAsStateWithLifecycle()
     ScreenScaffold(
         stringResource(R.string.hello_name, name.substringBefore(' ')),
         actions = {
@@ -109,7 +111,7 @@ fun EmployeeHomeScreen(collect: (tenantId: Int, invoiceId: Int) -> Unit, openRec
 
 @Composable
 fun EmployeeTenantsScreen(collect: (tenantId: Int, invoiceId: Int) -> Unit) {
-    val vm = rememberLoader("emp-tenants") { employeeTenants() }
+    val vm = hiltViewModel<AgentTenantsViewModel>().tenants
     val state by vm.state.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     ScreenScaffold(stringResource(R.string.my_tenants)) { pad ->
@@ -144,7 +146,7 @@ private fun EmployeeTenantCard(t: TenantRow, onCollect: () -> Unit) {
 
 @Composable
 fun EmployeeCollectionsScreen(openReceipt: (String) -> Unit) {
-    val vm = rememberLoader("emp-collections") { employeeCollections() }
+    val vm = hiltViewModel<AgentCollectionsViewModel>().collections
     val state by vm.state.collectAsStateWithLifecycle()
     ScreenScaffold(stringResource(R.string.my_collections), actions = { IconButton(onClick = vm::refresh) { Icon(Icons.Filled.Refresh, stringResource(R.string.refresh)) } }) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { d ->
@@ -165,14 +167,14 @@ fun EmployeeCollectionsScreen(openReceipt: (String) -> Unit) {
  */
 @Composable
 fun EmployeeCollectScreen(preTenant: Int, preInvoice: Int, onBack: () -> Unit, onDone: (String) -> Unit) {
-    val container = LocalAppContainer.current
-    val vmT = rememberLoader("emp-tenants") { employeeTenants() }
-    val vmD = rememberLoader("emp-dashboard") { employeeDashboard() }
+    val model: AgentCollectViewModel = hiltViewModel()
+    val vmT = model.tenants
     val tState by vmT.state.collectAsStateWithLifecycle()
-    val dState by vmD.state.collectAsStateWithLifecycle()
-    val action = rememberAction<PaymentResult>("emp-collect")
+    val dState by model.dashboard.state.collectAsStateWithLifecycle()
+    val meta by model.meta.state.collectAsStateWithLifecycle()
+    val action = model.collectAction
     val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { (act as? ActionState.Done<*>)?.let { onDone((it.result as PaymentResult).receiptNumber) } }
+    EventEffect(model) { if (it is ScreenEvent.ReceiptReady) onDone(it.receiptNumber) }
 
     var tenantId by rememberSaveable { mutableStateOf(preTenant) }
     var invoiceId by rememberSaveable { mutableStateOf(preInvoice) }
@@ -209,10 +211,9 @@ fun EmployeeCollectScreen(preTenant: Int, preInvoice: Int, onBack: () -> Unit, o
                         maxAmount = max,
                         running = act is ActionState.Running,
                         errorMessage = (act as? ActionState.Failed)?.let { errorText(it.error) },
+                        modes = paymentModes(meta),
                     ) { amount, mode, date, ref, remarks ->
-                        if (propertyId > 0) action.run { key ->
-                            container.api.employeeCollect(tenant.id, propertyId, invoiceId, amount, mode, date, ref, remarks, key)
-                        }
+                        if (propertyId > 0) model.collect(tenant.id, propertyId, invoiceId, amount, mode, date, ref, remarks)
                     }
                 }
             }

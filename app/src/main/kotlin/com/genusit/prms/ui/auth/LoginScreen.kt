@@ -1,5 +1,8 @@
 package com.genusit.prms.ui.auth
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.genusit.prms.platform.AppLanguage
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,11 +56,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.genusit.prms.BuildConfig
 import com.genusit.prms.R
-import com.genusit.prms.core.model.Role
-import com.genusit.prms.core.net.ApiException
-import com.genusit.prms.data.AppContainer
-import com.genusit.prms.data.Session
-import com.genusit.prms.ui.common.LocalAppContainer
+import com.genusit.prms.domain.model.Role
 import com.genusit.prms.ui.common.UiError
 import com.genusit.prms.ui.common.errorText
 import com.genusit.prms.ui.theme.Palette
@@ -65,50 +64,19 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen() {
-    val container = LocalAppContainer.current
-    val scope = rememberCoroutineScope()
+    val model: LoginViewModel = hiltViewModel()
+    val ui by model.state.collectAsStateWithLifecycle()
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var showPw by rememberSaveable { mutableStateOf(false) }
-    var busy by rememberSaveable { mutableStateOf(false) }
-    var error by rememberSaveable { mutableStateOf<String?>(null) }
-    var errorRes by rememberSaveable { mutableStateOf(0) }
+    val busy = ui.busy
+    val error = ui.error
+    val errorRes = ui.errorRes
     // Debug builds only: which server was called and the technical reason it failed.
-    var debugInfo by rememberSaveable { mutableStateOf<String?>(null) }
-    val lang = AppContainer.currentLanguage()
+    val debugInfo = ui.debugInfo
+    val lang = AppLanguage.current()
 
-    fun submit() {
-        if (busy) return
-        if (username.isBlank() || password.isEmpty()) { errorRes = R.string.login_required; error = null; return }
-        busy = true; error = null; errorRes = 0; debugInfo = null
-        scope.launch {
-            try {
-                val r = container.api.login(username.trim(), password, lang)
-                val role = Role.from(r.userType)
-                if (role == null || role == Role.ADMIN) {
-                    // Super Admin works in the web panel only
-                    runCatching { container.api.logout() }
-                    errorRes = R.string.login_admin_web
-                } else {
-                    container.session.save(Session(r.token, role, r.user.fullName))
-                }
-            } catch (e: ApiException) {
-                when {
-                    e.isNetwork -> errorRes = R.string.error_network
-                    // Never show raw "HTTP 301" / HTML to users; details go to debugInfo (debug builds).
-                    e.isServerMisconfig -> errorRes = R.string.error_server
-                    else -> error = e.message
-                }
-                if (BuildConfig.DEBUG && (e.isNetwork || e.isServerMisconfig)) {
-                    debugInfo = "Server: ${BuildConfig.API_BASE_URL}\n${e.message}"
-                }
-            } catch (e: Exception) {
-                errorRes = R.string.error_generic
-            } finally {
-                busy = false
-            }
-        }
-    }
+    fun submit() = model.submit(username, password, lang)
 
     Box(Modifier.fillMaxSize().background(Palette.HeaderGradient)) {
         Column(
@@ -119,7 +87,7 @@ fun LoginScreen() {
                 listOf("en" to "EN", "hi" to "हिं", "mr" to "मरा").forEach { (code, label) ->
                     FilterChip(
                         selected = lang == code,
-                        onClick = { AppContainer.setLanguage(code) },
+                        onClick = { AppLanguage.set(code) },
                         label = { Text(label, color = if (lang == code) Palette.BrandDark else Color.White) },
                         modifier = Modifier.padding(start = 6.dp),
                     )

@@ -1,16 +1,17 @@
-# Use this workflow when PRMSApp itself is the root of the GitHub repository.
-# (android.yml expects the app inside android/PRMSApp of the full project repo.)
-name: Android debug APK (standalone repo)
+# Builds the app when PRMSApp is the root of the repository (e.g. the `android-native` branch).
+# (android.yml is for the full project repo, where the app lives in android/PRMSApp.)
+name: Android build (standalone repo)
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ main, android-native ]
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -18,11 +19,23 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v3
-      - name: Core unit tests
-        run: ./gradlew :core:test --stacktrace
-      - name: Debug APK (uses the live server URL from gradle.properties)
+
+      - name: Unit tests (domain rules + Retrofit/OkHttp data layer against MockWebServer)
+        run: ./gradlew :domain:test :data:test --stacktrace
+
+      - name: Debug APK (Hilt/KSP code generation + Compose)
         run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Lint
+        run: ./gradlew :app:lintDebug
+
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: prms-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/reports/lint-results-*.html
+            domain/build/reports/tests/
+            data/build/reports/tests/
+          if-no-files-found: warn

@@ -1,5 +1,9 @@
 package com.genusit.prms.ui.owner
 
+import com.genusit.prms.domain.model.Meta
+import com.genusit.prms.ui.common.ScreenEvent
+import com.genusit.prms.ui.common.EventEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,16 +47,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.model.InvoiceDetail
-import com.genusit.prms.core.model.LabelValue as Lv
-import com.genusit.prms.core.model.PaymentResult
-import com.genusit.prms.core.util.Dates
-import com.genusit.prms.core.util.Money
-import com.genusit.prms.core.util.Validators
+import com.genusit.prms.domain.model.InvoiceDetail
+import com.genusit.prms.domain.model.LabelValue as Lv
+import com.genusit.prms.domain.model.PaymentResult
+import com.genusit.prms.domain.util.Dates
+import com.genusit.prms.domain.util.Money
+import com.genusit.prms.domain.util.Validators
 import com.genusit.prms.ui.common.ActionState
 import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.LabelValue
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.PaymentRow
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
@@ -62,8 +65,6 @@ import com.genusit.prms.ui.common.UiState
 import com.genusit.prms.ui.common.WalletCard
 import com.genusit.prms.ui.common.dateText
 import com.genusit.prms.ui.common.errorText
-import com.genusit.prms.ui.common.rememberAction
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.theme.Palette
 
 /** Shared invoice body for owner and tenant. */
@@ -131,8 +132,10 @@ fun InvoiceBody(inv: InvoiceDetail, showTenant: Boolean, openReceipt: (String) -
 
 @Composable
 fun InvoiceDetailScreen(id: Int, onBack: () -> Unit, recordPayment: (Int) -> Unit, openReceipt: (String) -> Unit) {
-    val vm = rememberLoader("owner-invoice-$id") { ownerInvoice(id) }
+    val model: InvoiceDetailViewModel = hiltViewModel()
+    val vm = model.invoice
     val state by vm.state.collectAsStateWithLifecycle()
+    val cancelState by model.cancelAction.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { if (state !is UiState.Loading) vm.refresh() }
     ScreenScaffold(stringResource(R.string.invoice), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { inv ->
@@ -143,7 +146,7 @@ fun InvoiceDetailScreen(id: Int, onBack: () -> Unit, recordPayment: (Int) -> Uni
                 // only a bill without any payment can be cancelled (the server checks again)
                 if ((inv.status == "pending" || inv.status == "overdue") && inv.paidAmount <= 0.0) {
                     Spacer(Modifier.height(8.dp))
-                    CancelInvoiceButton(inv.id, onCancelled = { vm.refresh() })
+                    CancelInvoiceButton(cancelState, onCancel = model::cancel)
                 }
             }
         }
@@ -152,9 +155,8 @@ fun InvoiceDetailScreen(id: Int, onBack: () -> Unit, recordPayment: (Int) -> Uni
 
 /** Payment modes with server-localized labels; falls back to the app's own strings offline. */
 @Composable
-fun rememberPaymentModes(): List<Lv> {
-    val vm = rememberLoader("meta") { meta() }
-    val st by vm.state.collectAsStateWithLifecycle()
+fun paymentModes(meta: UiState<Meta>): List<Lv> {
+    val st = meta
     val fallback = listOf(
         Lv("cash", stringResource(R.string.mode_cash)), Lv("upi", "UPI"),
         Lv("online", stringResource(R.string.mode_online)), Lv("bank_transfer", stringResource(R.string.mode_bank)),
@@ -169,9 +171,9 @@ fun PaymentForm(
     maxAmount: Double,
     running: Boolean,
     errorMessage: String?,
+    modes: List<Lv>,
     onSubmit: (amount: Double, mode: String, date: String, reference: String, remarks: String) -> Unit,
 ) {
-    val modes = rememberPaymentModes()
     var amount by rememberSaveable { mutableStateOf("") }
     var mode by rememberSaveable { mutableStateOf("cash") }
     var reference by rememberSaveable { mutableStateOf("") }
@@ -227,12 +229,12 @@ fun PaymentForm(
 
 @Composable
 fun RecordPaymentScreen(invoiceId: Int, onBack: () -> Unit, onDone: (String) -> Unit) {
-    val vm = rememberLoader("owner-invoice-$invoiceId") { ownerInvoice(invoiceId) }
+    val model: RecordPaymentViewModel = hiltViewModel()
+    val vm = model.invoice
     val state by vm.state.collectAsStateWithLifecycle()
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<PaymentResult>("pay-$invoiceId")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { (act as? ActionState.Done<PaymentResult>)?.let { onDone(it.result.receiptNumber) } }
+    val meta by model.meta.state.collectAsStateWithLifecycle()
+    val act by model.payAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it is ScreenEvent.ReceiptReady) onDone(it.receiptNumber) }
 
     ScreenScaffold(stringResource(R.string.record_payment), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { inv ->
@@ -246,8 +248,9 @@ fun RecordPaymentScreen(invoiceId: Int, onBack: () -> Unit, onDone: (String) -> 
                         maxAmount = inv.balanceAmount,
                         running = act is ActionState.Running,
                         errorMessage = failed?.let { errorText(it.error) },
+                        modes = paymentModes(meta),
                     ) { amount, mode, date, ref, remarks ->
-                        action.run { key -> api.ownerRecordPayment(inv.id, amount, mode, date, ref, remarks, key) }
+                        model.pay(inv.id, amount, mode, date, ref, remarks)
                     }
                 }
             }

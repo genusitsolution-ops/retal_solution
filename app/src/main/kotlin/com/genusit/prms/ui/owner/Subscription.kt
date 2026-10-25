@@ -1,5 +1,6 @@
 package com.genusit.prms.ui.owner
 
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,19 +29,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.common.ActionState
 import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.LabelValue
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
 import com.genusit.prms.ui.common.StateContent
 import com.genusit.prms.ui.common.StatusChip
 import com.genusit.prms.ui.common.dateText
 import com.genusit.prms.ui.common.errorText
-import com.genusit.prms.ui.common.rememberAction
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.theme.Palette
 
 /**
@@ -50,12 +48,10 @@ import com.genusit.prms.ui.theme.Palette
  */
 @Composable
 fun SubscriptionScreen(onBack: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val vm = rememberLoader("owner-subscription") { subscription() }
+    val model: SubscriptionViewModel = hiltViewModel()
+    val vm = model.subscription
     val state by vm.state.collectAsStateWithLifecycle()
-    val action = rememberAction<Unit>("renewal")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) vm.refresh() }
+    val act by model.renewal.state.collectAsStateWithLifecycle()
 
     ScreenScaffold(stringResource(R.string.subscription), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { s ->
@@ -125,7 +121,7 @@ fun SubscriptionScreen(onBack: () -> Unit) {
                 if (s.canRequestRenewal && !hasUnpaid) item {
                     Column {
                         (act as? ActionState.Failed)?.let { Text(errorText(it.error), color = MaterialTheme.colorScheme.error) }
-                        Button(onClick = { action.run { api.requestRenewal() } }, enabled = act !is ActionState.Running, modifier = Modifier.fillMaxWidth().height(50.dp)) {
+                        Button(onClick = model::requestRenewal, enabled = act !is ActionState.Running, modifier = Modifier.fillMaxWidth().height(50.dp)) {
                             if (act is ActionState.Running) CircularProgressIndicator(color = Color.White) else Text(stringResource(R.string.request_renewal_invoice))
                         }
                         Text(stringResource(R.string.renewal_note), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

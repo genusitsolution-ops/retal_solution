@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 // Release signing comes ONLY from the project owner's own keystore.properties (never committed)
@@ -22,8 +24,8 @@ android {
         applicationId = "com.genusit.prms"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
         val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://genusitsolution.com/rentalsolutionfinal/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
         vectorDrawables { useSupportLibrary = true }
@@ -77,7 +79,10 @@ android {
 }
 
 dependencies {
-    implementation(project(":core"))
+    implementation(project(":data"))
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)

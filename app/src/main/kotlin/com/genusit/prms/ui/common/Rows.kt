@@ -28,9 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.genusit.prms.R
-import com.genusit.prms.core.model.ChartPoint
-import com.genusit.prms.core.model.InvoiceSummary
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.model.ChartPoint
+import com.genusit.prms.domain.model.InvoiceSummary
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.theme.Palette
 
 @Composable

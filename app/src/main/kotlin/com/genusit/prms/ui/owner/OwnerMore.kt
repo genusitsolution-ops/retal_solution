@@ -1,5 +1,8 @@
 package com.genusit.prms.ui.owner
 
+import com.genusit.prms.ui.common.ScreenEvent
+import com.genusit.prms.ui.common.EventEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -53,14 +56,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.model.CreatedId
-import com.genusit.prms.core.model.NewProperty
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.model.CreatedId
+import com.genusit.prms.domain.model.NewProperty
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.common.ActionState
 import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.EmptyState
 import com.genusit.prms.ui.common.IconBadge
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.PaymentRow
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.StateContent
@@ -68,8 +70,6 @@ import com.genusit.prms.ui.common.StatusChip
 import com.genusit.prms.ui.common.WalletCard
 import com.genusit.prms.ui.common.dateText
 import com.genusit.prms.ui.common.errorText
-import com.genusit.prms.ui.common.rememberAction
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.theme.Palette
 
 @Composable
@@ -108,7 +108,7 @@ fun OwnerMoreScreen(open: (String) -> Unit) {
 
 @Composable
 fun PropertiesScreen(onBack: () -> Unit, addProperty: () -> Unit, editProperty: (Int) -> Unit = {}) {
-    val vm = rememberLoader("owner-properties") { ownerProperties() }
+    val vm = hiltViewModel<PropertiesViewModel>().properties
     val state by vm.state.collectAsStateWithLifecycle()
     // reload when coming back from "add property"
     LaunchedEffect(Unit) { if (state !is com.genusit.prms.ui.common.UiState.Loading) vm.refresh() }
@@ -148,10 +148,9 @@ fun PropertiesScreen(onBack: () -> Unit, addProperty: () -> Unit, editProperty: 
 
 @Composable
 fun AddPropertyScreen(onBack: () -> Unit, onSaved: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<CreatedId>("add-property")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) onSaved() }
+    val model: AddPropertyViewModel = hiltViewModel()
+    val act by model.saveAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.Saved) onSaved() }
     var code by rememberSaveable { mutableStateOf("") }
     var address by rememberSaveable { mutableStateOf("") }
     var city by rememberSaveable { mutableStateOf("") }
@@ -183,7 +182,7 @@ fun AddPropertyScreen(onBack: () -> Unit, onSaved: () -> Unit) {
             Button(
                 onClick = {
                     tried = true
-                    if (valid) action.run { api.addProperty(NewProperty(code.trim(), address.trim(), city.trim(), stateName.trim(), pincode, rentV!!, depV!!)) }
+                    if (valid) model.save(NewProperty(code.trim(), address.trim(), city.trim(), stateName.trim(), pincode, rentV!!, depV!!))
                 },
                 enabled = act !is ActionState.Running, modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
@@ -195,7 +194,7 @@ fun AddPropertyScreen(onBack: () -> Unit, onSaved: () -> Unit) {
 
 @Composable
 fun OwnerPaymentsScreen(onBack: () -> Unit, openReceipt: (String) -> Unit) {
-    val vm = rememberLoader("owner-payments") { ownerPayments() }
+    val vm = hiltViewModel<OwnerPaymentsViewModel>().payments
     val state by vm.state.collectAsStateWithLifecycle()
     ScreenScaffold(stringResource(R.string.payments), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { d ->

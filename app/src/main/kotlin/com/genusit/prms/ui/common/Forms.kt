@@ -35,7 +35,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.genusit.prms.R
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.theme.Palette
 
 /** One labelled text field used by every form (red outline after the first submit attempt). */

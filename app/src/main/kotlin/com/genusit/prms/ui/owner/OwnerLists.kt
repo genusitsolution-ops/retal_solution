@@ -1,5 +1,8 @@
 package com.genusit.prms.ui.owner
 
+import com.genusit.prms.ui.common.ScreenEvent
+import com.genusit.prms.ui.common.EventEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,7 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.EmptyState
 import com.genusit.prms.ui.common.IconBadge
@@ -50,7 +53,6 @@ import com.genusit.prms.ui.common.SectionHeader
 import com.genusit.prms.ui.common.StateContent
 import com.genusit.prms.ui.common.StatusChip
 import com.genusit.prms.ui.common.dial
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.theme.Palette
 
 @Composable
@@ -66,7 +68,7 @@ fun SearchField(value: String, onChange: (String) -> Unit) {
 
 @Composable
 fun OwnerTenantsScreen(openTenant: (Int) -> Unit, addTenant: (() -> Unit)? = null) {
-    val vm = rememberLoader("owner-tenants") { ownerTenants() }
+    val vm = hiltViewModel<OwnerTenantsViewModel>().tenants
     val state by vm.state.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     androidx.compose.runtime.LaunchedEffect(Unit) { if (state !is com.genusit.prms.ui.common.UiState.Loading) vm.refresh() }
@@ -104,7 +106,10 @@ fun OwnerTenantsScreen(openTenant: (Int) -> Unit, addTenant: (() -> Unit)? = nul
 
 @Composable
 fun OwnerTenantDetailScreen(id: Int, onBack: () -> Unit, openInvoice: (Int) -> Unit, edit: () -> Unit = {}, onDeleted: () -> Unit = onBack) {
-    val vm = rememberLoader("owner-tenant-$id") { ownerTenant(id) }
+    val model: OwnerTenantDetailViewModel = hiltViewModel()
+    val vm = model.tenant
+    val deleteState by model.deleteAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.Saved) onDeleted() }
     val state by vm.state.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(Unit) { if (state !is com.genusit.prms.ui.common.UiState.Loading) vm.refresh() }
     val ctx = LocalContext.current
@@ -131,7 +136,7 @@ fun OwnerTenantDetailScreen(id: Int, onBack: () -> Unit, openInvoice: (Int) -> U
                                 }
                             }
                             Spacer(Modifier.height(8.dp))
-                            TenantManageActions(id, t.invoices.size, onEdit = edit, onDeleted = onDeleted)
+                            TenantManageActions(t.invoices.size, deleteState, onEdit = edit, onDelete = model::delete)
                         }
                     }
                 }
@@ -148,7 +153,7 @@ private val INVOICE_FILTERS = listOf("" to R.string.all, "pending" to R.string.s
 /** Invoice list; with [onlyOpen] it is the "pick an invoice to collect" screen behind the FAB. */
 @Composable
 fun OwnerInvoicesScreen(openInvoice: (Int) -> Unit, onlyOpen: Boolean = false, onBack: (() -> Unit)? = null) {
-    val vm = rememberLoader(if (onlyOpen) "owner-invoices-open" else "owner-invoices") { ownerInvoices() }
+    val vm = hiltViewModel<OwnerInvoicesViewModel>().invoices
     val state by vm.state.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf("") }
     var query by rememberSaveable { mutableStateOf("") }

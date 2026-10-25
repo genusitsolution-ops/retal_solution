@@ -23,8 +23,8 @@ jobs:
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v3
 
-      - name: Core unit tests (API client, money, validation)
-        run: ./gradlew :core:test --stacktrace
+      - name: Unit tests (domain rules + Retrofit/OkHttp data layer)
+        run: ./gradlew :domain:test :data:test --stacktrace
 
       - name: Debug APK
         run: ./gradlew :app:assembleDebug --stacktrace

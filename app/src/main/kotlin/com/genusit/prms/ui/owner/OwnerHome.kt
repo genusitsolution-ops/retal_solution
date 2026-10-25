@@ -1,5 +1,6 @@
 package com.genusit.prms.ui.owner
 
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -26,18 +27,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.common.BilledCollectedChart
 import com.genusit.prms.ui.common.EmptyState
 import com.genusit.prms.ui.common.InvoiceRow
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
 import com.genusit.prms.ui.common.StatTile
 import com.genusit.prms.ui.common.StateContent
 import com.genusit.prms.ui.common.SubscriptionBanner
 import com.genusit.prms.ui.common.WalletCard
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.theme.Palette
 
 @Composable
@@ -47,9 +46,10 @@ fun OwnerHomeScreen(
     openSubscription: () -> Unit,
     openNotifications: () -> Unit,
 ) {
-    val vm = rememberLoader("owner-dashboard") { ownerDashboard() }
+    val model: OwnerHomeViewModel = hiltViewModel()
+    val vm = model.dashboard
     val state by vm.state.collectAsStateWithLifecycle()
-    val name = LocalAppContainer.current.session.session.collectAsStateWithLifecycle().value?.name.orEmpty()
+    val name by model.userName.collectAsStateWithLifecycle()
 
     ScreenScaffold(
         title = stringResource(R.string.hello_name, name.substringBefore(' ')),

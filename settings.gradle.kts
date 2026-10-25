@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "PRMSApp"
-include(":core", ":app")
+include(":domain", ":data", ":app")

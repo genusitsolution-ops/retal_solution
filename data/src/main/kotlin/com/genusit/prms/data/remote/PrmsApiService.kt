@@ -1,0 +1,224 @@
+package com.genusit.prms.data.remote
+
+import kotlinx.serialization.json.JsonObject
+import okhttp3.ResponseBody
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.DELETE
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Query
+
+/**
+ * Retrofit description of the PRMS REST API v1 (paths are relative to `…/api/v1/`).
+ *
+ * Every endpoint answers with the same JSON envelope
+ * `{"status":"success|error","code":…,"message":…,"data":…,"errors":…}`, so responses are
+ * returned raw and unwrapped in one place by [ApiCaller] (status codes, localized server
+ * messages, lenient decoding). Request bodies are serialized by the kotlinx.serialization
+ * converter. A null `@Query`/`@Header` value is left out of the request.
+ */
+interface PrmsApiService {
+
+    /* ───────── auth & common ───────── */
+
+    @POST("auth/login.php")
+    suspend fun login(@Body body: JsonObject): Response<ResponseBody>
+
+    /** [authorization] overrides the session token (used when a Super Admin is signed out right after login). */
+    @POST("auth/logout.php")
+    suspend fun logout(@Body body: JsonObject, @Header("Authorization") authorization: String?): Response<ResponseBody>
+
+    @GET("auth/me.php")
+    suspend fun me(): Response<ResponseBody>
+
+    @PUT("auth/me.php")
+    suspend fun updateMe(@Body body: JsonObject): Response<ResponseBody>
+
+    @GET("common/meta.php")
+    suspend fun meta(): Response<ResponseBody>
+
+    @GET("common/notifications.php")
+    suspend fun notifications(): Response<ResponseBody>
+
+    @POST("common/notifications.php")
+    suspend fun updateNotifications(@Body body: JsonObject): Response<ResponseBody>
+
+    @GET("common/receipt.php")
+    suspend fun receipt(@Query("receipt") receiptNumber: String): Response<ResponseBody>
+
+    /* ───────── owner: dashboard, reports, referrals ───────── */
+
+    @GET("owner/dashboard.php")
+    suspend fun ownerDashboard(): Response<ResponseBody>
+
+    /** [type] = collections | revenue | pending */
+    @GET("owner/reports.php")
+    suspend fun ownerReport(@Query("type") type: String, @Query("from") from: String?, @Query("to") to: String?): Response<ResponseBody>
+
+    @GET("owner/referrals.php")
+    suspend fun ownerReferrals(): Response<ResponseBody>
+
+    /* ───────── owner: rooms ───────── */
+
+    @GET("owner/properties.php")
+    suspend fun ownerProperties(@Query("id") id: Int?): Response<ResponseBody>
+
+    @POST("owner/properties.php")
+    suspend fun addProperty(@Body body: JsonObject): Response<ResponseBody>
+
+    @PUT("owner/properties.php")
+    suspend fun updateProperty(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    @DELETE("owner/properties.php")
+    suspend fun deleteProperty(@Query("id") id: Int): Response<ResponseBody>
+
+    /* ───────── owner: tenants ───────── */
+
+    @GET("owner/tenants.php")
+    suspend fun ownerTenants(@Query("id") id: Int?): Response<ResponseBody>
+
+    @POST("owner/tenants.php")
+    suspend fun addTenant(@Body body: JsonObject): Response<ResponseBody>
+
+    @PUT("owner/tenants.php")
+    suspend fun updateTenant(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    @DELETE("owner/tenants.php")
+    suspend fun deleteTenant(@Query("id") id: Int): Response<ResponseBody>
+
+    /* ───────── owner: invoices & payments ───────── */
+
+    @GET("owner/invoices.php")
+    suspend fun ownerInvoices(@Query("status") status: String?): Response<ResponseBody>
+
+    @GET("owner/invoices.php")
+    suspend fun ownerInvoice(@Query("id") id: Int): Response<ResponseBody>
+
+    @GET("owner/invoices.php")
+    suspend fun invoiceContext(
+        @Query("action") action: String,
+        @Query("allocation_id") allocationId: Int,
+        @Query("billing_month") month: Int,
+        @Query("billing_year") year: Int,
+    ): Response<ResponseBody>
+
+    /** Record payment (with [idempotencyKey]), generate (`action=generate`) or cancel (`action=cancel`). */
+    @POST("owner/invoices.php")
+    suspend fun ownerInvoiceAction(@Body body: JsonObject, @Header("Idempotency-Key") idempotencyKey: String?): Response<ResponseBody>
+
+    @GET("owner/payments.php")
+    suspend fun ownerPayments(@Query("from") from: String?, @Query("to") to: String?): Response<ResponseBody>
+
+    /* ───────── owner: charges ───────── */
+
+    @GET("owner/charges.php")
+    suspend fun ownerCharges(@Query("all") all: Int?): Response<ResponseBody>
+
+    @PUT("owner/charges.php")
+    suspend fun updateCharge(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    @POST("owner/charges.php")
+    suspend fun addCharge(@Body body: JsonObject): Response<ResponseBody>
+
+    @DELETE("owner/charges.php")
+    suspend fun deactivateCharge(@Query("id") id: Int): Response<ResponseBody>
+
+    /* ───────── owner: allocations ───────── */
+
+    @GET("owner/allocations.php")
+    suspend fun ownerAllocations(@Query("status") status: String?): Response<ResponseBody>
+
+    @POST("owner/allocations.php")
+    suspend fun allocate(@Body body: JsonObject): Response<ResponseBody>
+
+    @PUT("owner/allocations.php")
+    suspend fun closeAllocation(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    /** `{"action":"collect_deposit","amount":…}` */
+    @POST("owner/allocations.php")
+    suspend fun allocationAction(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    /* ───────── owner: collection agents ───────── */
+
+    @GET("owner/employees.php")
+    suspend fun ownerEmployees(@Query("id") id: Int?): Response<ResponseBody>
+
+    @POST("owner/employees.php")
+    suspend fun addEmployee(@Body body: JsonObject): Response<ResponseBody>
+
+    @PUT("owner/employees.php")
+    suspend fun updateEmployee(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    @DELETE("owner/employees.php")
+    suspend fun deleteEmployee(@Query("id") id: Int): Response<ResponseBody>
+
+    /** [action] = "assign" with `{"property_ids":[…]}` */
+    @POST("owner/employees.php")
+    suspend fun employeeAction(@Query("action") action: String, @Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    /* ───────── owner: complaints & subscription ───────── */
+
+    @GET("owner/queries.php")
+    suspend fun ownerQueries(@Query("id") id: Int?): Response<ResponseBody>
+
+    @POST("owner/queries.php")
+    suspend fun ownerReplyQuery(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    @PUT("owner/queries.php")
+    suspend fun ownerUpdateQuery(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    @GET("owner/subscription.php")
+    suspend fun subscription(): Response<ResponseBody>
+
+    @POST("owner/subscription.php")
+    suspend fun subscriptionAction(@Body body: JsonObject): Response<ResponseBody>
+
+    /* ───────── collection agent ───────── */
+
+    @GET("employee/dashboard.php")
+    suspend fun agentDashboard(): Response<ResponseBody>
+
+    @GET("employee/tenants.php")
+    suspend fun agentTenants(): Response<ResponseBody>
+
+    @GET("employee/collections.php")
+    suspend fun agentCollections(@Query("from") from: String?, @Query("to") to: String?): Response<ResponseBody>
+
+    @POST("employee/collections.php")
+    suspend fun agentCollect(@Body body: JsonObject, @Header("Idempotency-Key") idempotencyKey: String?): Response<ResponseBody>
+
+    @GET("employee/profile.php")
+    suspend fun agentProfile(): Response<ResponseBody>
+
+    @PUT("employee/profile.php")
+    suspend fun updateAgentProfile(@Body body: JsonObject): Response<ResponseBody>
+
+    /* ───────── tenant ───────── */
+
+    @GET("tenant/dashboard.php")
+    suspend fun tenantDashboard(): Response<ResponseBody>
+
+    @GET("tenant/invoices.php")
+    suspend fun tenantInvoices(@Query("id") id: Int?): Response<ResponseBody>
+
+    @GET("tenant/payments.php")
+    suspend fun tenantPayments(): Response<ResponseBody>
+
+    @GET("tenant/queries.php")
+    suspend fun tenantQueries(@Query("id") id: Int?): Response<ResponseBody>
+
+    @POST("tenant/queries.php")
+    suspend fun raiseQuery(@Body body: JsonObject): Response<ResponseBody>
+
+    @POST("tenant/queries.php")
+    suspend fun tenantReplyQuery(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    @GET("tenant/profile.php")
+    suspend fun tenantProfile(): Response<ResponseBody>
+
+    @PUT("tenant/profile.php")
+    suspend fun updateTenantProfile(@Body body: JsonObject): Response<ResponseBody>
+}

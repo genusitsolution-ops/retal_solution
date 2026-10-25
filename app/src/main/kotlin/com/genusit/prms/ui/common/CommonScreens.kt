@@ -1,5 +1,7 @@
 package com.genusit.prms.ui.common
 
+import com.genusit.prms.platform.AppLanguage
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -53,15 +55,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.BuildConfig
 import com.genusit.prms.R
-import com.genusit.prms.core.model.Role
-import com.genusit.prms.core.util.Money
-import com.genusit.prms.data.AppContainer
+import com.genusit.prms.domain.model.Role
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.theme.Palette
 import kotlinx.coroutines.launch
 
 @Composable
 fun ReceiptScreen(receiptNo: String, onBack: () -> Unit) {
-    val vm = rememberLoader("receipt-$receiptNo") { receipt(receiptNo) }
+    val vm = hiltViewModel<ReceiptViewModel>().receipt
     val state by vm.state.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
     val chooser = stringResource(R.string.share_receipt)
@@ -104,12 +105,11 @@ fun ReceiptScreen(receiptNo: String, onBack: () -> Unit) {
 
 @Composable
 fun NotificationsScreen(onBack: () -> Unit) {
-    val container = LocalAppContainer.current
-    val scope = rememberCoroutineScope()
-    val vm = rememberLoader("notifications") { notifications() }
+    val model: NotificationsViewModel = hiltViewModel()
+    val vm = model.notifications
     val state by vm.state.collectAsStateWithLifecycle()
     ScreenScaffold(stringResource(R.string.notifications), onBack = onBack, actions = {
-        IconButton(onClick = { scope.launch { runCatching { container.api.markAllNotificationsRead() }; vm.refresh() } }) {
+        IconButton(onClick = model::markAllRead) {
             Icon(Icons.Filled.DoneAll, stringResource(R.string.mark_all_read))
         }
     }) { pad ->
@@ -135,11 +135,10 @@ fun NotificationsScreen(onBack: () -> Unit) {
 
 @Composable
 fun SettingsScreen(role: Role, onBack: (() -> Unit)?) {
-    val container = LocalAppContainer.current
-    val scope = rememberCoroutineScope()
-    val lang = AppContainer.currentLanguage()
+    val model: SettingsViewModel = hiltViewModel()
+    val lang = AppLanguage.current()
     var confirmLogout by rememberSaveable { mutableStateOf(false) }
-    val session by container.session.session.collectAsStateWithLifecycle()
+    val session by model.session.collectAsStateWithLifecycle()
 
     ScreenScaffold(stringResource(R.string.settings), onBack = onBack) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -161,15 +160,14 @@ fun SettingsScreen(role: Role, onBack: (() -> Unit)?) {
                         listOf("en" to "English", "hi" to "हिंदी", "mr" to "मराठी").forEach { (code, label) ->
                             FilterChip(selected = lang == code, onClick = {
                                 // saved on the server too, so web, receipts and notifications follow the same language
-                                scope.launch { runCatching { container.api.saveLanguage(code) } }
-                                AppContainer.setLanguage(code)
+                                model.setLanguage(code)
                             }, label = { Text(label) })
                         }
                     }
                 }
             }
-            ProfileCard(role)
-            ChangePasswordCard(role)
+            ProfileCard(model, role)
+            ChangePasswordCard(model, role)
             OutlinedButton(onClick = { confirmLogout = true }, modifier = Modifier.fillMaxWidth().height(50.dp)) {
                 Icon(Icons.AutoMirrored.Filled.Logout, null, tint = Palette.Danger); Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.logout), color = Palette.Danger)
@@ -181,24 +179,21 @@ fun SettingsScreen(role: Role, onBack: (() -> Unit)?) {
         onDismissRequest = { confirmLogout = false },
         title = { Text(stringResource(R.string.logout)) },
         text = { Text(stringResource(R.string.logout_confirm)) },
-        confirmButton = { TextButton(onClick = { confirmLogout = false; container.logout() }) { Text(stringResource(R.string.logout)) } },
+        confirmButton = { TextButton(onClick = { confirmLogout = false; model.logout() }) { Text(stringResource(R.string.logout)) } },
         dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
 /** Phone and e-mail of the signed-in user (owner via auth/me.php, tenant/employee via their profile endpoint). */
 @Composable
-private fun ProfileCard(role: Role) {
-    val api = LocalAppContainer.current.api
-    val vm = rememberLoader("me") { me() }
-    val state by vm.state.collectAsStateWithLifecycle()
-    val action = rememberAction<Unit>("profile-save")
-    val act by action.state.collectAsStateWithLifecycle()
+private fun ProfileCard(model: SettingsViewModel, role: Role) {
+    val state by model.me.state.collectAsStateWithLifecycle()
+    val act by model.profileAction.state.collectAsStateWithLifecycle()
     val me = (state as? UiState.Data)?.value ?: return
     var phone by rememberSaveable(me.phone) { mutableStateOf(me.phone.orEmpty()) }
     var email by rememberSaveable(me.email) { mutableStateOf(me.email.orEmpty()) }
     var tried by rememberSaveable { mutableStateOf(false) }
-    val phoneOk = com.genusit.prms.core.util.Validators.phone(phone)
+    val phoneOk = com.genusit.prms.domain.util.Validators.phone(phone)
     val emailOk = (role != Role.OWNER && email.isEmpty()) || android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -210,7 +205,7 @@ private fun ProfileCard(role: Role) {
             if (act is ActionState.Done<*>) SuccessText(stringResource(R.string.saved))
             Button(onClick = {
                 tried = true
-                if (phoneOk && emailOk) action.run { api.updateProfile(role, phone, email.ifBlank { null }, null, null) }
+                if (phoneOk && emailOk) model.saveContact(role, phone, email.ifBlank { null })
             }, enabled = act !is ActionState.Running) {
                 if (act is ActionState.Running) CircularProgressIndicator(color = Color.White) else Text(stringResource(R.string.save))
             }
@@ -219,15 +214,13 @@ private fun ProfileCard(role: Role) {
 }
 
 @Composable
-private fun ChangePasswordCard(role: Role) {
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<Unit>("change-password")
-    val act by action.state.collectAsStateWithLifecycle()
+private fun ChangePasswordCard(model: SettingsViewModel, role: Role) {
+    val act by model.passwordAction.state.collectAsStateWithLifecycle()
     var current by rememberSaveable { mutableStateOf("") }
     var next by rememberSaveable { mutableStateOf("") }
     var confirm by rememberSaveable { mutableStateOf("") }
     var localErr by rememberSaveable { mutableStateOf(0) }
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) { current = ""; next = ""; confirm = "" } }
+    EventEffect(model) { if (it == ScreenEvent.PasswordChanged) { current = ""; next = ""; confirm = "" } }
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.change_password), style = MaterialTheme.typography.titleMedium)
@@ -250,7 +243,7 @@ private fun ChangePasswordCard(role: Role) {
                     next != confirm -> R.string.err_password_mismatch
                     else -> 0
                 }
-                if (localErr == 0) action.run { api.updateProfile(role, null, null, current, next) }
+                if (localErr == 0) model.changePassword(role, current, next)
             }, enabled = act !is ActionState.Running) {
                 if (act is ActionState.Running) CircularProgressIndicator(color = Color.White) else Text(stringResource(R.string.save))
             }

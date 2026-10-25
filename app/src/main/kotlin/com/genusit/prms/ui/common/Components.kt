@@ -51,9 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.genusit.prms.R
-import com.genusit.prms.core.model.SubscriptionBrief
-import com.genusit.prms.core.util.Dates
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.model.SubscriptionBrief
+import com.genusit.prms.domain.util.Dates
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.theme.Palette
 
 /* ───────── scaffolding ───────── */
@@ -86,7 +86,7 @@ fun ScreenScaffold(
     )
 }
 
-/** Renders loading / error / data for a [LoadViewModel] state. */
+/** Renders loading / error / data for a screen's [UiState]. */
 @Composable
 fun <T> StateContent(state: UiState<T>, onRetry: () -> Unit, modifier: Modifier = Modifier, content: @Composable (T) -> Unit) {
     when (state) {

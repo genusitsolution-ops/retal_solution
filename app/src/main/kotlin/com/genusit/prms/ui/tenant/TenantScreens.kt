@@ -1,5 +1,8 @@
 package com.genusit.prms.ui.tenant
 
+import com.genusit.prms.ui.common.ScreenEvent
+import com.genusit.prms.ui.common.EventEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,16 +48,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.model.CreatedId
-import com.genusit.prms.core.model.NewQuery
-import com.genusit.prms.core.util.Dates
-import com.genusit.prms.core.util.Money
+import com.genusit.prms.domain.model.CreatedId
+import com.genusit.prms.domain.model.NewQuery
+import com.genusit.prms.domain.util.Dates
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.common.ActionState
 import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.EmptyState
 import com.genusit.prms.ui.common.InvoiceRow
 import com.genusit.prms.ui.common.LabelValue
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.PaymentRow
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
@@ -64,18 +66,17 @@ import com.genusit.prms.ui.common.WalletCard
 import com.genusit.prms.ui.common.dateText
 import com.genusit.prms.ui.common.dial
 import com.genusit.prms.ui.common.errorText
-import com.genusit.prms.ui.common.rememberAction
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.owner.InvoiceBody
 import com.genusit.prms.ui.owner.MenuRow
 import com.genusit.prms.ui.theme.Palette
 
 @Composable
 fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit) {
-    val vm = rememberLoader("ten-dashboard") { tenantDashboard() }
+    val model: TenantHomeViewModel = hiltViewModel()
+    val vm = model.dashboard
     val state by vm.state.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
-    val name = LocalAppContainer.current.session.session.collectAsStateWithLifecycle().value?.name.orEmpty()
+    val name by model.userName.collectAsStateWithLifecycle()
     ScreenScaffold(
         stringResource(R.string.hello_name, name.substringBefore(' ')),
         actions = {
@@ -132,7 +133,7 @@ fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit) 
 
 @Composable
 fun TenantInvoicesScreen(openInvoice: (Int) -> Unit) {
-    val vm = rememberLoader("ten-invoices") { tenantInvoices() }
+    val vm = hiltViewModel<TenantInvoicesViewModel>().invoices
     val state by vm.state.collectAsStateWithLifecycle()
     ScreenScaffold(stringResource(R.string.my_invoices)) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { list ->
@@ -146,7 +147,7 @@ fun TenantInvoicesScreen(openInvoice: (Int) -> Unit) {
 
 @Composable
 fun TenantInvoiceDetailScreen(id: Int, onBack: () -> Unit, openReceipt: (String) -> Unit) {
-    val vm = rememberLoader("ten-invoice-$id") { tenantInvoice(id) }
+    val vm = hiltViewModel<TenantInvoiceDetailViewModel>().invoice
     val state by vm.state.collectAsStateWithLifecycle()
     ScreenScaffold(stringResource(R.string.invoice), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { inv -> InvoiceBody(inv, showTenant = false, openReceipt = openReceipt) }
@@ -155,7 +156,7 @@ fun TenantInvoiceDetailScreen(id: Int, onBack: () -> Unit, openReceipt: (String)
 
 @Composable
 fun TenantPaymentsScreen(openReceipt: (String) -> Unit) {
-    val vm = rememberLoader("ten-payments") { tenantPayments() }
+    val vm = hiltViewModel<TenantPaymentsViewModel>().payments
     val state by vm.state.collectAsStateWithLifecycle()
     ScreenScaffold(stringResource(R.string.payment_history)) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { d ->
@@ -183,7 +184,7 @@ fun TenantMoreScreen(open: (String) -> Unit) {
 
 @Composable
 fun TenantQueriesScreen(onBack: () -> Unit, newQuery: () -> Unit, openQuery: (Int) -> Unit = {}) {
-    val vm = rememberLoader("ten-queries") { tenantQueries() }
+    val vm = hiltViewModel<TenantQueriesViewModel>().queries
     val state by vm.state.collectAsStateWithLifecycle()
     ScreenScaffold(stringResource(R.string.my_queries), onBack = onBack, actions = {
         IconButton(onClick = newQuery) { Icon(Icons.Filled.SupportAgent, stringResource(R.string.raise_query)) }
@@ -210,10 +211,9 @@ fun TenantQueriesScreen(onBack: () -> Unit, newQuery: () -> Unit, openQuery: (In
 
 @Composable
 fun RaiseQueryScreen(onBack: () -> Unit, onDone: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<CreatedId>("raise-query")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) onDone() }
+    val model: RaiseQueryViewModel = hiltViewModel()
+    val act by model.submitAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.Saved) onDone() }
     var subject by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
     var priority by rememberSaveable { mutableStateOf("medium") }
@@ -233,7 +233,7 @@ fun RaiseQueryScreen(onBack: () -> Unit, onDone: () -> Unit) {
             }
             (act as? ActionState.Failed)?.let { Text(errorText(it.error), color = MaterialTheme.colorScheme.error) }
             Button(
-                onClick = { tried = true; if (subject.isNotBlank() && description.isNotBlank()) action.run { api.raiseQuery(NewQuery(subject.trim(), description.trim(), priority)) } },
+                onClick = { tried = true; if (subject.isNotBlank() && description.isNotBlank()) model.submit(NewQuery(subject.trim(), description.trim(), priority)) },
                 enabled = act !is ActionState.Running, modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
                 if (act is ActionState.Running) CircularProgressIndicator(color = Color.White) else Text(stringResource(R.string.submit), fontWeight = FontWeight.Bold)

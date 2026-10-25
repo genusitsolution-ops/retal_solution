@@ -1,16 +1,21 @@
-// Runs the :core client against a real PRMS server (test data only!).
-//   kotlinc ... && java ... LiveApiCheckKt http://127.0.0.1:8080/api/v1/ owner_user emp_user tenant_user password
-import com.genusit.prms.core.CoreChecks
-import com.genusit.prms.core.model.EmployeeInput
-import com.genusit.prms.core.model.MeterReading
-import com.genusit.prms.core.model.NewAllocation
-import com.genusit.prms.core.model.NewCharge
-import com.genusit.prms.core.model.NewProperty
-import com.genusit.prms.core.model.NewQuery
-import com.genusit.prms.core.model.TenantInput
-import com.genusit.prms.core.net.ApiException
-import com.genusit.prms.core.net.PrmsApi
-import com.genusit.prms.core.util.Dates
+// Runs the app's real data layer (Retrofit + repositories) against a PRMS server.
+// TEST DATA ONLY: it creates tenants/rooms/charges/agents and records ₹1 payments.
+//   ./gradlew :data:jar  (or compile with kotlinc) && java ... LiveApiCheckKt https://host/rentalsolutionfinal/api/v1/ owner_user emp_user tenant_user password
+import com.genusit.prms.data.remote.ApiCaller
+import com.genusit.prms.data.remote.NetworkConfig
+import com.genusit.prms.data.remote.PrmsNetwork
+import com.genusit.prms.data.repository.*
+import com.genusit.prms.domain.model.*
+import com.genusit.prms.domain.util.IdempotencyKey
+import com.genusit.prms.domain.model.EmployeeInput
+import com.genusit.prms.domain.model.MeterReading
+import com.genusit.prms.domain.model.NewAllocation
+import com.genusit.prms.domain.model.NewCharge
+import com.genusit.prms.domain.model.NewProperty
+import com.genusit.prms.domain.model.NewQuery
+import com.genusit.prms.domain.model.TenantInput
+import com.genusit.prms.domain.error.ApiException
+import com.genusit.prms.domain.util.Dates
 import kotlinx.coroutines.runBlocking
 
 private var pass = 0
@@ -22,8 +27,6 @@ private fun ok(cond: Boolean, name: String, detail: Any? = null) {
 fun main(args: Array<String>) = runBlocking {
     val base = args.getOrElse(0) { "http://127.0.0.1:8080/api/v1/" }
     val (ownerU, empU, tenU, pw) = listOf(args.getOrElse(1) { "owner1" }, args.getOrElse(2) { "emp1" }, args.getOrElse(3) { "tenant1" }, args.getOrElse(4) { "" })
-
-    CoreChecks.all(); ok(true, "offline core checks (money, validators, lenient JSON, envelope, headers)")
 
     var token: String? = null
     var lang = "mr"
@@ -85,7 +88,7 @@ fun main(args: Array<String>) = runBlocking {
     ok(api.tenantQueries().any { it.ticketId == q.ticketId }, "query listed")
     api.tenantReplyQuery(q.id, "More details from the app")
     val tq = api.tenantQuery(q.id); ok(tq.responses.any { it.responderType == "tenant" } && tq.description.isNotEmpty(), "tenant query detail + reply", tq.responses.size)
-    val tprof = api.tenantProfile(); api.updateProfile(com.genusit.prms.core.model.Role.TENANT, tprof.phone, tprof.email, null, null)
+    val tprof = api.tenantProfile(); api.updateProfile(com.genusit.prms.domain.model.Role.TENANT, tprof.phone, tprof.email, null, null)
     ok(true, "tenant profile phone/email save")
     try { api.ownerDashboard(); ok(false, "role") } catch (e: ApiException) { ok(e.httpStatus == 403, "tenant blocked from owner API", e.code) }
     api.saveLanguage("en")
@@ -172,6 +175,92 @@ private suspend fun ownerManageChecks(api: PrmsApi) {
     ok(api.revenueReport("2026-01-01", Dates.today()).all { it.label.isNotEmpty() }, "revenue report")
     val pr = api.pendingReport(); ok(pr.totalPending >= 0, "pending report", pr.totalPending)
     val rf = api.referrals(); ok(!rf.enabled || (rf.code?.startsWith("RS") == true && rf.shareText != null), "referral summary", rf.code)
-    val me = api.me(); val saved = api.updateOwnerProfile(me.phone, me.email, null, null); ok(saved.email == me.email, "owner profile save", saved)
-    try { api.updateOwnerProfile(null, null, "wrong", "newpass1"); ok(false, "wrong pw") } catch (e2: ApiException) { ok(e2.code == "WRONG_PASSWORD", "owner password change needs current password", e2.code) }
+    val me = api.me(); api.updateProfile(Role.OWNER, me.phone, me.email, null, null); ok(api.me().email == me.email, "owner profile save", me.email)
+    try { api.updateProfile(Role.OWNER, null, null, "wrong", "newpass1"); ok(false, "wrong pw") } catch (e2: ApiException) { ok(e2.code == "WRONG_PASSWORD", "owner password change needs current password", e2.code) }
+}
+
+/** Same call names as the app 1.1 client, implemented with the app's Retrofit repositories. */
+class PrmsApi(baseUrl: String, token: () -> String?, lang: () -> String) {
+    private val config = NetworkConfig(baseUrl, "PRMS-LiveCheck", debugLogging = false)
+    val json = PrmsNetwork.json()
+    private val service = PrmsNetwork.service(PrmsNetwork.retrofit(config, PrmsNetwork.okHttp(config, { token() }, { lang() }), json))
+    private val caller = ApiCaller(json)
+    private val auth = AuthRepositoryImpl(service, caller)
+    private val common = CommonRepositoryImpl(service, caller)
+    private val props = PropertyRepositoryImpl(service, caller)
+    private val tenants = TenantAdminRepositoryImpl(service, caller)
+    private val billing = BillingRepositoryImpl(service, caller)
+    private val allocs = AllocationRepositoryImpl(service, caller)
+    private val team = TeamRepositoryImpl(service, caller)
+    private val queries = QueryRepositoryImpl(service, caller)
+    private val reports = ReportRepositoryImpl(service, caller)
+    private val subs = SubscriptionRepositoryImpl(service, caller)
+    private val agent = AgentRepositoryImpl(service, caller)
+    private val portal = TenantPortalRepositoryImpl(service, caller)
+
+    fun newIdempotencyKey() = IdempotencyKey.new()
+    suspend fun login(u: String, p: String, l: String) = auth.login(u, p, l)
+    suspend fun logout() = auth.logout()
+    suspend fun me() = auth.me()
+    suspend fun saveLanguage(l: String) = auth.saveLanguage(l)
+    suspend fun updateProfile(role: Role, phone: String?, email: String?, cur: String?, new: String?) = auth.updateProfile(role, phone, email, cur, new)
+    suspend fun meta() = common.meta()
+    suspend fun notifications() = common.notifications()
+    suspend fun receipt(no: String) = common.receipt(no)
+    suspend fun ownerDashboard() = reports.ownerDashboard()
+    suspend fun ownerProperties() = props.properties()
+    suspend fun ownerProperty(id: Int) = props.property(id)
+    suspend fun addProperty(p: NewProperty) = props.add(p)
+    suspend fun updateProperty(id: Int, p: NewProperty, status: String?) = props.update(id, p, status)
+    suspend fun ownerTenants() = tenants.tenants()
+    suspend fun ownerTenant(id: Int) = tenants.tenant(id)
+    suspend fun ownerTenantEditable(id: Int) = tenants.editable(id)
+    suspend fun addTenant(t: TenantInput) = tenants.add(t)
+    suspend fun updateTenant(id: Int, t: TenantInput) = tenants.update(id, t)
+    suspend fun deleteTenant(id: Int) = tenants.delete(id)
+    suspend fun ownerInvoices(status: String? = null) = billing.invoices(status)
+    suspend fun ownerInvoice(id: Int) = billing.invoice(id)
+    suspend fun ownerRecordPayment(id: Int, amount: Double, mode: String, date: String, ref: String, remarks: String, key: String) =
+        billing.recordPayment(id, amount, mode, date, ref, remarks, key)
+    suspend fun ownerPayments() = billing.payments()
+    suspend fun invoiceContext(a: Int, m: Int, y: Int) = billing.invoiceContext(a, m, y)
+    suspend fun generateInvoice(a: Int, m: Int, y: Int, ids: List<Int>, r: List<MeterReading>) = billing.generateInvoice(a, m, y, ids, r)
+    suspend fun cancelInvoice(id: Int, reason: String) = billing.cancelInvoice(id, reason)
+    suspend fun ownerCharges(includeInactive: Boolean = false) = billing.charges(includeInactive)
+    suspend fun setChargeStatus(id: Int, active: Boolean) = billing.setChargeStatus(id, active)
+    suspend fun addCharge(c: NewCharge) = billing.addCharge(c)
+    suspend fun deactivateCharge(id: Int) = billing.deactivateCharge(id)
+    suspend fun ownerAllocations(status: String? = null) = allocs.allocations(status)
+    suspend fun allocate(a: NewAllocation) = allocs.allocate(a)
+    suspend fun closeAllocation(id: Int, notes: String) = allocs.close(id, notes)
+    suspend fun collectDeposit(id: Int, amount: Double) = allocs.collectDeposit(id, amount)
+    suspend fun ownerEmployees() = team.employees()
+    suspend fun ownerEmployee(id: Int) = team.employee(id)
+    suspend fun addEmployee(e: EmployeeInput) = team.add(e)
+    suspend fun setEmployeeStatus(id: Int, active: Boolean) = team.setStatus(id, active)
+    suspend fun deleteEmployee(id: Int) = team.delete(id)
+    suspend fun assignProperties(id: Int, ids: List<Int>) = team.assignProperties(id, ids)
+    suspend fun ownerQuery(id: Int) = queries.ownerQuery(id)
+    suspend fun ownerReplyQuery(id: Int, msg: String, status: String?) = queries.ownerReply(id, msg, status)
+    suspend fun ownerSetQueryStatus(id: Int, status: String) = queries.ownerSetStatus(id, status)
+    suspend fun tenantQueries() = queries.tenantQueries()
+    suspend fun tenantQuery(id: Int) = queries.tenantQuery(id)
+    suspend fun tenantReplyQuery(id: Int, msg: String) = queries.tenantReply(id, msg)
+    suspend fun raiseQuery(q: NewQuery) = queries.raise(q)
+    suspend fun collectionsReport(from: String?, to: String?) = reports.collections(from, to)
+    suspend fun revenueReport(from: String?, to: String?) = reports.revenue(from, to)
+    suspend fun pendingReport() = reports.pending()
+    suspend fun referrals() = reports.referrals()
+    suspend fun subscription() = subs.status()
+    suspend fun employeeDashboard() = agent.dashboard()
+    suspend fun employeeTenants() = agent.tenants()
+    suspend fun employeeCollections() = agent.collections()
+    suspend fun employeeCollect(t: Int, p: Int, i: Int, amount: Double, mode: String, date: String, ref: String, remarks: String, key: String) =
+        agent.collect(t, p, i, amount, mode, date, ref, remarks, key)
+    suspend fun employeeProfile() = agent.profile()
+    suspend fun tenantDashboard() = portal.dashboard()
+    suspend fun tenantInvoices() = portal.invoices()
+    suspend fun tenantInvoice(id: Int) = portal.invoice(id)
+    suspend fun tenantPayments() = portal.payments()
+    suspend fun tenantProfile() = portal.profile()
 }

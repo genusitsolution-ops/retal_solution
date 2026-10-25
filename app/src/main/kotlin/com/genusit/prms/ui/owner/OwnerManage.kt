@@ -1,5 +1,9 @@
 package com.genusit.prms.ui.owner
 
+import com.genusit.prms.ui.common.ErrorBox
+import com.genusit.prms.ui.common.ScreenEvent
+import com.genusit.prms.ui.common.EventEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -52,17 +56,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.model.AllocationClosed
-import com.genusit.prms.core.model.CreatedId
-import com.genusit.prms.core.model.GeneratedInvoice
-import com.genusit.prms.core.model.MeterReading
-import com.genusit.prms.core.model.NewAllocation
-import com.genusit.prms.core.model.NewCharge
-import com.genusit.prms.core.model.NewProperty
-import com.genusit.prms.core.model.TenantInput
-import com.genusit.prms.core.util.Dates
-import com.genusit.prms.core.util.Money
-import com.genusit.prms.core.util.Validators
+import com.genusit.prms.domain.model.AllocationClosed
+import com.genusit.prms.domain.model.CreatedId
+import com.genusit.prms.domain.model.GeneratedInvoice
+import com.genusit.prms.domain.model.MeterReading
+import com.genusit.prms.domain.model.NewAllocation
+import com.genusit.prms.domain.model.NewCharge
+import com.genusit.prms.domain.model.NewProperty
+import com.genusit.prms.domain.model.TenantInput
+import com.genusit.prms.domain.util.Dates
+import com.genusit.prms.domain.util.Money
+import com.genusit.prms.domain.util.Validators
 import com.genusit.prms.ui.common.ActionError
 import com.genusit.prms.ui.common.ActionState
 import com.genusit.prms.ui.common.AmountDialog
@@ -74,7 +78,6 @@ import com.genusit.prms.ui.common.FormField
 import com.genusit.prms.ui.common.IconBadge
 import com.genusit.prms.ui.common.LabelValue
 import com.genusit.prms.ui.common.LoadingBox
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.StateContent
 import com.genusit.prms.ui.common.StatusChip
@@ -84,8 +87,6 @@ import com.genusit.prms.ui.common.TextDialog
 import com.genusit.prms.ui.common.UiState
 import com.genusit.prms.ui.common.amountInput
 import com.genusit.prms.ui.common.dateText
-import com.genusit.prms.ui.common.rememberAction
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.theme.Palette
 
 /* ═════════════════════════ tenants: add / edit / delete ═════════════════════════ */
@@ -93,10 +94,10 @@ import com.genusit.prms.ui.theme.Palette
 /** Add ([id] = 0) or edit a tenant. Same validation as the web form; the server validates again. */
 @Composable
 fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<Unit>("tenant-form-$id")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) onSaved() }
+    val model: TenantFormViewModel = hiltViewModel()
+    val act by model.saveAction.state.collectAsStateWithLifecycle()
+    val existing by model.existing.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.Saved) onSaved() }
 
     var loaded by rememberSaveable { mutableStateOf(id == 0) }
     var name by rememberSaveable { mutableStateOf("") }
@@ -110,17 +111,15 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var tried by rememberSaveable { mutableStateOf(false) }
-    var loadError by remember { mutableStateOf<String?>(null) }
 
-    if (!loaded) {
-        LaunchedEffect(id) {
-            try {
-                val t = api.ownerTenantEditable(id)
-                name = t.fullName; phone = t.phone.orEmpty(); email = t.email.orEmpty(); address = t.address.orEmpty()
-                aadhaar = t.aadharNumber.orEmpty(); pan = t.panNumber.orEmpty()
-                hasAccount = t.hasAccount; hadAccount = t.hasAccount; username = t.username.orEmpty()
-                loaded = true
-            } catch (e: Exception) { loadError = e.message }
+    // copy the stored values into the form once, when they arrive
+    LaunchedEffect(existing) {
+        val t = (existing as? UiState.Data)?.value
+        if (!loaded && t != null) {
+            name = t.fullName; phone = t.phone.orEmpty(); email = t.email.orEmpty(); address = t.address.orEmpty()
+            aadhaar = t.aadharNumber.orEmpty(); pan = t.panNumber.orEmpty()
+            hasAccount = t.hasAccount; hadAccount = t.hasAccount; username = t.username.orEmpty()
+            loaded = true
         }
     }
 
@@ -133,7 +132,8 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
 
     ScreenScaffold(stringResource(if (id == 0) R.string.add_tenant else R.string.edit_tenant), onBack = onBack) { pad ->
         if (!loaded) {
-            if (loadError != null) Text(loadError ?: "", Modifier.padding(pad).padding(16.dp), color = MaterialTheme.colorScheme.error)
+            val failed = existing as? UiState.Error
+            if (failed != null) ErrorBox(failed.error, onRetry = model.existing::refresh, modifier = Modifier.padding(pad))
             else LoadingBox(Modifier.padding(pad))
             return@ScreenScaffold
         }
@@ -167,7 +167,7 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                         hasAccount = hasAccount, username = if (hasAccount) username else null,
                         password = password.ifEmpty { null },
                     )
-                    action.run { if (id == 0) { api.addTenant(input); Unit } else api.updateTenant(id, input) }
+                    model.save(input)
                 }
             }
         }
@@ -176,12 +176,8 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
 
 /** Edit / delete buttons shown on the tenant detail screen. Delete is refused by the server when history exists. */
 @Composable
-fun TenantManageActions(id: Int, invoiceCount: Int, onEdit: () -> Unit, onDeleted: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<Unit>("tenant-delete-$id")
-    val act by action.state.collectAsStateWithLifecycle()
+fun TenantManageActions(invoiceCount: Int, act: ActionState<*>, onEdit: () -> Unit, onDelete: () -> Unit) {
     var confirm by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) onDeleted() }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = onEdit) { Icon(Icons.Filled.Edit, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.edit)) }
@@ -192,21 +188,19 @@ fun TenantManageActions(id: Int, invoiceCount: Int, onEdit: () -> Unit, onDelete
         ActionError(act)
     }
     if (confirm) ConfirmDialog(stringResource(R.string.delete_tenant), stringResource(R.string.delete_tenant_confirm), stringResource(R.string.delete),
-        onConfirm = { confirm = false; action.run { api.deleteTenant(id) } }, onDismiss = { confirm = false })
+        onConfirm = { confirm = false; onDelete() }, onDismiss = { confirm = false })
 }
 
 /* ═════════════════════════ rooms: edit / delete ═════════════════════════ */
 
 @Composable
 fun EditPropertyScreen(id: Int, onBack: () -> Unit, onDone: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val vm = rememberLoader("property-$id") { ownerProperty(id) }
+    val model: EditPropertyViewModel = hiltViewModel()
+    val vm = model.property
     val state by vm.state.collectAsStateWithLifecycle()
-    val save = rememberAction<Unit>("property-save-$id")
-    val del = rememberAction<Unit>("property-delete-$id")
-    val saveState by save.state.collectAsStateWithLifecycle()
-    val delState by del.state.collectAsStateWithLifecycle()
-    LaunchedEffect(saveState, delState) { if (saveState is ActionState.Done<*> || delState is ActionState.Done<*>) onDone() }
+    val saveState by model.saveAction.state.collectAsStateWithLifecycle()
+    val delState by model.deleteAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.Saved) onDone() }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
 
     ScreenScaffold(stringResource(R.string.edit_room), onBack = onBack) { pad ->
@@ -240,9 +234,9 @@ fun EditPropertyScreen(id: Int, onBack: () -> Unit, onDone: () -> Unit) {
                 ActionError(saveState)
                 SubmitButton(stringResource(R.string.save), saveState) {
                     tried = true
-                    if (valid) save.run {
-                        api.updateProperty(id, NewProperty(p.propertyCode, address.trim(), city.trim(), st.trim(), pincode, rentV!!, depV!!), if (occupied) null else status)
-                    }
+                    if (valid) model.save(
+                        NewProperty(p.propertyCode, address.trim(), city.trim(), st.trim(), pincode, rentV!!, depV!!), if (occupied) null else status,
+                    )
                 }
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 Text(stringResource(R.string.delete_room_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -254,20 +248,20 @@ fun EditPropertyScreen(id: Int, onBack: () -> Unit, onDone: () -> Unit) {
         }
     }
     if (confirmDelete) ConfirmDialog(stringResource(R.string.delete_room), stringResource(R.string.delete_room_confirm), stringResource(R.string.delete),
-        onConfirm = { confirmDelete = false; del.run { api.deleteProperty(id) } }, onDismiss = { confirmDelete = false })
+        onConfirm = { confirmDelete = false; model.delete() }, onDismiss = { confirmDelete = false })
 }
 
 /* ═════════════════════════ charges ═════════════════════════ */
 
 @Composable
 fun ChargesScreen(onBack: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val vm = rememberLoader("owner-charges") { ownerCharges(includeInactive = true) }
+    val model: ChargesViewModel = hiltViewModel()
+    val vm = model.charges
     val state by vm.state.collectAsStateWithLifecycle()
-    val toggle = rememberAction<Unit>("charge-toggle")
-    val tState by toggle.state.collectAsStateWithLifecycle()
-    LaunchedEffect(tState) { if (tState is ActionState.Done<*>) { vm.refresh(); toggle.reset() } }
+    val tState by model.toggle.state.collectAsStateWithLifecycle()
+    val addState by model.addAction.state.collectAsStateWithLifecycle()
     var adding by rememberSaveable { mutableStateOf(false) }
+    EventEffect(model) { if (it == ScreenEvent.ChargeAdded) adding = false }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -293,7 +287,7 @@ fun ChargesScreen(onBack: () -> Unit) {
                                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
-                                Switch(checked = c.status == "active", onCheckedChange = { on -> toggle.run { api.setChargeStatus(c.id, on) } })
+                                Switch(checked = c.status == "active", onCheckedChange = { on -> model.setActive(c.id, on) })
                             }
                         }
                     }
@@ -301,15 +295,11 @@ fun ChargesScreen(onBack: () -> Unit) {
             }
         }
     }
-    if (adding) AddChargeDialog(onDismiss = { adding = false }, onSaved = { adding = false; vm.refresh() })
+    if (adding) AddChargeDialog(addState, onDismiss = { adding = false; model.addAction.reset() }, onSave = model::add)
 }
 
 @Composable
-private fun AddChargeDialog(onDismiss: () -> Unit, onSaved: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<CreatedId>("charge-add")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) { action.reset(); onSaved() } }
+private fun AddChargeDialog(act: ActionState<*>, onDismiss: () -> Unit, onSave: (NewCharge) -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     var variable by rememberSaveable { mutableStateOf(false) }
     var amount by rememberSaveable { mutableStateOf("") }
@@ -335,12 +325,10 @@ private fun AddChargeDialog(onDismiss: () -> Unit, onSaved: () -> Unit) {
         confirmButton = {
             TextButton(onClick = {
                 tried = true
-                if (valid) action.run {
-                    api.addCharge(
-                        if (variable) NewCharge(name.trim(), "variable", ratePerUnit = v, unitLabel = unit.ifBlank { "unit" })
-                        else NewCharge(name.trim(), "fixed", fixedAmount = v),
-                    )
-                }
+                if (valid) onSave(
+                    if (variable) NewCharge(name.trim(), "variable", ratePerUnit = v, unitLabel = unit.ifBlank { "unit" })
+                    else NewCharge(name.trim(), "fixed", fixedAmount = v),
+                )
             }, enabled = act !is ActionState.Running) { Text(stringResource(R.string.save), fontWeight = FontWeight.Bold) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
@@ -351,18 +339,18 @@ private fun AddChargeDialog(onDismiss: () -> Unit, onSaved: () -> Unit) {
 
 @Composable
 fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInvoice: (Int) -> Unit) {
-    val api = LocalAppContainer.current.api
+    val model: AllocationsViewModel = hiltViewModel()
     var filter by rememberSaveable { mutableStateOf("active") }
-    val vm = rememberLoader("owner-allocations-$filter") { ownerAllocations(filter) }
+    val vm = model.allocations
+    LaunchedEffect(filter) { vm.load(filter) }
     val state by vm.state.collectAsStateWithLifecycle()
-    val deposit = rememberAction<Unit>("alloc-deposit")
-    val close = rememberAction<AllocationClosed>("alloc-close")
+    val deposit = model.deposit
+    val close = model.closeAction
     val dState by deposit.state.collectAsStateWithLifecycle()
     val cState by close.state.collectAsStateWithLifecycle()
     var depositFor by rememberSaveable { mutableStateOf(0) }
     var closeFor by rememberSaveable { mutableStateOf(0) }
-    LaunchedEffect(dState) { if (dState is ActionState.Done<*>) vm.refresh() }
-    LaunchedEffect(cState) { if (cState is ActionState.Done<*>) vm.refresh() }
+    // reload when coming back (e.g. after a new allocation or a generated bill)
     LaunchedEffect(Unit) { if (state !is UiState.Loading) vm.refresh() }
 
     Scaffold(
@@ -418,7 +406,7 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
     val list = (state as? UiState.Data)?.value.orEmpty()
     list.firstOrNull { it.id == depositFor }?.let { a ->
         AmountDialog(stringResource(R.string.collect_deposit) + " · " + (a.tenantName ?: ""), a.depositBalance,
-            onConfirm = { amt -> depositFor = 0; deposit.run { api.collectDeposit(a.id, amt); Unit } }, onDismiss = { depositFor = 0 })
+            onConfirm = { amt -> depositFor = 0; model.collectDepositFor(a.id, amt) }, onDismiss = { depositFor = 0 })
     }
     list.firstOrNull { it.id == closeFor }?.let { a ->
         TextDialog(
@@ -427,7 +415,7 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
             confirmLabel = stringResource(R.string.vacate),
             required = false,
             message = stringResource(R.string.vacate_confirm),
-            onConfirm = { notes -> closeFor = 0; close.run { api.closeAllocation(a.id, notes) } },
+            onConfirm = { notes -> closeFor = 0; model.close(a.id, notes) },
             onDismiss = { closeFor = 0 },
         )
     }
@@ -435,16 +423,12 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
 
 @Composable
 fun NewAllocationScreen(onBack: () -> Unit, onDone: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val props = rememberLoader("alloc-props") { ownerProperties() }
-    val tenants = rememberLoader("alloc-tenants") { ownerTenants() }
-    val charges = rememberLoader("alloc-charges") { ownerCharges() }
-    val pState by props.state.collectAsStateWithLifecycle()
-    val tState by tenants.state.collectAsStateWithLifecycle()
-    val cState by charges.state.collectAsStateWithLifecycle()
-    val action = rememberAction<Unit>("alloc-new")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) onDone() }
+    val model: NewAllocationViewModel = hiltViewModel()
+    val pState by model.properties.state.collectAsStateWithLifecycle()
+    val tState by model.tenants.state.collectAsStateWithLifecycle()
+    val cState by model.charges.state.collectAsStateWithLifecycle()
+    val act by model.allocateAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.Saved) onDone() }
 
     var propId by rememberSaveable { mutableStateOf(0) }
     var tenantId by rememberSaveable { mutableStateOf(0) }
@@ -458,7 +442,16 @@ fun NewAllocationScreen(onBack: () -> Unit, onDone: () -> Unit) {
         val p = (pState as? UiState.Data)?.value
         val t = (tState as? UiState.Data)?.value
         val c = (cState as? UiState.Data)?.value
-        if (p == null || t == null || c == null) { LoadingBox(Modifier.padding(pad)); return@ScreenScaffold }
+        if (p == null || t == null || c == null) {
+            val failed = listOf(pState, tState, cState).filterIsInstance<UiState.Error>().firstOrNull()
+            if (failed != null) ErrorBox(failed.error, onRetry = {
+                if (pState is UiState.Error) model.properties.refresh()
+                if (tState is UiState.Error) model.tenants.refresh()
+                if (cState is UiState.Error) model.charges.refresh()
+            }, modifier = Modifier.padding(pad))
+            else LoadingBox(Modifier.padding(pad))
+            return@ScreenScaffold
+        }
         val freeRooms = p.filter { it.status == "available" }
         val freeTenants = t.filter { it.status == "active" && it.allocatedProperty == null }
         val agreedV = Money.parse(agreed); val collV = Money.parse(collected)
@@ -486,9 +479,7 @@ fun NewAllocationScreen(onBack: () -> Unit, onDone: () -> Unit) {
             ActionError(act)
             SubmitButton(stringResource(R.string.allocate_room), act) {
                 tried = true
-                if (valid) action.run {
-                    api.allocate(NewAllocation(propId, tenantId, date, agreedV!!, collV!!, chosen.filterValues { it }.keys.toList())); Unit
-                }
+                if (valid) model.allocate(NewAllocation(propId, tenantId, date, agreedV!!, collV!!, chosen.filterValues { it }.keys.toList()))
             }
         }
     }
@@ -498,23 +489,22 @@ fun NewAllocationScreen(onBack: () -> Unit, onDone: () -> Unit) {
 
 @Composable
 fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -> Unit) {
-    val api = LocalAppContainer.current.api
+    val model: GenerateInvoiceViewModel = hiltViewModel()
     val today = Dates.today()
-    var month by rememberSaveable { mutableStateOf(today.substring(5, 7).toInt()) }
-    var year by rememberSaveable { mutableStateOf(today.substring(0, 4).toInt()) }
-    val vm = rememberLoader("inv-ctx-$allocationId-$month-$year") { invoiceContext(allocationId, month, year) }
+    val month by model.month.collectAsStateWithLifecycle()
+    val year by model.year.collectAsStateWithLifecycle()
+    val vm = model.context
     val state by vm.state.collectAsStateWithLifecycle()
-    val action = rememberAction<GeneratedInvoice>("inv-gen-$allocationId")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { (act as? ActionState.Done<GeneratedInvoice>)?.let { onDone(it.result.id) } }
+    val act by model.generateAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it is ScreenEvent.InvoiceCreated) onDone(it.invoiceId) }
     val months = stringArrayResource(R.array.months).toList()
 
     ScreenScaffold(stringResource(R.string.generate_bill), onBack = onBack) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             Row(Modifier.padding(16.dp, 8.dp, 16.dp, 0.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Column(Modifier.weight(1.4f)) { ChoiceField(stringResource(R.string.month), (1..12).map { it to months[it - 1] }, month, { month = it }) }
+                Column(Modifier.weight(1.4f)) { ChoiceField(stringResource(R.string.month), (1..12).map { it to months[it - 1] }, month, { model.setPeriod(it, year) }) }
                 val y0 = today.substring(0, 4).toInt()
-                Column(Modifier.weight(1f)) { ChoiceField(stringResource(R.string.year), (y0 - 1..y0 + 1).map { it to it.toString() }, year, { year = it }) }
+                Column(Modifier.weight(1f)) { ChoiceField(stringResource(R.string.year), (y0 - 1..y0 + 1).map { it to it.toString() }, year, { model.setPeriod(month, it) }) }
             }
             StateContent(state, vm::refresh) { ctx ->
                 val fixedOn = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.fixedCharges.forEach { put(it.tcId, true) } } }
@@ -564,13 +554,10 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                     ActionError(act)
                     SubmitButton(stringResource(R.string.generate_bill), act) {
                         tried = true
-                        if (!ctx.alreadyExists && readingsOk) action.run {
-                            api.generateInvoice(
-                                allocationId, month, year,
-                                ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.map { it.tcId },
-                                readings.mapNotNull { (v, p, c) -> if (p != null && c != null) MeterReading(v.tcId, p, c) else null },
-                            )
-                        }
+                        if (!ctx.alreadyExists && readingsOk) model.generate(
+                            ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.map { it.tcId },
+                            readings.mapNotNull { (v, p, c) -> if (p != null && c != null) MeterReading(v.tcId, p, c) else null },
+                        )
                     }
                 }
             }
@@ -582,17 +569,13 @@ private fun trimNum(v: Double): String = if (v == Math.floor(v)) v.toLong().toSt
 
 /** "Cancel bill" button for an unpaid invoice (server refuses once any payment exists). */
 @Composable
-fun CancelInvoiceButton(invoiceId: Int, onCancelled: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<Unit>("inv-cancel-$invoiceId")
-    val act by action.state.collectAsStateWithLifecycle()
+fun CancelInvoiceButton(act: ActionState<*>, onCancel: (reason: String) -> Unit) {
     var asking by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) { action.reset(); onCancelled() } }
     ActionError(act)
     OutlinedButton(onClick = { asking = true }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.cancel_bill), color = Palette.Danger) }
     if (asking) TextDialog(
         title = stringResource(R.string.cancel_bill), label = stringResource(R.string.reason), confirmLabel = stringResource(R.string.cancel_bill),
         required = true, message = stringResource(R.string.cancel_bill_confirm),
-        onConfirm = { r -> asking = false; action.run { api.cancelInvoice(invoiceId, r) } }, onDismiss = { asking = false },
+        onConfirm = { r -> asking = false; onCancel(r) }, onDismiss = { asking = false },
     )
 }

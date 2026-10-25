@@ -1,5 +1,7 @@
 package com.genusit.prms.ui
 
+import com.genusit.prms.ui.common.AppViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,9 +57,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.genusit.prms.R
-import com.genusit.prms.core.model.Role
+import com.genusit.prms.domain.model.Role
 import com.genusit.prms.ui.auth.LoginScreen
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.NotificationsScreen
 import com.genusit.prms.ui.common.ReceiptScreen
 import com.genusit.prms.ui.common.SettingsScreen
@@ -101,9 +102,9 @@ import com.genusit.prms.ui.theme.Palette
 /** Login gate: no session → login; otherwise the shell for the user's role. */
 @Composable
 fun AppRoot() {
-    val container = LocalAppContainer.current
-    val loaded by container.session.loaded.collectAsStateWithLifecycle()
-    val sessionState by container.session.session.collectAsStateWithLifecycle()
+    val app: AppViewModel = hiltViewModel()
+    val loaded by app.loaded.collectAsStateWithLifecycle()
+    val sessionState by app.session.collectAsStateWithLifecycle()
     val session = sessionState
     when {
         !loaded -> Box(Modifier.fillMaxSize().background(Palette.Canvas), contentAlignment = Alignment.Center) { CircularProgressIndicator() }

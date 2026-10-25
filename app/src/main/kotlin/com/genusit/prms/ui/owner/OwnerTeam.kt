@@ -1,5 +1,9 @@
 package com.genusit.prms.ui.owner
 
+import com.genusit.prms.ui.common.ErrorBox
+import com.genusit.prms.ui.common.ScreenEvent
+import com.genusit.prms.ui.common.EventEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -56,13 +60,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
-import com.genusit.prms.core.model.EmployeeInput
-import com.genusit.prms.core.model.EmployeeRemoved
-import com.genusit.prms.core.model.QueryDetail
-import com.genusit.prms.core.model.Role
-import com.genusit.prms.core.util.Dates
-import com.genusit.prms.core.util.Money
-import com.genusit.prms.core.util.Validators
+import com.genusit.prms.domain.model.EmployeeInput
+import com.genusit.prms.domain.model.EmployeeRemoved
+import com.genusit.prms.domain.model.QueryDetail
+import com.genusit.prms.domain.model.Role
+import com.genusit.prms.domain.util.Dates
+import com.genusit.prms.domain.util.Money
+import com.genusit.prms.domain.util.Validators
 import com.genusit.prms.ui.common.ActionError
 import com.genusit.prms.ui.common.ActionState
 import com.genusit.prms.ui.common.AppCard
@@ -73,7 +77,6 @@ import com.genusit.prms.ui.common.IconBadge
 import com.genusit.prms.ui.common.InvoiceRow
 import com.genusit.prms.ui.common.LabelValue
 import com.genusit.prms.ui.common.LoadingBox
-import com.genusit.prms.ui.common.LocalAppContainer
 import com.genusit.prms.ui.common.PaymentRow
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
@@ -84,15 +87,13 @@ import com.genusit.prms.ui.common.SuccessText
 import com.genusit.prms.ui.common.UiState
 import com.genusit.prms.ui.common.WalletCard
 import com.genusit.prms.ui.common.dateText
-import com.genusit.prms.ui.common.rememberAction
-import com.genusit.prms.ui.common.rememberLoader
 import com.genusit.prms.ui.theme.Palette
 
 /* ═════════════════════════ employees ═════════════════════════ */
 
 @Composable
 fun EmployeesScreen(onBack: () -> Unit, openEmployee: (Int) -> Unit, addEmployee: () -> Unit) {
-    val vm = rememberLoader("owner-employees") { ownerEmployees() }
+    val vm = hiltViewModel<EmployeesViewModel>().employees
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { if (state !is UiState.Loading) vm.refresh() }
     Scaffold(
@@ -130,10 +131,10 @@ fun EmployeesScreen(onBack: () -> Unit, openEmployee: (Int) -> Unit, addEmployee
 /** Add ([id] = 0) or edit a collection agent. Username is unique across all roles (server checks). */
 @Composable
 fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val action = rememberAction<Unit>("emp-form-$id")
-    val act by action.state.collectAsStateWithLifecycle()
-    LaunchedEffect(act) { if (act is ActionState.Done<*>) onSaved() }
+    val model: EmployeeFormViewModel = hiltViewModel()
+    val act by model.saveAction.state.collectAsStateWithLifecycle()
+    val existing by model.existing.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.Saved) onSaved() }
     var loaded by rememberSaveable { mutableStateOf(id == 0) }
     var name by rememberSaveable { mutableStateOf("") }
     var phone by rememberSaveable { mutableStateOf("") }
@@ -141,8 +142,10 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var tried by rememberSaveable { mutableStateOf(false) }
-    if (!loaded) LaunchedEffect(id) {
-        runCatching { api.ownerEmployee(id) }.onSuccess { e ->
+    // copy the stored values into the form once, when they arrive
+    LaunchedEffect(existing) {
+        val e = (existing as? UiState.Data)?.value
+        if (!loaded && e != null) {
             name = e.fullName; phone = e.phone.orEmpty(); email = e.email.orEmpty(); username = e.username.orEmpty(); loaded = true
         }
     }
@@ -150,7 +153,12 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val pwOk = if (id == 0) password.length >= 6 else password.isEmpty() || password.length >= 6
     val valid = name.isNotBlank() && Validators.phone(phone) && emailOk && username.length >= 3 && pwOk
     ScreenScaffold(stringResource(if (id == 0) R.string.add_employee else R.string.edit_employee), onBack = onBack) { pad ->
-        if (!loaded) { LoadingBox(Modifier.padding(pad)); return@ScreenScaffold }
+        if (!loaded) {
+            val failed = existing as? UiState.Error
+            if (failed != null) ErrorBox(failed.error, onRetry = model.existing::refresh, modifier = Modifier.padding(pad))
+            else LoadingBox(Modifier.padding(pad))
+            return@ScreenScaffold
+        }
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             FormField(name, { name = it.take(150) }, stringResource(R.string.full_name), tried && name.isBlank())
             FormField(phone, { phone = it.filter { c -> c.isDigit() || c == '+' }.take(15) }, stringResource(R.string.phone), tried && !Validators.phone(phone), KeyboardType.Phone)
@@ -163,7 +171,7 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                 tried = true
                 if (valid) {
                     val input = EmployeeInput(name.trim(), phone, email.ifBlank { null }, if (id == 0) username else null, password.ifEmpty { null })
-                    action.run { if (id == 0) { api.addEmployee(input); Unit } else api.updateEmployee(id, input) }
+                    model.save(input)
                 }
             }
         }
@@ -172,19 +180,14 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
 
 @Composable
 fun EmployeeDetailScreen(id: Int, onBack: () -> Unit, edit: () -> Unit, openReceipt: (String) -> Unit) {
-    val api = LocalAppContainer.current.api
-    val vm = rememberLoader("owner-employee-$id") { ownerEmployee(id) }
-    val props = rememberLoader("emp-assign-props") { ownerProperties() }
+    val model: EmployeeDetailViewModel = hiltViewModel()
+    val vm = model.employee
     val state by vm.state.collectAsStateWithLifecycle()
-    val pState by props.state.collectAsStateWithLifecycle()
-    val assign = rememberAction<Unit>("emp-assign-$id")
-    val status = rememberAction<Unit>("emp-status-$id")
-    val remove = rememberAction<EmployeeRemoved>("emp-delete-$id")
-    val aState by assign.state.collectAsStateWithLifecycle()
-    val sState by status.state.collectAsStateWithLifecycle()
-    val rState by remove.state.collectAsStateWithLifecycle()
-    LaunchedEffect(aState, sState) { if (aState is ActionState.Done<*> || sState is ActionState.Done<*>) vm.refresh() }
-    LaunchedEffect(rState) { if (rState is ActionState.Done<*>) onBack() }
+    val pState by model.properties.state.collectAsStateWithLifecycle()
+    val aState by model.assignAction.state.collectAsStateWithLifecycle()
+    val sState by model.status.state.collectAsStateWithLifecycle()
+    val rState by model.removeAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.Saved) onBack() }
     LaunchedEffect(Unit) { if (state !is UiState.Loading) vm.refresh() }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
 
@@ -205,7 +208,7 @@ fun EmployeeDetailScreen(id: Int, onBack: () -> Unit, edit: () -> Unit, openRece
                             LabelValue(stringResource(R.string.last_login), dateText(e.lastLogin))
                             Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(onClick = edit) { Icon(Icons.Filled.Edit, null); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.edit)) }
-                                OutlinedButton(onClick = { status.run { api.setEmployeeStatus(id, e.status != "active") } }) {
+                                OutlinedButton(onClick = { model.setActive(e.status != "active") }) {
                                     Text(stringResource(if (e.status == "active") R.string.deactivate else R.string.activate))
                                 }
                             }
@@ -227,7 +230,7 @@ fun EmployeeDetailScreen(id: Int, onBack: () -> Unit, edit: () -> Unit, openRece
                             }
                             ActionError(aState)
                             if (aState is ActionState.Done<*>) SuccessText(stringResource(R.string.saved))
-                            Button(onClick = { assign.run { api.assignProperties(id, selected.filterValues { it }.keys.toList()) } }, enabled = aState !is ActionState.Running) {
+                            Button(onClick = { model.assign(selected.filterValues { it }.keys.toList()) }, enabled = aState !is ActionState.Running) {
                                 Text(stringResource(R.string.save_assignments))
                             }
                         }
@@ -250,7 +253,7 @@ fun EmployeeDetailScreen(id: Int, onBack: () -> Unit, edit: () -> Unit, openRece
         }
     }
     if (confirmDelete) ConfirmDialog(stringResource(R.string.delete_employee), stringResource(R.string.delete_employee_confirm), stringResource(R.string.delete),
-        onConfirm = { confirmDelete = false; remove.run { api.deleteEmployee(id) } }, onDismiss = { confirmDelete = false })
+        onConfirm = { confirmDelete = false; model.remove() }, onDismiss = { confirmDelete = false })
 }
 
 /* ═════════════════════════ complaints (owner) ═════════════════════════ */
@@ -259,7 +262,7 @@ private val QUERY_FILTERS = listOf("" to R.string.all, "open" to R.string.st_ope
 
 @Composable
 fun OwnerQueriesScreen(onBack: () -> Unit, openQuery: (Int) -> Unit) {
-    val vm = rememberLoader("owner-queries") { ownerQueries() }
+    val vm = hiltViewModel<OwnerQueriesViewModel>().queries
     val state by vm.state.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(Unit) { if (state !is UiState.Loading) vm.refresh() }
@@ -293,14 +296,13 @@ fun OwnerQueriesScreen(onBack: () -> Unit, openQuery: (Int) -> Unit) {
 /** Ticket conversation for owner and tenant. The owner can also change the status. */
 @Composable
 fun QueryDetailScreen(id: Int, role: Role, onBack: () -> Unit) {
-    val api = LocalAppContainer.current.api
-    val vm = rememberLoader("${role.api}-query-$id") { if (role == Role.OWNER) ownerQuery(id) else tenantQuery(id) }
+    val model: QueryDetailViewModel = hiltViewModel()
+    val vm = model.detail
     val state by vm.state.collectAsStateWithLifecycle()
-    val reply = rememberAction<Unit>("query-reply-$id")
-    val rState by reply.state.collectAsStateWithLifecycle()
+    val rState by model.reply.state.collectAsStateWithLifecycle()
     var message by rememberSaveable { mutableStateOf("") }
     var newStatus by rememberSaveable { mutableStateOf("") }
-    LaunchedEffect(rState) { if (rState is ActionState.Done<*>) { message = ""; newStatus = ""; reply.reset(); vm.refresh() } }
+    EventEffect(model) { if (it == ScreenEvent.ReplySent) { message = ""; newStatus = "" } }
 
     ScreenScaffold(stringResource(R.string.complaint), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { q: QueryDetail ->
@@ -342,11 +344,7 @@ fun QueryDetailScreen(id: Int, role: Role, onBack: () -> Unit) {
                         ActionError(rState)
                         SubmitButton(stringResource(R.string.send), rState) {
                             val st = newStatus.takeIf { it.isNotEmpty() && it != q.status }
-                            when {
-                                message.isNotBlank() && role == Role.OWNER -> reply.run { api.ownerReplyQuery(id, message.trim(), st) }
-                                message.isNotBlank() -> reply.run { api.tenantReplyQuery(id, message.trim()) }
-                                st != null && role == Role.OWNER -> reply.run { api.ownerSetQueryStatus(id, st) }
-                            }
+                            model.send(message, st)
                         }
                     }
                 }
@@ -359,6 +357,7 @@ fun QueryDetailScreen(id: Int, role: Role, onBack: () -> Unit) {
 
 @Composable
 fun ReportsScreen(onBack: () -> Unit, openInvoice: (Int) -> Unit, openReceipt: (String) -> Unit) {
+    val model: ReportsViewModel = hiltViewModel()
     var tab by rememberSaveable { mutableStateOf(0) }
     val today = Dates.today()
     var from by rememberSaveable { mutableStateOf(today.substring(0, 8) + "01") }
@@ -376,17 +375,18 @@ fun ReportsScreen(onBack: () -> Unit, openInvoice: (Int) -> Unit, openReceipt: (
                 Column(Modifier.weight(1f)) { FormField(to, { to = it.filter { c -> c.isDigit() || c == '-' }.take(10) }, stringResource(R.string.to_date), Dates.parse(to) == null) }
             }
             when (tab) {
-                0 -> if (rangeOk) CollectionsReportBody(from, to, openReceipt)
-                1 -> if (rangeOk) RevenueReportBody(from, to)
-                else -> PendingReportBody(openInvoice)
+                0 -> if (rangeOk) CollectionsReportBody(model, from, to, openReceipt)
+                1 -> if (rangeOk) RevenueReportBody(model, from, to)
+                else -> PendingReportBody(model, openInvoice)
             }
         }
     }
 }
 
 @Composable
-private fun CollectionsReportBody(from: String, to: String, openReceipt: (String) -> Unit) {
-    val vm = rememberLoader("rep-coll-$from-$to") { collectionsReport(from, to) }
+private fun CollectionsReportBody(model: ReportsViewModel, from: String, to: String, openReceipt: (String) -> Unit) {
+    val vm = model.collections
+    LaunchedEffect(from, to) { vm.load(DateRange(from, to)) }
     val state by vm.state.collectAsStateWithLifecycle()
     StateContent(state, vm::refresh) { r ->
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -410,8 +410,9 @@ private fun CollectionsReportBody(from: String, to: String, openReceipt: (String
 }
 
 @Composable
-private fun RevenueReportBody(from: String, to: String) {
-    val vm = rememberLoader("rep-rev-$from-$to") { revenueReport(from, to) }
+private fun RevenueReportBody(model: ReportsViewModel, from: String, to: String) {
+    val vm = model.revenue
+    LaunchedEffect(from, to) { vm.load(DateRange(from, to)) }
     val state by vm.state.collectAsStateWithLifecycle()
     StateContent(state, vm::refresh) { rows ->
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -435,8 +436,9 @@ private fun RevenueReportBody(from: String, to: String) {
 }
 
 @Composable
-private fun PendingReportBody(openInvoice: (Int) -> Unit) {
-    val vm = rememberLoader("rep-pending") { pendingReport() }
+private fun PendingReportBody(model: ReportsViewModel, openInvoice: (Int) -> Unit) {
+    val vm = model.pending
+    LaunchedEffect(Unit) { vm.load(Unit) }
     val state by vm.state.collectAsStateWithLifecycle()
     StateContent(state, vm::refresh) { r ->
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -451,7 +453,7 @@ private fun PendingReportBody(openInvoice: (Int) -> Unit) {
 
 @Composable
 fun ReferralScreen(onBack: () -> Unit) {
-    val vm = rememberLoader("owner-referrals") { referrals() }
+    val vm = hiltViewModel<ReferralViewModel>().referrals
     val state by vm.state.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
     var copied by rememberSaveable { mutableStateOf(false) }
