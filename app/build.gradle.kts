@@ -69,6 +69,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // java.time (dates on bills, receipts, reports) only exists natively from Android 8.0;
+        // desugaring makes it work on Android 7.0/7.1 too (minSdk 24).
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures {
@@ -80,6 +83,7 @@ android {
 
 dependencies {
     implementation(project(":data"))
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
