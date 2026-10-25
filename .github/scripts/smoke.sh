@@ -10,16 +10,21 @@ adb shell am start -W -n $PKG/com.genusit.prms.MainActivity
 sleep 15
 adb exec-out screencap -p > shots/01-login.png
 python3 .github/scripts/ui.py dump shots/01-login.txt
-# username, password (made-up account), then Enter = "Done" → submit
+# username, password (made-up account); BACK hides the keyboard between steps
 python3 .github/scripts/ui.py tap-edit 0 && adb shell input text "ci_smoke_no_such_user"
+adb shell input keyevent 4; sleep 1
 python3 .github/scripts/ui.py tap-edit 1 && adb shell input text "not-a-password"
-adb shell input keyevent 66
+adb shell input keyevent 4; sleep 1
+python3 .github/scripts/ui.py dump shots/02a-filled.txt
+python3 .github/scripts/ui.py tap-text "Sign in"
 sleep 20
 adb exec-out screencap -p > shots/02-after-sign-in.png
 python3 .github/scripts/ui.py dump shots/02-after-sign-in.txt
-# Hindi, then Marathi
-python3 .github/scripts/ui.py tap-text "हिं" && sleep 6 && adb exec-out screencap -p > shots/03-hindi.png && python3 .github/scripts/ui.py dump shots/03-hindi.txt
-python3 .github/scripts/ui.py tap-text "मरा" && sleep 6 && adb exec-out screencap -p > shots/04-marathi.png && python3 .github/scripts/ui.py dump shots/04-marathi.txt
+# back to the top, then Hindi and Marathi
+adb shell input swipe 540 500 540 1700 300; sleep 1
+python3 .github/scripts/ui.py tap-text "हिं" ; sleep 6; adb exec-out screencap -p > shots/03-hindi.png; python3 .github/scripts/ui.py dump shots/03-hindi.txt
+adb shell input swipe 540 500 540 1700 300; sleep 1
+python3 .github/scripts/ui.py tap-text "मरा" ; sleep 6; adb exec-out screencap -p > shots/04-marathi.png; python3 .github/scripts/ui.py dump shots/04-marathi.txt
 adb shell pidof $PKG > shots/pid.txt || true
 adb logcat -d -s AndroidRuntime:E PrmsApi:W okhttp.OkHttpClient:I > shots/logcat.txt || true
 exit 0

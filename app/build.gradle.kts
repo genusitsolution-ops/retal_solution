@@ -26,7 +26,7 @@ android {
         targetSdk = 35
         versionCode = 3
         versionName = "1.2.0"
-        val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://genusitsolution.com/rentalsolutionfinal/api/v1/"
+        val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://www.genusitsolution.com/rentalsolutionfinal/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
         vectorDrawables { useSupportLibrary = true }
         // Only the three supported app languages are packaged
