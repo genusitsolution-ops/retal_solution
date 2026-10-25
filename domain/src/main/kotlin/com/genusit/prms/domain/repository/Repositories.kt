@@ -58,6 +58,12 @@ interface TenantAdminRepository {
     suspend fun update(id: Int, t: TenantInput)
     /** Only for tenants without any rent history (server answers HAS_HISTORY otherwise). */
     suspend fun delete(id: Int)
+    /** Full history, the same records as the web "Full History" page. */
+    suspend fun history(id: Int): TenantHistory
+    /** Downloads the tenant's Aadhaar / PAN document (owner of the tenant only). */
+    suspend fun document(id: Int, type: TenantDocType): DocumentFile
+    /** Uploads or replaces the document; [consent] must be true (the server refuses otherwise). */
+    suspend fun uploadDocument(id: Int, type: TenantDocType, file: java.io.File, mimeType: String, consent: Boolean)
 }
 
 /** Owner: invoices, payments and charges. */

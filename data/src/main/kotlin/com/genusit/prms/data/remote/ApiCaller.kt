@@ -73,6 +73,37 @@ class ApiCaller(val json: Json) {
     suspend fun <T> get(serializer: KSerializer<T>, request: suspend () -> Response<ResponseBody>): T =
         decode(serializer, call(request))
 
+    /**
+     * Binary download (documents). A 2xx response that is not JSON is the file; anything else
+     * goes through the normal envelope rules so the server's error code and message are kept.
+     */
+    suspend fun download(request: suspend () -> Response<ResponseBody>): Pair<ByteArray, String> {
+        val response = try {
+            request()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InterruptedIOException) {
+            throw ApiException(ApiException.NETWORK, "timeout: ${e.javaClass.simpleName}: ${e.message ?: ""}", 0)
+        } catch (e: IOException) {
+            throw ApiException(ApiException.NETWORK, "${e.javaClass.simpleName}: ${e.message ?: "network"}", 0)
+        }
+        val status = response.code()
+        if (status in 300..399) {
+            response.errorBody()?.close()
+            throw ApiException(ApiException.SERVER_REDIRECT, "HTTP $status → ${response.headers()["Location"] ?: "(no Location header)"}", status)
+        }
+        val body = if (response.isSuccessful) response.body() else response.errorBody()
+        val type = body?.contentType()?.let { "${it.type}/${it.subtype}" } ?: response.headers()["Content-Type"].orEmpty()
+        val bytes = try {
+            body?.use { it.bytes() } ?: ByteArray(0)
+        } catch (e: IOException) {
+            throw ApiException(ApiException.NETWORK, "${e.javaClass.simpleName}: ${e.message ?: "network"}", 0)
+        }
+        if (response.isSuccessful && bytes.isNotEmpty() && !type.contains("json")) return bytes to type
+        parseEnvelope(status, String(bytes, Charsets.UTF_8))
+        throw ApiException(ApiException.BAD_RESPONSE, "HTTP $status (no file)", status)
+    }
+
     /** Call whose `data` is not needed (the envelope is still checked). */
     suspend fun run(request: suspend () -> Response<ResponseBody>) {
         call(request)

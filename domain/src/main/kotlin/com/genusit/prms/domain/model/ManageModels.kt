@@ -330,3 +330,88 @@ data class ReferralSummary(
 
 @Serializable
 data class ProfileSaved(val phone: String? = null, val email: String? = null)
+
+/* ───────── tenant full history (GET owner/tenant_history.php?id=N) — same records as the web page ───────── */
+
+@Serializable
+data class TenantHistory(
+    val tenant: HistoryTenant = HistoryTenant(),
+    val summary: HistorySummary = HistorySummary(),
+    val deposits: HistoryDeposits = HistoryDeposits(),
+    val allocations: List<HistoryAllocation> = emptyList(),
+    val payments: List<HistoryPayment> = emptyList(),
+    val invoices: List<HistoryInvoice> = emptyList(),
+)
+
+@Serializable
+data class HistoryTenant(val id: Int = 0, @SerialName("full_name") val fullName: String = "", val phone: String? = null, val status: String = "active")
+
+@Serializable
+data class HistorySummary(
+    @SerialName("total_billed") val totalBilled: Double = 0.0,
+    @SerialName("total_paid") val totalPaid: Double = 0.0,
+    @SerialName("total_outstanding") val totalOutstanding: Double = 0.0,
+    @SerialName("invoice_count") val invoiceCount: Int = 0,
+    @SerialName("paid_count") val paidCount: Int = 0,
+    @SerialName("unpaid_count") val unpaidCount: Int = 0,
+    @SerialName("late_payments") val latePayments: Int = 0,
+)
+
+@Serializable
+data class HistoryDeposits(
+    @SerialName("total_agreed") val totalAgreed: Double = 0.0,
+    @SerialName("total_collected") val totalCollected: Double = 0.0,
+    @SerialName("total_refunded") val totalRefunded: Double = 0.0,
+    @SerialName("total_pending") val totalPending: Double = 0.0,
+)
+
+@Serializable
+data class HistoryAllocation(
+    val id: Int = 0,
+    val status: String = "",
+    @SerialName("status_label") val statusLabel: String? = null,
+    @SerialName("allocation_date") val allocationDate: String? = null,
+    @SerialName("deallocation_date") val deallocationDate: String? = null,
+    @SerialName("deposit_agreed") val depositAgreed: Double = 0.0,
+    @SerialName("deposit_collected") val depositCollected: Double = 0.0,
+    @SerialName("settlement_amount") val settlementAmount: Double = 0.0,
+    @SerialName("settlement_notes") val settlementNotes: String? = null,
+    @SerialName("property_code") val propertyCode: String? = null,
+    val city: String? = null,
+    @SerialName("base_rent") val baseRent: Double = 0.0,
+    @SerialName("tenancy_days") val tenancyDays: Int = 0,
+)
+
+@Serializable
+data class HistoryPayment(
+    val id: Int = 0,
+    @SerialName("receipt_number") val receiptNumber: String = "",
+    @SerialName("payment_date") val paymentDate: String? = null,
+    val amount: Double = 0.0,
+    @SerialName("payment_method_label") val paymentMethodLabel: String? = null,
+    @SerialName("reference_number") val referenceNumber: String? = null,
+    @SerialName("invoice_number") val invoiceNumber: String? = null,
+    @SerialName("period_label") val periodLabel: String? = null,
+    @SerialName("property_code") val propertyCode: String? = null,
+)
+
+@Serializable
+data class HistoryInvoice(
+    val id: Int = 0,
+    @SerialName("invoice_number") val invoiceNumber: String = "",
+    @SerialName("period_label") val periodLabel: String? = null,
+    @SerialName("total_amount") val totalAmount: Double = 0.0,
+    @SerialName("paid_amount") val paidAmount: Double = 0.0,
+    @SerialName("balance_amount") val balanceAmount: Double = 0.0,
+    val status: String = "",
+    @SerialName("status_label") val statusLabel: String? = null,
+    @SerialName("property_code") val propertyCode: String? = null,
+)
+
+/** Tenant ID document kinds stored on the server (same columns as the web form). */
+enum class TenantDocType(val apiValue: String) { AADHAAR("aadhaar"), PAN("pan") }
+
+/** A document file downloaded through the authenticated API. */
+class DocumentFile(val bytes: ByteArray, val contentType: String) {
+    val isPdf: Boolean get() = contentType.startsWith("application/pdf")
+}

@@ -99,7 +99,14 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val act by model.saveAction.state.collectAsStateWithLifecycle()
     val existing by model.existing.state.collectAsStateWithLifecycle()
     val scan by model.scan.collectAsStateWithLifecycle()
-    EventEffect(model) { if (it == ScreenEvent.Saved) onSaved() }
+    val formCtx = androidx.compose.ui.platform.LocalContext.current
+    EventEffect(model) {
+        if (it == ScreenEvent.Saved) onSaved()
+        if (it == ScreenEvent.SavedDocumentFailed) {
+            android.widget.Toast.makeText(formCtx, formCtx.getString(R.string.doc_upload_failed_after_save), android.widget.Toast.LENGTH_LONG).show()
+            onSaved()
+        }
+    }
 
     var loaded by rememberSaveable { mutableStateOf(id == 0) }
     var name by rememberSaveable { mutableStateOf("") }

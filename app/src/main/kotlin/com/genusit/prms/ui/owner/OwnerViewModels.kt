@@ -20,6 +20,8 @@ import com.genusit.prms.domain.model.PendingReport
 import com.genusit.prms.domain.model.RevenueRow
 import com.genusit.prms.domain.model.Role
 import com.genusit.prms.domain.model.TenantInput
+import com.genusit.prms.domain.model.TenantDocType
+import com.genusit.prms.domain.model.DocumentFile
 import com.genusit.prms.domain.repository.SessionRepository
 import com.genusit.prms.domain.usecase.*
 import com.genusit.prms.domain.util.Dates
@@ -68,13 +70,77 @@ class OwnerTenantDetailViewModel @Inject constructor(
     handle: SavedStateHandle,
     getTenant: GetOwnerTenantUseCase,
     private val deleteTenant: DeleteTenantUseCase,
+    private val uploadDocument: UploadTenantDocumentUseCase,
+    private val scanner: DocumentScanner,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
     val tenant = loadable { getTenant(id) }
     val deleteAction = action<Unit>()
+    /** Upload / replace an ID document (same storage as the web "Edit Tenant" form). */
+    val uploadAction = action<TenantDocType>()
 
     fun delete() = deleteAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { deleteTenant(id) }
+
+    fun newCaptureTarget(): Pair<File, Uri> = scanner.newCaptureTarget()
+
+    /** Compresses the photo on the phone, uploads it, then reloads the tenant. Photos never outlive the upload. */
+    fun upload(type: TenantDocType, source: Uri, consent: Boolean, captureFile: File?) =
+        uploadAction.run(onSuccess = { tenant.refresh() }) {
+            var compressed: File? = null
+            try {
+                compressed = scanner.compress(source)
+                uploadDocument(id, type, compressed, "image/jpeg", consent)
+                type
+            } finally {
+                scanner.discard(compressed); scanner.discard(captureFile)
+            }
+        }
+}
+
+/** Full history (same records as the web "Full History" page). */
+@HiltViewModel
+class TenantHistoryViewModel @Inject constructor(
+    handle: SavedStateHandle,
+    getHistory: GetTenantHistoryUseCase,
+    expiry: SessionExpiryHandler,
+) : BaseViewModel(expiry) {
+    private val id = handle.intArg()
+    val history = loadable { getHistory(id) }
+}
+
+/** What the document viewer shows: an image in the app, or a PDF handed to a PDF viewer. */
+sealed interface DocumentView {
+    class Image(val bitmap: android.graphics.Bitmap) : DocumentView
+    class Pdf(val uri: Uri) : DocumentView
+}
+
+/** Views a tenant's Aadhaar / PAN document fetched with the owner's token; the cached copy is removed on exit. */
+@HiltViewModel
+class TenantDocumentViewModel @Inject constructor(
+    handle: SavedStateHandle,
+    getDocument: GetTenantDocumentUseCase,
+    private val scanner: DocumentScanner,
+    expiry: SessionExpiryHandler,
+) : BaseViewModel(expiry) {
+    private val id = handle.intArg()
+    val type: TenantDocType = TenantDocType.entries.firstOrNull { it.apiValue == handle.get<String>("type") } ?: TenantDocType.AADHAAR
+    private var cached: File? = null
+    val document = loadable {
+        val f: DocumentFile = getDocument(id, type)
+        if (f.isPdf) {
+            val (file, uri) = scanner.cacheForViewing(f.bytes, "pdf")
+            scanner.discard(cached); cached = file
+            DocumentView.Pdf(uri)
+        } else {
+            val bmp = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                android.graphics.BitmapFactory.decodeByteArray(f.bytes, 0, f.bytes.size)
+            } ?: throw com.genusit.prms.domain.error.ApiException(com.genusit.prms.domain.error.ApiException.BAD_RESPONSE, "image", 200)
+            DocumentView.Image(bmp)
+        }
+    }
+
+    override fun onCleared() { scanner.discard(cached); super.onCleared() }
 }
 
 /** Reading an ID document photo in the tenant form. */
@@ -92,6 +158,7 @@ class TenantFormViewModel @Inject constructor(
     handle: SavedStateHandle,
     getEditable: GetEditableTenantUseCase,
     private val saveTenant: SaveTenantUseCase,
+    private val uploadDocument: UploadTenantDocumentUseCase,
     private val scanner: DocumentScanner,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
@@ -105,7 +172,32 @@ class TenantFormViewModel @Inject constructor(
     /** Compressed photo of the last document read (kept in the private cache only). */
     private var documentImage: File? = null
 
-    fun save(input: TenantInput) = saveAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { saveTenant(id, input) }
+    private var documentType: DocumentType? = null
+    private var documentUploadFailed = false
+
+    /**
+     * Saves the tenant, then stores the photo of the document that was read (the tenant's consent was
+     * given before the photo could be taken) — like choosing the Aadhaar file in the web form.
+     * A failed photo upload never undoes the save; the owner is told and can upload it from the tenant page.
+     */
+    fun save(input: TenantInput) = saveAction.run(onSuccess = {
+        sendEvent(if (documentUploadFailed) ScreenEvent.SavedDocumentFailed else ScreenEvent.Saved)
+    }) {
+        val tenantId = saveTenant(id, input)
+        val image = documentImage
+        val type = documentType
+        documentUploadFailed = false
+        if (image != null && type != null && tenantId > 0) {
+            try {
+                uploadDocument(tenantId, if (type == DocumentType.PAN) TenantDocType.PAN else TenantDocType.AADHAAR, image, "image/jpeg", consent = true)
+                scanner.discard(image); documentImage = null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                documentUploadFailed = true
+            }
+        }
+    }
 
     fun newCaptureTarget(): Pair<File, Uri> = scanner.newCaptureTarget()
 
@@ -118,6 +210,7 @@ class TenantFormViewModel @Inject constructor(
                 val r = scanner.scan(source, type)
                 scanner.discard(documentImage)
                 documentImage = r.image
+                documentType = type
                 if (r.fields.isEmpty) ScanState.Unreadable else ScanState.Found(type, r.fields)
             } catch (e: CancellationException) {
                 throw e

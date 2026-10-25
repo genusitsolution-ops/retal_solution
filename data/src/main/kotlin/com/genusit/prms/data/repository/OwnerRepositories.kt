@@ -19,6 +19,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 
 /** Serializes a request model exactly as app 1.1 did (encodeDefaults, same field names). */
@@ -69,6 +72,17 @@ class TenantAdminRepositoryImpl @Inject constructor(
     override suspend fun add(t: TenantInput): CreatedId = caller.get(CreatedId.serializer()) { api.addTenant(caller.body(TenantInput.serializer(), t)) }
     override suspend fun update(id: Int, t: TenantInput) { caller.run { api.updateTenant(id, caller.body(TenantInput.serializer(), t)) } }
     override suspend fun delete(id: Int) { caller.run { api.deleteTenant(id) } }
+    override suspend fun history(id: Int): TenantHistory = caller.get(TenantHistory.serializer()) { api.tenantHistory(id) }
+    override suspend fun document(id: Int, type: TenantDocType): DocumentFile =
+        caller.download { api.tenantDocument(id, type.apiValue) }.let { (bytes, mime) -> DocumentFile(bytes, mime) }
+    override suspend fun uploadDocument(id: Int, type: TenantDocType, file: java.io.File, mimeType: String, consent: Boolean) {
+        val text = "text/plain".toMediaType()
+        val part = okhttp3.MultipartBody.Part.createFormData("file", "${type.apiValue}.${if (mimeType.contains("pdf")) "pdf" else if (mimeType.contains("png")) "png" else "jpg"}",
+            file.asRequestBody(mimeType.toMediaType()))
+        caller.run {
+            api.uploadTenantDocument(id.toString().toRequestBody(text), type.apiValue.toRequestBody(text), (if (consent) "1" else "0").toRequestBody(text), part)
+        }
+    }
 }
 
 class BillingRepositoryImpl @Inject constructor(

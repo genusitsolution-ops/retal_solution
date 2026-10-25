@@ -105,10 +105,14 @@ fun OwnerTenantsScreen(openTenant: (Int) -> Unit, addTenant: (() -> Unit)? = nul
 }
 
 @Composable
-fun OwnerTenantDetailScreen(id: Int, onBack: () -> Unit, openInvoice: (Int) -> Unit, edit: () -> Unit = {}, onDeleted: () -> Unit = onBack) {
+fun OwnerTenantDetailScreen(
+    id: Int, onBack: () -> Unit, openInvoice: (Int) -> Unit, edit: () -> Unit = {}, onDeleted: () -> Unit = onBack,
+    openHistory: () -> Unit = {}, openDocument: (com.genusit.prms.domain.model.TenantDocType) -> Unit = {},
+) {
     val model: OwnerTenantDetailViewModel = hiltViewModel()
     val vm = model.tenant
     val deleteState by model.deleteAction.state.collectAsStateWithLifecycle()
+    val uploadState by model.uploadAction.state.collectAsStateWithLifecycle()
     EventEffect(model) { if (it == ScreenEvent.Saved) onDeleted() }
     val state by vm.state.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(Unit) { if (state !is com.genusit.prms.ui.common.UiState.Loading) vm.refresh() }
@@ -127,6 +131,11 @@ fun OwnerTenantDetailScreen(id: Int, onBack: () -> Unit, openInvoice: (Int) -> U
                             LabelValue(stringResource(R.string.property), t.allocatedProperty ?: stringResource(R.string.not_allocated))
                             LabelValue(stringResource(R.string.phone), t.phone ?: "—")
                             LabelValue(stringResource(R.string.email), t.email ?: "—")
+                            LabelValue(stringResource(R.string.doc_number_aadhaar), com.genusit.prms.domain.util.IdMask.mask(t.aadharNumber) ?: "—")
+                            LabelValue(stringResource(R.string.doc_number_pan), t.panNumber?.takeIf { it.isNotBlank() } ?: "—")
+                            LabelValue(stringResource(R.string.tenant_portal),
+                                if (t.hasAccount) stringResource(R.string.yes) + (t.username?.takeIf { it.isNotBlank() }?.let { " · @$it" } ?: "") else stringResource(R.string.no),
+                                if (t.hasAccount) Palette.Success else androidx.compose.ui.graphics.Color.Unspecified)
                             LabelValue(stringResource(R.string.aadhaar), stringResource(if (t.hasAadhaar) R.string.uploaded else R.string.not_uploaded))
                             LabelValue(stringResource(R.string.outstanding), Money.format(t.pendingAmount), if (t.pendingAmount > 0) Palette.Danger else Palette.Success, bold = true)
                             if (!t.phone.isNullOrBlank()) {
@@ -137,8 +146,18 @@ fun OwnerTenantDetailScreen(id: Int, onBack: () -> Unit, openInvoice: (Int) -> U
                             }
                             Spacer(Modifier.height(8.dp))
                             TenantManageActions(t.invoices.size, deleteState, onEdit = edit, onDelete = model::delete)
+                            androidx.compose.material3.OutlinedButton(onClick = openHistory) {
+                                Icon(androidx.compose.material.icons.Icons.Filled.History, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.full_history))
+                            }
                         }
                     }
+                }
+                item {
+                    TenantDocumentsCard(
+                        hasAadhaar = t.hasAadhaar, hasPan = t.hasPanDoc, uploadState = uploadState,
+                        onView = openDocument, newCaptureTarget = model::newCaptureTarget,
+                        onUpload = { type, uri, consent, file -> model.upload(type, uri, consent, file) },
+                    )
                 }
                 item { SectionHeader(stringResource(R.string.invoices)) }
                 if (t.invoices.isEmpty()) item { EmptyState(stringResource(R.string.no_invoices), Icons.Filled.Badge) }

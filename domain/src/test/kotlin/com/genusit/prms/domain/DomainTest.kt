@@ -131,4 +131,10 @@ class DomainTest {
         assertFalse(reply(Role.OWNER, 7, "", null))
         assertEquals(listOf("ownerReply:7:Fixed:resolved", "tenantReply:7:Thanks", "ownerStatus:7:in_progress"), repo.calls)
     }
+
+    @Test fun idMaskMatchesWebPanel() {
+        assertEquals("XXXXXXXX0123", com.genusit.prms.domain.util.IdMask.mask("1234 1234 0123"))
+        assertEquals(null, com.genusit.prms.domain.util.IdMask.mask("  "))
+        assertEquals("ABC", com.genusit.prms.domain.util.IdMask.mask("ABC"))
+    }
 }

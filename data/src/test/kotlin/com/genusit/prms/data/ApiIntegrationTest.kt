@@ -8,6 +8,8 @@ import com.genusit.prms.data.repository.BillingRepositoryImpl
 import com.genusit.prms.data.repository.SubscriptionRepositoryImpl
 import com.genusit.prms.data.repository.ReportRepositoryImpl
 import com.genusit.prms.data.repository.AgentRepositoryImpl
+import com.genusit.prms.data.repository.TenantAdminRepositoryImpl
+import com.genusit.prms.domain.model.TenantDocType
 import com.genusit.prms.domain.error.ApiException
 import com.genusit.prms.domain.model.InvoiceSummary
 import com.genusit.prms.domain.model.SubscriptionStatus
@@ -61,6 +63,45 @@ class ApiIntegrationTest {
     }
 
     private fun take(): RecordedRequest = server.takeRequest()
+
+    @Test fun tenantDetailHistoryAndDocuments() = runTest {
+        val repo = TenantAdminRepositoryImpl(api, caller)
+        token = "TOK"
+        enqueue(200, """{"status":"success","message":"OK","data":{"id":"7","full_name":"Kept Tenant","has_aadhaar":true,"has_pan_doc":false,"has_account":"1","username":"kt","aadhar_number":"123412340123","pan_number":null,"invoices":[]}}""")
+        val d = repo.tenant(7)
+        assertTrue(d.hasAadhaar && d.hasAccount && !d.hasPanDoc); assertEquals("kt", d.username); assertEquals("123412340123", d.aadharNumber)
+        server.takeRequest()
+
+        enqueue(200, """{"status":"success","message":"OK","data":{"tenant":{"id":7,"full_name":"Kept Tenant"},"summary":{"total_billed":"1000.00","total_paid":"500.00","total_outstanding":"500.00","invoice_count":"1","paid_count":"0","unpaid_count":"1","late_payments":0},
+            "deposits":{"total_agreed":"2000","total_collected":"1500","total_refunded":"0","total_pending":"500"},
+            "allocations":[{"id":"3","status":"active","status_label":"Active","allocation_date":"2026-09-01","deallocation_date":null,"deposit_agreed":"2000.00","property_code":"K-201","city":"Pune","base_rent":"5000.00","tenancy_days":"54"}],
+            "payments":[{"id":"9","receipt_number":"RCP-1","payment_date":"2026-10-05","amount":"500.00","payment_method_label":"UPI","reference_number":null,"invoice_number":"INV-1","period_label":"October 2026","property_code":"K-201"}],
+            "invoices":[{"id":"4","invoice_number":"INV-1","period_label":"October 2026","total_amount":"1000.00","paid_amount":"500.00","balance_amount":"500.00","status":"partial","status_label":"Partial"}]}}""")
+        val h = repo.history(7)
+        assertEquals(500.0, h.summary.totalOutstanding); assertEquals(1500.0, h.deposits.totalCollected)
+        assertEquals("K-201", h.allocations.single().propertyCode); assertEquals(54, h.allocations.single().tenancyDays)
+        assertEquals("RCP-1", h.payments.single().receiptNumber); assertEquals("partial", h.invoices.single().status)
+        assertTrue(server.takeRequest().path!!.endsWith("owner/tenant_history.php?id=7"))
+
+        val jpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 1, 2, 3)
+        server.enqueue(MockResponse().setResponseCode(200).setHeader("Content-Type", "image/jpeg").setBody(okio.Buffer().write(jpeg)))
+        val f = repo.document(7, TenantDocType.AADHAAR)
+        assertTrue(f.bytes.contentEquals(jpeg)); assertEquals("image/jpeg", f.contentType)
+        val dr = server.takeRequest()
+        assertTrue(dr.path!!.endsWith("owner/tenant_document.php?id=7&type=aadhaar")); assertEquals("Bearer TOK", dr.getHeader("Authorization"))
+
+        enqueue(404, """{"status":"error","code":"NOT_FOUND","message":"दस्तऐवज सापडला नाही."}""", "Content-Type" to "application/json")
+        try { repo.document(7, TenantDocType.PAN); fail("expected 404") } catch (e: ApiException) { assertEquals("NOT_FOUND", e.code) }
+        server.takeRequest()
+
+        val tmp = java.io.File.createTempFile("doc", ".jpg").apply { writeBytes(jpeg); deleteOnExit() }
+        enqueue(201, """{"status":"success","message":"Document uploaded.","data":{"tenant_id":7,"type":"pan","has_document":true}}""")
+        repo.uploadDocument(7, TenantDocType.PAN, tmp, "image/jpeg", consent = true)
+        val up = server.takeRequest()
+        val body = up.body.readUtf8()
+        assertTrue(up.getHeader("Content-Type")!!.startsWith("multipart/form-data"))
+        assertTrue(body.contains("name=\"id\"") && body.contains("name=\"type\"") && body.contains("pan") && body.contains("name=\"consent\"") && body.contains("name=\"file\"; filename=\"pan.jpg\""), body.take(400))
+    }
 
     @Test fun loginSendsJsonAndHeaders() = runTest {
         enqueue(200, ok)

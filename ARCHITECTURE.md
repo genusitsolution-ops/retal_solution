@@ -136,3 +136,16 @@ Super Admin is unchanged: it is told to use the web panel, and its token is revo
 - uploading the document photo to the server (the compressed photo is ready and kept only in the private cache);
 - test-data cleanup;
 - Super Admin payment QR and owner payment claims.
+
+## 1.4.0 additions (25 Oct 2026): tenant actions from the web panel
+
+| Web panel action (Owner → Tenants) | App | API |
+|---|---|---|
+| View tenant details (Aadhaar no. masked, PAN, tenant login) | Tenant detail: masked Aadhaar number, PAN, "Tenant login: Yes · @username / No" | GET owner/tenants.php?id= (+ `has_pan_doc`) |
+| Edit | Edit (unchanged); a document photo read in the form is now also stored as the tenant's Aadhaar/PAN file after saving | PUT/POST owner/tenants.php, POST owner/tenant_document.php |
+| View Aadhaar document | Documents card → View (image in the app; PDF opens in the phone's PDF viewer from the private cache) | GET owner/tenant_document.php?id=&type=aadhaar\|pan |
+| Upload / replace Aadhaar (web edit form) | Documents card → Upload / Replace: consent → camera or gallery → compressed on the phone → upload | POST owner/tenant_document.php (multipart, consent=1) |
+| Full History | Full history screen: financial summary, security deposits, tenancy (move-in/out, settlement), payments (open receipt), all bills (open bill) | GET owner/tenant_history.php?id= |
+| Delete (only without history) | Unchanged | DELETE owner/tenants.php |
+
+Tests: `ApiIntegrationTest.tenantDetailHistoryAndDocuments` (detail fields, history decoding, binary download with Bearer token, JSON error on 404, multipart upload parts) and `DomainTest.idMaskMatchesWebPanel`.

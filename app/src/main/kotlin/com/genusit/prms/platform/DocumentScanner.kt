@@ -62,6 +62,23 @@ class DocumentScanner @Inject constructor(
             ScanResult(fields, out, out.length())
         }
 
+    /** Upright, compressed JPEG copy of a photo for uploading (no OCR). Delete it with [discard]. */
+    suspend fun compress(source: Uri, maxSide: Int = MAX_SIDE, quality: Int = JPEG_QUALITY): File =
+        withContext(Dispatchers.Default) {
+            val bitmap = decodeUpright(source, maxSide) ?: throw IllegalArgumentException("unreadable image")
+            val out = File(dir, "upload-${UUID.randomUUID()}.jpg")
+            out.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it) }
+            bitmap.recycle()
+            out
+        }
+
+    /** Writes a downloaded document into the private cache so a PDF viewer can open it (content Uri, read-only grant). */
+    suspend fun cacheForViewing(bytes: ByteArray, extension: String): Pair<File, Uri> = withContext(Dispatchers.IO) {
+        val f = File(dir, "view-${UUID.randomUUID()}.$extension")
+        f.writeBytes(bytes)
+        f to FileProvider.getUriForFile(context, "${context.packageName}.files", f)
+    }
+
     fun discard(file: File?) { runCatching { file?.delete() } }
 
     /** Removes leftover photos (e.g. after the form is closed). */

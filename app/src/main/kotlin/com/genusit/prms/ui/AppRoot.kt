@@ -91,6 +91,8 @@ import com.genusit.prms.ui.owner.OwnerInvoicesScreen
 import com.genusit.prms.ui.owner.OwnerMoreScreen
 import com.genusit.prms.ui.owner.OwnerPaymentsScreen
 import com.genusit.prms.ui.owner.OwnerTenantDetailScreen
+import com.genusit.prms.ui.owner.TenantDocumentScreen
+import com.genusit.prms.ui.owner.TenantHistoryScreen
 import com.genusit.prms.ui.owner.OwnerTenantsScreen
 import com.genusit.prms.ui.owner.PropertiesScreen
 import com.genusit.prms.ui.owner.RecordPaymentScreen
@@ -232,7 +234,15 @@ private fun RoleShell(role: Role) {
             composable("owner/tenant/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 val tid = it.arguments?.getInt("id") ?: 0
                 OwnerTenantDetailScreen(tid, onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") },
-                    edit = { nav.navigate("owner/tenant-form/$tid") }, onDeleted = back)
+                    edit = { nav.navigate("owner/tenant-form/$tid") }, onDeleted = back,
+                    openHistory = { nav.navigate("owner/tenant/$tid/history") },
+                    openDocument = { type -> nav.navigate("owner/tenant/$tid/document/${type.apiValue}") })
+            }
+            composable("owner/tenant/{id}/history", listOf(navArgument("id") { type = NavType.IntType })) {
+                TenantHistoryScreen(onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") }, openReceipt = openReceipt)
+            }
+            composable("owner/tenant/{id}/document/{type}", listOf(navArgument("id") { type = NavType.IntType }, navArgument("type") { type = NavType.StringType })) {
+                TenantDocumentScreen(onBack = back)
             }
             composable("owner/tenant-form/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 TenantFormScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onSaved = back)

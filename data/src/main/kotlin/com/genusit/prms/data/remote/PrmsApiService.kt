@@ -1,14 +1,18 @@
 package com.genusit.prms.data.remote
 
 import kotlinx.serialization.json.JsonObject
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Query
 
 /**
@@ -88,6 +92,22 @@ interface PrmsApiService {
 
     @DELETE("owner/tenants.php")
     suspend fun deleteTenant(@Query("id") id: Int): Response<ResponseBody>
+
+    @GET("owner/tenant_history.php")
+    suspend fun tenantHistory(@Query("id") id: Int): Response<ResponseBody>
+
+    /** Binary document (image or PDF); errors still come back as the JSON envelope. */
+    @GET("owner/tenant_document.php")
+    suspend fun tenantDocument(@Query("id") id: Int, @Query("type") type: String): Response<ResponseBody>
+
+    @Multipart
+    @POST("owner/tenant_document.php")
+    suspend fun uploadTenantDocument(
+        @Part("id") id: RequestBody,
+        @Part("type") type: RequestBody,
+        @Part("consent") consent: RequestBody,
+        @Part file: MultipartBody.Part,
+    ): Response<ResponseBody>
 
     /* ───────── owner: invoices & payments ───────── */
 

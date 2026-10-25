@@ -318,6 +318,12 @@ data class TenantDetail(
     @SerialName("pending_amount") val pendingAmount: Double = 0.0,
     @SerialName("has_aadhaar") val hasAadhaar: Boolean = false,
     val invoices: List<InvoiceSummary> = emptyList(),
+    // same fields the web "Tenant Details" page shows
+    @SerialName("aadhar_number") val aadharNumber: String? = null,
+    @SerialName("pan_number") val panNumber: String? = null,
+    @SerialName("has_account") val hasAccount: Boolean = false,
+    val username: String? = null,
+    @SerialName("has_pan_doc") val hasPanDoc: Boolean = false,
 )
 
 @Serializable

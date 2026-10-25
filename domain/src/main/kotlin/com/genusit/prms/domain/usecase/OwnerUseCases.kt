@@ -68,15 +68,30 @@ class GetEditableTenantUseCase @Inject constructor(private val repo: TenantAdmin
     suspend operator fun invoke(id: Int): TenantEditable = repo.editable(id)
 }
 
-/** Adds ([id] = 0) or updates a tenant. */
+/** Adds ([id] = 0) or updates a tenant. Returns the tenant id (the new one when adding). */
 class SaveTenantUseCase @Inject constructor(private val repo: TenantAdminRepository) {
-    suspend operator fun invoke(id: Int, input: TenantInput) {
-        if (id == 0) repo.add(input) else repo.update(id, input)
-    }
+    suspend operator fun invoke(id: Int, input: TenantInput): Int =
+        if (id == 0) repo.add(input).id else { repo.update(id, input); id }
 }
 
 class DeleteTenantUseCase @Inject constructor(private val repo: TenantAdminRepository) {
     suspend operator fun invoke(id: Int) = repo.delete(id)
+}
+
+class GetTenantHistoryUseCase @Inject constructor(private val repo: TenantAdminRepository) {
+    suspend operator fun invoke(id: Int): TenantHistory = repo.history(id)
+}
+
+class GetTenantDocumentUseCase @Inject constructor(private val repo: TenantAdminRepository) {
+    suspend operator fun invoke(id: Int, type: TenantDocType): DocumentFile = repo.document(id, type)
+}
+
+/** Uploads (or replaces) a tenant's ID document. Refuses without the tenant's consent. */
+class UploadTenantDocumentUseCase @Inject constructor(private val repo: TenantAdminRepository) {
+    suspend operator fun invoke(id: Int, type: TenantDocType, file: java.io.File, mimeType: String, consent: Boolean) {
+        require(consent) { "consent required" }
+        repo.uploadDocument(id, type, file, mimeType, consent)
+    }
 }
 
 /* ───────── billing ───────── */

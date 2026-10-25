@@ -59,6 +59,8 @@ sealed interface ActionState<out R> {
 sealed interface ScreenEvent {
     /** A form was saved / an item was deleted – the screen usually goes back. */
     data object Saved : ScreenEvent
+    /** The tenant was saved but the document photo could not be uploaded (it can be uploaded from the tenant page). */
+    data object SavedDocumentFailed : ScreenEvent
     /** A payment or collection was recorded – open its receipt. */
     data class ReceiptReady(val receiptNumber: String) : ScreenEvent
     /** A rent bill was generated – open it. */
