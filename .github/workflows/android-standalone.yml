@@ -25,6 +25,19 @@ jobs:
       - name: Unit tests (domain rules + Retrofit/OkHttp data layer against MockWebServer)
         run: ./gradlew :domain:test :data:test --stacktrace
 
+      - name: Test summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          for mod in ('domain', 'data'):
+              t = f = e = s = 0
+              for x in glob.glob(f'{mod}/build/test-results/test/*.xml'):
+                  r = ET.parse(x).getroot()
+                  t += int(r.get('tests', 0)); f += int(r.get('failures', 0)); e += int(r.get('errors', 0)); s += int(r.get('skipped', 0))
+              print(f"::notice title=:{mod} unit tests::{t} run, {f} failed, {e} errors, {s} skipped")
+          PY
+
       - name: Debug APK (Hilt/KSP code generation + Compose)
         run: ./gradlew :app:assembleDebug --stacktrace
 
