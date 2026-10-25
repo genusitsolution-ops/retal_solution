@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
@@ -147,7 +148,7 @@ fun OwnerTenantDetailScreen(
                             Spacer(Modifier.height(8.dp))
                             TenantManageActions(t.invoices.size, deleteState, onEdit = edit, onDelete = model::delete)
                             androidx.compose.material3.OutlinedButton(onClick = openHistory) {
-                                Icon(androidx.compose.material.icons.Icons.Filled.History, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.full_history))
+                                Icon(Icons.Filled.History, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.full_history))
                             }
                         }
                     }
