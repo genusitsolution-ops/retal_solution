@@ -50,6 +50,7 @@ jobs:
           disable-animations: true
           script: |
             ./gradlew :app:connectedDebugAndroidTest || true
+            mkdir -p shots && adb pull /data/local/tmp/form-keyboard.png shots/00-form-keyboard.png || true
             bash .github/scripts/smoke.sh
 
       - name: Report
