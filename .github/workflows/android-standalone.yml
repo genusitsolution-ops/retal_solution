@@ -1,5 +1,4 @@
-# Builds the app when PRMSApp is the root of the repository (e.g. the `android-native` branch).
-# (android.yml is for the full project repo, where the app lives in android/PRMSApp.)
+# Builds the app when PRMSApp is the root of the repository (the `android-native` branch).
 name: Android build (standalone repo)
 
 on:
@@ -7,6 +6,9 @@ on:
   push:
     branches: [ main, android-native ]
   pull_request:
+
+permissions:
+  contents: write   # only for the draft (team-only) release that carries the debug APK
 
 jobs:
   build:
@@ -26,8 +28,35 @@ jobs:
       - name: Debug APK (Hilt/KSP code generation + Compose)
         run: ./gradlew :app:assembleDebug --stacktrace
 
+      - name: Publish debug APK as a draft release (visible to repository members only)
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="android-debug-${{ github.run_number }}"
+          cp app/build/outputs/apk/debug/app-debug.apk "PRMS-${TAG}.apk"
+          gh release create "$TAG" "PRMS-${TAG}.apk" --draft --target "${{ github.sha }}" \
+            --title "Android debug build ${{ github.run_number }}" --notes "Debug APK built from ${{ github.sha }}"
+
       - name: Lint
+        id: lint
         run: ./gradlew :app:lintDebug
+
+      - name: Show lint errors as annotations
+        if: failure() && steps.lint.outcome == 'failure'
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          for f in glob.glob('app/build/reports/lint-results-*.xml'):
+              for i in ET.parse(f).getroot().iter('issue'):
+                  if i.get('severity') not in ('Error', 'Fatal'):
+                      continue
+                  loc = i.find('location')
+                  path = (loc.get('file') if loc is not None else '').split('/PRMSApp/')[-1].replace('/home/runner/work/retal_solution/retal_solution/', '')
+                  line = loc.get('line', '1') if loc is not None else '1'
+                  msg = (i.get('id') + ': ' + i.get('message', '')).replace('\n', ' ')[:300]
+                  print(f"::error file={path},line={line}::{msg}")
+          PY
 
       - uses: actions/upload-artifact@v4
         if: always()
