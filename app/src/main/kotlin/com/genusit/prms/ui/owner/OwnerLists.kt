@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
@@ -180,7 +181,7 @@ fun OwnerInvoicesScreen(openInvoice: (Int) -> Unit, onlyOpen: Boolean = false, o
     ScreenScaffold(stringResource(if (onlyOpen) R.string.collect_select_invoice else R.string.invoices), onBack = onBack, actions = {
         // "Collect payment" (formerly the centre + button) lives on the Bills tab
         if (onCollect != null) androidx.compose.material3.FilledTonalButton(onClick = onCollect, modifier = Modifier.padding(end = 8.dp)) {
-            Icon(androidx.compose.material.icons.Icons.Filled.Add, null); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.collect_payment))
+            Icon(Icons.Filled.Add, null); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.collect_payment))
         }
     }) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { list ->
