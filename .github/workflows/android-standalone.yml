@@ -39,7 +39,15 @@ jobs:
           PY
 
       - name: Debug APK (Hilt/KSP code generation + Compose)
-        run: ./gradlew :app:assembleDebug --stacktrace
+        id: apk
+        run: ./gradlew :app:assembleDebug --stacktrace 2>&1 | tee build-output.txt; exit ${PIPESTATUS[0]}
+
+      - name: Show build errors as annotations
+        if: failure() && steps.apk.outcome == 'failure'
+        run: |
+          grep -E "^e: |error:|What went wrong" -A2 build-output.txt | head -40 | while IFS= read -r l; do
+            echo "::error title=build::$(echo "$l" | sed 's#file:///home/runner/work/retal_solution/retal_solution/##' | cut -c1-400)"
+          done
 
       - name: Publish debug APK as a draft release (visible to repository members only)
         if: github.event_name != 'pull_request'
