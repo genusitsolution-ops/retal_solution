@@ -349,7 +349,7 @@
     <string name="doc_upload_hint">Take a clear photo of the card. It is compressed on this phone and stored securely; the web panel shows the same file.</string>
     <string name="doc_uploading">Uploading…</string>
     <string name="doc_uploaded_ok">Document saved.</string>
-    <string name="doc_upload_failed_after_save">Tenant saved, but the document photo could not be uploaded. Upload it from the tenant page.</string>
+    <string name="doc_upload_failed_after_save">Tenant saved, but the document could not be attached. Upload it again from the tenant page.</string>
     <string name="doc_pdf_hint">This document is a PDF. It opens in your PDF viewer.</string>
     <string name="doc_open_pdf">Open PDF</string>
     <string name="doc_no_pdf_app">No app to open PDF files is installed.</string>
@@ -364,5 +364,16 @@
     <string name="tenancy_days">Days stayed</string>
     <string name="rent_per_month">Rent / month</string>
     <string name="all_invoices">All bills</string>
+    <string name="collected_in_month">Collected in %1$s</string>
+    <string name="payments_count">%1$d payments</string>
+    <string name="period_this_month">This month</string>
+    <string name="period_3_months">Last 3 months</string>
+    <string name="period_this_year">This year</string>
+    <string name="nav_properties">Properties</string>
+    <string name="remove">Remove</string>
+    <string name="pan_hint">10 characters, e.g. ABCDE1234F; optional</string>
+    <string name="doc_uploaded_draft">Uploaded ✓ — saved with the tenant</string>
+    <string name="doc_invalid_image">This file is not a readable image. Choose a JPG or PNG photo of the card.</string>
+    <string name="doc_wait_upload">Waiting for the document upload to finish…</string>
     <string-array name="months"><item>January</item><item>February</item><item>March</item><item>April</item><item>May</item><item>June</item><item>July</item><item>August</item><item>September</item><item>October</item><item>November</item><item>December</item></string-array>
 </resources>

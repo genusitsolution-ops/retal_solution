@@ -350,7 +350,7 @@ S = {
 "doc_upload_hint": ("Take a clear photo of the card. It is compressed on this phone and stored securely; the web panel shows the same file.", "कार्ड की साफ़ फ़ोटो लें। यह इसी फ़ोन पर छोटी की जाती है और सुरक्षित रखी जाती है; वेब पैनल में भी यही फ़ाइल दिखती है।", "कार्डचा स्पष्ट फोटो घ्या. तो याच फोनवर लहान केला जातो व सुरक्षित ठेवला जातो; वेब पॅनलमध्येही हीच फाइल दिसते."),
 "doc_uploading": ("Uploading…", "अपलोड हो रहा है…", "अपलोड होत आहे…"),
 "doc_uploaded_ok": ("Document saved.", "दस्तावेज़ सहेजा गया।", "दस्तऐवज जतन झाले."),
-"doc_upload_failed_after_save": ("Tenant saved, but the document photo could not be uploaded. Upload it from the tenant page.", "किरायेदार सहेजा गया, पर दस्तावेज़ की फ़ोटो अपलोड नहीं हो सकी। किरायेदार पेज से अपलोड करें।", "भाडेकरू जतन झाला, पण दस्तऐवजाचा फोटो अपलोड झाला नाही. भाडेकरू पानावरून अपलोड करा."),
+"doc_upload_failed_after_save": ("Tenant saved, but the document could not be attached. Upload it again from the tenant page.", "किरायेदार सहेजा गया, पर दस्तावेज़ नहीं जुड़ सका। किरायेदार पेज से फिर अपलोड करें।", "भाडेकरू जतन झाला, पण दस्तऐवज जोडता आला नाही. भाडेकरू पानावरून पुन्हा अपलोड करा."),
 "doc_pdf_hint": ("This document is a PDF. It opens in your PDF viewer.", "यह दस्तावेज़ PDF है। यह आपके PDF व्यूअर में खुलेगा।", "हा दस्तऐवज PDF आहे. तो तुमच्या PDF व्ह्यूअरमध्ये उघडेल."),
 "doc_open_pdf": ("Open PDF", "PDF खोलें", "PDF उघडा"),
 "doc_no_pdf_app": ("No app to open PDF files is installed.", "PDF खोलने वाला कोई ऐप इंस्टॉल नहीं है।", "PDF उघडणारे ॲप इन्स्टॉल नाही."),
@@ -365,6 +365,18 @@ S = {
 "tenancy_days": ("Days stayed", "रहने के दिन", "राहिलेले दिवस"),
 "rent_per_month": ("Rent / month", "किराया / माह", "भाडे / महिना"),
 "all_invoices": ("All bills", "सभी बिल", "सर्व बिले"),
+# 1.5: payments period, owner bottom bar, document draft upload, ID inputs
+"collected_in_month": ("Collected in %1$s", "%1$s में वसूला गया", "%1$s मध्ये वसूल"),
+"payments_count": ("%1$d payments", "%1$d भुगतान", "%1$d भरणे"),
+"period_this_month": ("This month", "इस माह", "हा महिना"),
+"period_3_months": ("Last 3 months", "पिछले 3 माह", "मागील 3 महिने"),
+"period_this_year": ("This year", "इस वर्ष", "हे वर्ष"),
+"nav_properties": ("Properties", "संपत्तियाँ", "मालमत्ता"),
+"remove": ("Remove", "हटाएँ", "काढा"),
+"pan_hint": ("10 characters, e.g. ABCDE1234F; optional", "10 अक्षर, जैसे ABCDE1234F; वैकल्पिक", "10 अक्षरे, उदा. ABCDE1234F; ऐच्छिक"),
+"doc_uploaded_draft": ("Uploaded ✓ — saved with the tenant", "अपलोड हुआ ✓ — किरायेदार के साथ सहेजा जाएगा", "अपलोड झाले ✓ — भाडेकरूसोबत जतन होईल"),
+"doc_invalid_image": ("This file is not a readable image. Choose a JPG or PNG photo of the card.", "यह फ़ाइल पढ़ने योग्य छवि नहीं है। कार्ड की JPG या PNG फ़ोटो चुनें।", "ही फाइल वाचता येणारी प्रतिमा नाही. कार्डचा JPG किंवा PNG फोटो निवडा."),
+"doc_wait_upload": ("Waiting for the document upload to finish…", "दस्तावेज़ अपलोड पूरा होने की प्रतीक्षा…", "दस्तऐवज अपलोड पूर्ण होण्याची प्रतीक्षा…"),
 }
 MONTHS = {
 "en": "January February March April May June July August September October November December".split(),

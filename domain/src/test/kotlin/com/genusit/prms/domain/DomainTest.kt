@@ -137,4 +137,37 @@ class DomainTest {
         assertEquals(null, com.genusit.prms.domain.util.IdMask.mask("  "))
         assertEquals("ABC", com.genusit.prms.domain.util.IdMask.mask("ABC"))
     }
+
+    @Test fun periodsMatchTheServerRules() {
+        val d = java.time.LocalDate.of(2026, 10, 25)
+        assertEquals("2026-10-01" to "2026-10-31", com.genusit.prms.domain.util.Dates.thisMonth(d))
+        assertEquals("2026-08-01" to "2026-10-25", com.genusit.prms.domain.util.Dates.lastMonths(3, d))
+        assertEquals("2026-01-01" to "2026-10-25", com.genusit.prms.domain.util.Dates.thisYear(d))
+        assertEquals("2026-02-01" to "2026-02-28", com.genusit.prms.domain.util.Dates.thisMonth(java.time.LocalDate.of(2026, 2, 10)))
+    }
+
+    @Test fun saveTenantReportsMissingDocuments() = kotlinx.coroutines.test.runTest {
+        val repo = object : com.genusit.prms.domain.repository.TenantAdminRepository {
+            var addKey: String? = null
+            override suspend fun tenants() = emptyList<com.genusit.prms.domain.model.TenantRow>()
+            override suspend fun tenant(id: Int) = com.genusit.prms.domain.model.TenantDetail()
+            override suspend fun editable(id: Int) = com.genusit.prms.domain.model.TenantEditable()
+            override suspend fun add(t: com.genusit.prms.domain.model.TenantInput, idempotencyKey: String?) =
+                com.genusit.prms.domain.model.CreatedId(7, documents = mapOf("aadhaar" to true, "pan" to false)).also { addKey = idempotencyKey }
+            override suspend fun update(id: Int, t: com.genusit.prms.domain.model.TenantInput) = mapOf("aadhaar" to true)
+            override suspend fun delete(id: Int) {}
+            override suspend fun history(id: Int) = com.genusit.prms.domain.model.TenantHistory()
+            override suspend fun document(id: Int, type: com.genusit.prms.domain.model.TenantDocType) = com.genusit.prms.domain.model.DocumentFile(ByteArray(0), "")
+            override suspend fun uploadDocument(id: Int, type: com.genusit.prms.domain.model.TenantDocType, file: java.io.File, mimeType: String, consent: Boolean) {}
+            override suspend fun uploadDraft(type: com.genusit.prms.domain.model.TenantDocType, file: java.io.File, mimeType: String, consent: Boolean, replaceToken: String?) = "t"
+            override suspend fun deleteDraft(type: com.genusit.prms.domain.model.TenantDocType, token: String) {}
+        }
+        val save = com.genusit.prms.domain.usecase.SaveTenantUseCase(repo)
+        val base = com.genusit.prms.domain.model.TenantInput(fullName = "A", phone = "9000000001")
+        assertEquals(com.genusit.prms.domain.model.SaveTenantResult(7, true), save(0, base.copy(aadhaarDraft = "x"), "k"))
+        assertEquals("k", repo.addKey)
+        assertEquals(com.genusit.prms.domain.model.SaveTenantResult(7, false), save(0, base.copy(aadhaarDraft = "x", panDraft = "y"), "k"))
+        assertEquals(com.genusit.prms.domain.model.SaveTenantResult(3, true), save(3, base.copy(aadhaarDraft = "x"), null))
+        assertEquals(com.genusit.prms.domain.model.SaveTenantResult(7, true), save(0, base, "k"))
+    }
 }

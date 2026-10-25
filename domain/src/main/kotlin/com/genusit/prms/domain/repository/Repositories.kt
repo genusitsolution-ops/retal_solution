@@ -54,8 +54,10 @@ interface TenantAdminRepository {
     suspend fun tenants(): List<TenantRow>
     suspend fun tenant(id: Int): TenantDetail
     suspend fun editable(id: Int): TenantEditable
-    suspend fun add(t: TenantInput): CreatedId
-    suspend fun update(id: Int, t: TenantInput)
+    /** [idempotencyKey]: a retried create returns the first tenant instead of adding a second one. */
+    suspend fun add(t: TenantInput, idempotencyKey: String? = null): CreatedId
+    /** Returns which draft documents were attached (empty when none were sent). */
+    suspend fun update(id: Int, t: TenantInput): Map<String, Boolean>
     /** Only for tenants without any rent history (server answers HAS_HISTORY otherwise). */
     suspend fun delete(id: Int)
     /** Full history, the same records as the web "Full History" page. */
@@ -64,6 +66,9 @@ interface TenantAdminRepository {
     suspend fun document(id: Int, type: TenantDocType): DocumentFile
     /** Uploads or replaces the document; [consent] must be true (the server refuses otherwise). */
     suspend fun uploadDocument(id: Int, type: TenantDocType, file: java.io.File, mimeType: String, consent: Boolean)
+    /** Uploads a document before the tenant is saved; returns the draft token. [replaceToken] is deleted on the server. */
+    suspend fun uploadDraft(type: TenantDocType, file: java.io.File, mimeType: String, consent: Boolean, replaceToken: String?): String
+    suspend fun deleteDraft(type: TenantDocType, token: String)
 }
 
 /** Owner: invoices, payments and charges. */

@@ -26,10 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.genusit.prms.R
 import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.common.BilledCollectedChart
 import com.genusit.prms.ui.common.EmptyState
+import com.genusit.prms.ui.common.monthYearText
 import com.genusit.prms.ui.common.InvoiceRow
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
@@ -56,6 +58,16 @@ fun OwnerHomeScreen(
     val vm = model.dashboard
     val state by vm.state.collectAsStateWithLifecycle()
     val name by model.userName.collectAsStateWithLifecycle()
+    // Home stays in the back stack while payments are recorded elsewhere: reload every time it is shown
+    // again, so the totals always match the Payments screen (the first load is done by the ViewModel)
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    androidx.compose.runtime.LaunchedEffect(lifecycle) {
+        var first = true
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            if (!first && state !is com.genusit.prms.ui.common.UiState.Loading) vm.refresh()
+            first = false
+        }
+    }
 
     ScreenScaffold(
         title = stringResource(R.string.hello_name, name.substringBefore(' ')),
@@ -69,10 +81,12 @@ fun OwnerHomeScreen(
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 item { SubscriptionBanner(d.subscription, openSubscription) }
                 item {
+                    // same rows and the same dates as Payments → "This month"
                     WalletCard(
-                        label = stringResource(R.string.collected_this_month),
+                        label = stringResource(R.string.collected_in_month, monthYearText(s.monthFrom)),
                         amount = s.thisMonthCollected,
-                        footer = stringResource(R.string.billed_and_pending, Money.format(s.thisMonthBilled), Money.format(s.pendingAmount)),
+                        footer = stringResource(R.string.payments_count, s.thisMonthPayments) + "\n" +
+                            stringResource(R.string.billed_and_pending, Money.format(s.thisMonthBilled), Money.format(s.pendingAmount)),
                         onClick = openPayments,
                     )
                 }

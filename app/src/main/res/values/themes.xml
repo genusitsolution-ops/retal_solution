@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.PRMS" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@color/bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:windowLightStatusBar">true</item>
+        <!-- some phones (MIUI / ColorOS / One UI "dark mode for all apps") repaint light apps;
+             that recolours typed text in Compose fields and can make it invisible -->
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
     </style>
 </resources>

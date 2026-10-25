@@ -149,3 +149,12 @@ Super Admin is unchanged: it is told to use the web panel, and its token is revo
 | Delete (only without history) | Unchanged | DELETE owner/tenants.php |
 
 Tests: `ApiIntegrationTest.tenantDetailHistoryAndDocuments` (detail fields, history decoding, binary download with Bearer token, JSON error on 404, multipart upload parts) and `DomainTest.idMaskMatchesWebPanel`.
+
+## 1.5.0 fixes (25 Oct 2026)
+
+| Issue | Root cause | Fix |
+|---|---|---|
+| Dashboard "Collected" ≠ Payments total | (1) different periods with unclear labels (calendar month vs. last 3 months); (2) the Home tab kept its first result while payments were recorded elsewhere; (3) server list joins could hide a payment (no invoice/property) or repeat it (several collection rows with the same receipt) | Server: both use `payments.payment_date` in the same dates (`period=month` = dashboard), LEFT JOINs + one collection row per payment, `month_from/month_to/this_month_payments` returned. App: Home reloads whenever it is shown again; card reads "Collected in October 2026 · N payments" and opens Payments on "This month"; period chips (This month / Last 3 months / This year); rows without a receipt number are not clickable |
+| Typed Aadhaar/PAN not visible | Edge-to-edge window is not resized for the keyboard (no IME insets) → fields lower in the form stayed hidden under the keyboard while typing; OEM "force dark" could also recolour field text | `imePadding()` (after consuming the bar insets) on the role shell, so every screen is lifted above the keyboard and the focused field scrolls into view; explicit field text/cursor/selection colours; `forceDarkAllowed=false`; Aadhaar digits ≤ 12 with counter, PAN capital letters + digits ≤ 10, autocorrect off |
+| Centre + button overlapped the bar | FAB docked over a 4-item bar | Owner bar: Home · Tenants · Bills · Properties · More (no FAB); "Collect payment" button on the Bills tab; Properties is a tab |
+| Document upload as part of capture | Photo was uploaded only after saving (1.4) | Photo is compressed, OCR'd and uploaded at once as a server draft (owner-only, 24 h); progress / uploaded / failed + Retry / Remove; Save waits for uploads; the draft token is sent with the tenant and attached by the server; retried "add" uses an Idempotency-Key (no duplicate tenant); a retake replaces the old draft |

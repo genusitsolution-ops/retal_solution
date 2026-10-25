@@ -69,12 +69,27 @@ class TenantAdminRepositoryImpl @Inject constructor(
     override suspend fun tenants(): List<TenantRow> = caller.get(ListSerializer(TenantRow.serializer())) { api.ownerTenants(null) }
     override suspend fun tenant(id: Int): TenantDetail = caller.get(TenantDetail.serializer()) { api.ownerTenants(id) }
     override suspend fun editable(id: Int): TenantEditable = caller.get(TenantEditable.serializer()) { api.ownerTenants(id) }
-    override suspend fun add(t: TenantInput): CreatedId = caller.get(CreatedId.serializer()) { api.addTenant(caller.body(TenantInput.serializer(), t)) }
-    override suspend fun update(id: Int, t: TenantInput) { caller.run { api.updateTenant(id, caller.body(TenantInput.serializer(), t)) } }
+    override suspend fun add(t: TenantInput, idempotencyKey: String?): CreatedId =
+        caller.get(CreatedId.serializer()) { api.addTenant(caller.body(TenantInput.serializer(), t), idempotencyKey) }
+    override suspend fun update(id: Int, t: TenantInput): Map<String, Boolean> {
+        val data = caller.call { api.updateTenant(id, caller.body(TenantInput.serializer(), t)) }
+        return if (data is kotlinx.serialization.json.JsonObject) caller.decode(CreatedId.serializer(), data).documents else emptyMap()
+    }
     override suspend fun delete(id: Int) { caller.run { api.deleteTenant(id) } }
     override suspend fun history(id: Int): TenantHistory = caller.get(TenantHistory.serializer()) { api.tenantHistory(id) }
     override suspend fun document(id: Int, type: TenantDocType): DocumentFile =
         caller.download { api.tenantDocument(id, type.apiValue) }.let { (bytes, mime) -> DocumentFile(bytes, mime) }
+    override suspend fun uploadDraft(type: TenantDocType, file: java.io.File, mimeType: String, consent: Boolean, replaceToken: String?): String {
+        val text = "text/plain".toMediaType()
+        val part = okhttp3.MultipartBody.Part.createFormData("file", "${type.apiValue}.jpg", file.asRequestBody(mimeType.toMediaType()))
+        val data = caller.call {
+            api.uploadDraftDocument("1".toRequestBody(text), type.apiValue.toRequestBody(text), (if (consent) "1" else "0").toRequestBody(text),
+                replaceToken?.toRequestBody(text), part)
+        }
+        return (data as? kotlinx.serialization.json.JsonObject)?.get("draft_token")?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
+            ?: throw com.genusit.prms.domain.error.ApiException(com.genusit.prms.domain.error.ApiException.BAD_RESPONSE, "draft_token", 200)
+    }
+    override suspend fun deleteDraft(type: TenantDocType, token: String) { caller.run { api.deleteDraftDocument(token, type.apiValue) } }
     override suspend fun uploadDocument(id: Int, type: TenantDocType, file: java.io.File, mimeType: String, consent: Boolean) {
         val text = "text/plain".toMediaType()
         val part = okhttp3.MultipartBody.Part.createFormData("file", "${type.apiValue}.${if (mimeType.contains("pdf")) "pdf" else if (mimeType.contains("png")) "png" else "jpg"}",

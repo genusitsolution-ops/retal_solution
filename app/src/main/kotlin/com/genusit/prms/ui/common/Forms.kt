@@ -51,6 +51,9 @@ fun FormField(
     password: Boolean = false,
     enabled: Boolean = true,
     supporting: String? = null,
+    capitalization: androidx.compose.ui.text.input.KeyboardCapitalization = androidx.compose.ui.text.input.KeyboardCapitalization.None,
+    autoCorrect: Boolean = true,
+    imeAction: androidx.compose.ui.text.input.ImeAction = androidx.compose.ui.text.input.ImeAction.Default,
 ) {
     OutlinedTextField(
         value = value,
@@ -62,7 +65,21 @@ fun FormField(
         enabled = enabled,
         supportingText = supporting?.let { s -> { Text(s) } },
         visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(keyboardType = if (password) KeyboardType.Password else keyboard),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (password) KeyboardType.Password else keyboard,
+            capitalization = capitalization,
+            autoCorrectEnabled = autoCorrect && !password,
+            imeAction = imeAction,
+        ),
+        // explicit colours: typed text, cursor and selection stay readable on every device theme
+        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+            focusedTextColor = Palette.Ink, unfocusedTextColor = Palette.Ink, disabledTextColor = Palette.Muted, errorTextColor = Palette.Ink,
+            focusedContainerColor = Palette.Card, unfocusedContainerColor = Palette.Card, disabledContainerColor = Color(0xFFF8FAFC), errorContainerColor = Palette.Card,
+            cursorColor = Palette.Brand, errorCursorColor = Palette.Danger,
+            focusedBorderColor = Palette.Brand, unfocusedBorderColor = Color(0xFFCBD5E1),
+            focusedLabelColor = Palette.Brand, unfocusedLabelColor = Palette.Muted,
+            selectionColors = androidx.compose.foundation.text.selection.TextSelectionColors(handleColor = Palette.Brand, backgroundColor = Palette.Brand.copy(alpha = .25f)),
+        ),
         modifier = Modifier.fillMaxWidth(),
     )
 }

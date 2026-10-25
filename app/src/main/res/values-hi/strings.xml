@@ -349,7 +349,7 @@
     <string name="doc_upload_hint">कार्ड की साफ़ फ़ोटो लें। यह इसी फ़ोन पर छोटी की जाती है और सुरक्षित रखी जाती है; वेब पैनल में भी यही फ़ाइल दिखती है।</string>
     <string name="doc_uploading">अपलोड हो रहा है…</string>
     <string name="doc_uploaded_ok">दस्तावेज़ सहेजा गया।</string>
-    <string name="doc_upload_failed_after_save">किरायेदार सहेजा गया, पर दस्तावेज़ की फ़ोटो अपलोड नहीं हो सकी। किरायेदार पेज से अपलोड करें।</string>
+    <string name="doc_upload_failed_after_save">किरायेदार सहेजा गया, पर दस्तावेज़ नहीं जुड़ सका। किरायेदार पेज से फिर अपलोड करें।</string>
     <string name="doc_pdf_hint">यह दस्तावेज़ PDF है। यह आपके PDF व्यूअर में खुलेगा।</string>
     <string name="doc_open_pdf">PDF खोलें</string>
     <string name="doc_no_pdf_app">PDF खोलने वाला कोई ऐप इंस्टॉल नहीं है।</string>
@@ -364,5 +364,16 @@
     <string name="tenancy_days">रहने के दिन</string>
     <string name="rent_per_month">किराया / माह</string>
     <string name="all_invoices">सभी बिल</string>
+    <string name="collected_in_month">%1$s में वसूला गया</string>
+    <string name="payments_count">%1$d भुगतान</string>
+    <string name="period_this_month">इस माह</string>
+    <string name="period_3_months">पिछले 3 माह</string>
+    <string name="period_this_year">इस वर्ष</string>
+    <string name="nav_properties">संपत्तियाँ</string>
+    <string name="remove">हटाएँ</string>
+    <string name="pan_hint">10 अक्षर, जैसे ABCDE1234F; वैकल्पिक</string>
+    <string name="doc_uploaded_draft">अपलोड हुआ ✓ — किरायेदार के साथ सहेजा जाएगा</string>
+    <string name="doc_invalid_image">यह फ़ाइल पढ़ने योग्य छवि नहीं है। कार्ड की JPG या PNG फ़ोटो चुनें।</string>
+    <string name="doc_wait_upload">दस्तावेज़ अपलोड पूरा होने की प्रतीक्षा…</string>
     <string-array name="months"><item>जनवरी</item><item>फ़रवरी</item><item>मार्च</item><item>अप्रैल</item><item>मई</item><item>जून</item><item>जुलाई</item><item>अगस्त</item><item>सितंबर</item><item>अक्टूबर</item><item>नवंबर</item><item>दिसंबर</item></string-array>
 </resources>

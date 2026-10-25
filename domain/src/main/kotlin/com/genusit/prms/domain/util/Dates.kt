@@ -24,5 +24,17 @@ object Dates {
         return "${d.dayOfMonth} $name ${d.year}"
     }
 
+    /** First and last day of the current month ("2026-10-01" to "2026-10-31") — the dashboard's "this month". */
+    fun thisMonth(today: LocalDate = LocalDate.now()): Pair<String, String> =
+        today.withDayOfMonth(1).format(iso) to today.withDayOfMonth(today.lengthOfMonth()).format(iso)
+
+    /** From the 1st of the month [months] - 1 months ago up to today (3 → 1 Aug … 25 Oct). */
+    fun lastMonths(months: Int, today: LocalDate = LocalDate.now()): Pair<String, String> =
+        today.withDayOfMonth(1).minusMonths((months - 1).toLong()).format(iso) to today.format(iso)
+
+    /** 1 January … today. */
+    fun thisYear(today: LocalDate = LocalDate.now()): Pair<String, String> =
+        today.withDayOfYear(1).format(iso) to today.format(iso)
+
     fun isPast(value: String?): Boolean = parse(value)?.isBefore(LocalDate.now()) ?: false
 }

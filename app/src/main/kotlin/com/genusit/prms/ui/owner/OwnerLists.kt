@@ -172,12 +172,17 @@ private val INVOICE_FILTERS = listOf("" to R.string.all, "due" to R.string.all_d
 
 /** Invoice list; with [onlyOpen] it is the "pick an invoice to collect" screen behind the FAB. */
 @Composable
-fun OwnerInvoicesScreen(openInvoice: (Int) -> Unit, onlyOpen: Boolean = false, onBack: (() -> Unit)? = null, initialFilter: String = "") {
+fun OwnerInvoicesScreen(openInvoice: (Int) -> Unit, onlyOpen: Boolean = false, onBack: (() -> Unit)? = null, initialFilter: String = "", onCollect: (() -> Unit)? = null) {
     val vm = hiltViewModel<OwnerInvoicesViewModel>().invoices
     val state by vm.state.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf(initialFilter) }
     var query by rememberSaveable { mutableStateOf("") }
-    ScreenScaffold(stringResource(if (onlyOpen) R.string.collect_select_invoice else R.string.invoices), onBack = onBack) { pad ->
+    ScreenScaffold(stringResource(if (onlyOpen) R.string.collect_select_invoice else R.string.invoices), onBack = onBack, actions = {
+        // "Collect payment" (formerly the centre + button) lives on the Bills tab
+        if (onCollect != null) androidx.compose.material3.FilledTonalButton(onClick = onCollect, modifier = Modifier.padding(end = 8.dp)) {
+            Icon(androidx.compose.material.icons.Icons.Filled.Add, null); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.collect_payment))
+        }
+    }) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { list ->
             val shown = list.filter { inv ->
                 (if (onlyOpen) inv.isOpen else filter.isEmpty() || (filter == "due" && inv.isOpen) || inv.status == filter) &&

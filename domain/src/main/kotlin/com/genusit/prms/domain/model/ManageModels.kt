@@ -46,7 +46,13 @@ data class TenantInput(
     val username: String? = null,
     val password: String? = null,
     val status: String? = null,
+    /** Tokens of document photos already uploaded as drafts (owner/tenant_document.php, draft=1). */
+    @SerialName("aadhaar_draft") val aadhaarDraft: String? = null,
+    @SerialName("pan_draft") val panDraft: String? = null,
 )
+
+/** Result of saving a tenant: the id, and whether every draft document was attached. */
+data class SaveTenantResult(val id: Int, val documentsAttached: Boolean)
 
 /* ───────── charges ───────── */
 

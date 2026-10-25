@@ -4,6 +4,10 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,6 +62,9 @@ fun DocumentCaptureCard(
     reading: Boolean,
     newCaptureTarget: () -> Pair<File, Uri>,
     onImage: (uri: Uri, type: DocumentType, captureFile: File?) -> Unit,
+    uploads: Map<DocumentType, DocUpload> = emptyMap(),
+    onRetry: (DocumentType) -> Unit = {},
+    onRemove: (DocumentType) -> Unit = {},
 ) {
     var consent by rememberSaveable { mutableStateOf(false) }
     var type by rememberSaveable { mutableStateOf(DocumentType.AADHAAR) }
@@ -110,8 +117,49 @@ fun DocumentCaptureCard(
                     onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                 ) { Icon(Icons.Filled.PhotoLibrary, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.doc_gallery)) }
             }
+            // each captured document: preview + upload progress / success / retry
+            listOf(DocumentType.AADHAAR, DocumentType.PAN).forEach { t ->
+                uploads[t]?.let { up -> UploadRow(t, up, onRetry = { onRetry(t) }, onRemove = { onRemove(t) }) }
+            }
         }
     }
+}
+
+@Composable
+private fun UploadRow(type: DocumentType, up: DocUpload, onRetry: () -> Unit, onRemove: () -> Unit) {
+    androidx.compose.animation.AnimatedContent(targetState = up, label = "upload") { state ->
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            DocThumb(state.preview)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(if (type == DocumentType.PAN) R.string.doc_pan else R.string.doc_aadhaar), fontWeight = FontWeight.SemiBold)
+                when (state) {
+                    is DocUpload.Uploading -> Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = Palette.Brand)
+                        Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.doc_uploading), style = MaterialTheme.typography.labelMedium)
+                    }
+                    is DocUpload.Uploaded -> Text(stringResource(R.string.doc_uploaded_draft), style = MaterialTheme.typography.labelMedium, color = Palette.Success)
+                    is DocUpload.Failed -> Text(com.genusit.prms.ui.common.errorText(state.error), style = MaterialTheme.typography.labelMedium, color = Palette.Danger)
+                }
+            }
+            if (state is DocUpload.Failed) TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            TextButton(onClick = onRemove, enabled = state !is DocUpload.Uploading) { Text(stringResource(R.string.remove), color = Palette.Danger) }
+        }
+    }
+}
+
+/** Small preview of the compressed photo (decoded off the main thread, down-sampled). */
+@Composable
+private fun DocThumb(file: File) {
+    val bmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, file) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { android.graphics.BitmapFactory.decodeFile(file.absolutePath, android.graphics.BitmapFactory.Options().apply { inSampleSize = 8 }) }.getOrNull()
+        }
+    }
+    val m = Modifier.size(width = 64.dp, height = 44.dp).clip(MaterialTheme.shapes.small).background(MaterialTheme.colorScheme.surfaceVariant)
+    val b = bmp
+    if (b != null) androidx.compose.foundation.Image(b.asImageBitmap(), contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = m)
+    else androidx.compose.foundation.layout.Box(m)
 }
 
 /**

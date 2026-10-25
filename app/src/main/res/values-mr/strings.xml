@@ -349,7 +349,7 @@
     <string name="doc_upload_hint">कार्डचा स्पष्ट फोटो घ्या. तो याच फोनवर लहान केला जातो व सुरक्षित ठेवला जातो; वेब पॅनलमध्येही हीच फाइल दिसते.</string>
     <string name="doc_uploading">अपलोड होत आहे…</string>
     <string name="doc_uploaded_ok">दस्तऐवज जतन झाले.</string>
-    <string name="doc_upload_failed_after_save">भाडेकरू जतन झाला, पण दस्तऐवजाचा फोटो अपलोड झाला नाही. भाडेकरू पानावरून अपलोड करा.</string>
+    <string name="doc_upload_failed_after_save">भाडेकरू जतन झाला, पण दस्तऐवज जोडता आला नाही. भाडेकरू पानावरून पुन्हा अपलोड करा.</string>
     <string name="doc_pdf_hint">हा दस्तऐवज PDF आहे. तो तुमच्या PDF व्ह्यूअरमध्ये उघडेल.</string>
     <string name="doc_open_pdf">PDF उघडा</string>
     <string name="doc_no_pdf_app">PDF उघडणारे ॲप इन्स्टॉल नाही.</string>
@@ -364,5 +364,16 @@
     <string name="tenancy_days">राहिलेले दिवस</string>
     <string name="rent_per_month">भाडे / महिना</string>
     <string name="all_invoices">सर्व बिले</string>
+    <string name="collected_in_month">%1$s मध्ये वसूल</string>
+    <string name="payments_count">%1$d भरणे</string>
+    <string name="period_this_month">हा महिना</string>
+    <string name="period_3_months">मागील 3 महिने</string>
+    <string name="period_this_year">हे वर्ष</string>
+    <string name="nav_properties">मालमत्ता</string>
+    <string name="remove">काढा</string>
+    <string name="pan_hint">10 अक्षरे, उदा. ABCDE1234F; ऐच्छिक</string>
+    <string name="doc_uploaded_draft">अपलोड झाले ✓ — भाडेकरूसोबत जतन होईल</string>
+    <string name="doc_invalid_image">ही फाइल वाचता येणारी प्रतिमा नाही. कार्डचा JPG किंवा PNG फोटो निवडा.</string>
+    <string name="doc_wait_upload">दस्तऐवज अपलोड पूर्ण होण्याची प्रतीक्षा…</string>
     <string-array name="months"><item>जानेवारी</item><item>फेब्रुवारी</item><item>मार्च</item><item>एप्रिल</item><item>मे</item><item>जून</item><item>जुलै</item><item>ऑगस्ट</item><item>सप्टेंबर</item><item>ऑक्टोबर</item><item>नोव्हेंबर</item><item>डिसेंबर</item></string-array>
 </resources>

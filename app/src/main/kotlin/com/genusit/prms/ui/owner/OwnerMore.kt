@@ -107,7 +107,7 @@ fun OwnerMoreScreen(open: (String) -> Unit) {
 }
 
 @Composable
-fun PropertiesScreen(onBack: () -> Unit, addProperty: () -> Unit, editProperty: (Int) -> Unit = {}) {
+fun PropertiesScreen(onBack: (() -> Unit)?, addProperty: () -> Unit, editProperty: (Int) -> Unit = {}) {
     val vm = hiltViewModel<PropertiesViewModel>().properties
     val state by vm.state.collectAsStateWithLifecycle()
     // reload when coming back from "add property"
@@ -194,20 +194,35 @@ fun AddPropertyScreen(onBack: () -> Unit, onSaved: () -> Unit) {
 
 @Composable
 fun OwnerPaymentsScreen(onBack: () -> Unit, openReceipt: (String) -> Unit) {
-    val vm = hiltViewModel<OwnerPaymentsViewModel>().payments
+    val model = hiltViewModel<OwnerPaymentsViewModel>()
+    val vm = model.payments
     val state by vm.state.collectAsStateWithLifecycle()
+    val period by model.period.collectAsStateWithLifecycle()
     ScreenScaffold(stringResource(R.string.payments), onBack = onBack) { pad ->
-        StateContent(state, vm::refresh, Modifier.padding(pad)) { d ->
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                item { WalletCard(stringResource(R.string.received_in_period), d.total, dateText(d.from) + " – " + dateText(d.to)) }
-                if (d.payments.isEmpty()) item { EmptyState(stringResource(R.string.no_payments)) }
-                items(d.payments, key = { it.id }) { p ->
-                    PaymentRow(
-                        title = p.tenantName ?: "—",
-                        subtitle = listOfNotNull(dateText(p.paymentDate), p.paymentMethodLabel, p.collectedByLabel, p.receiptNumber).joinToString(" · "),
-                        amount = p.amount,
-                        onClick = { openReceipt(p.receiptNumber) },
-                    )
+        Column(Modifier.padding(pad).fillMaxSize()) {
+            // the period is always visible, so the total can be compared with the dashboard ("This month")
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(PaymentPeriod.MONTH to R.string.period_this_month, PaymentPeriod.LAST_3_MONTHS to R.string.period_3_months, PaymentPeriod.YEAR to R.string.period_this_year)
+                    .forEach { (p, label) -> androidx.compose.material3.FilterChip(selected = period == p, onClick = { model.select(p) }, label = { Text(stringResource(label)) }) }
+            }
+            StateContent(state, vm::refresh) { d ->
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    item {
+                        WalletCard(stringResource(R.string.received_in_period), d.total,
+                            dateText(d.from) + " – " + dateText(d.to) + " · " + stringResource(R.string.payments_count, d.payments.size))
+                    }
+                    if (d.payments.isEmpty()) item { EmptyState(stringResource(R.string.no_payments)) }
+                    items(d.payments, key = { it.id }) { p ->
+                        val receipt = p.receiptNumber.takeIf { it.isNotBlank() }
+                        PaymentRow(
+                            title = p.tenantName ?: "—",
+                            subtitle = listOfNotNull(dateText(p.paymentDate), p.paymentMethodLabel, p.collectedByLabel, receipt)
+                                .filter { it.isNotBlank() }.joinToString(" · "),
+                            amount = p.amount,
+                            // a record without a receipt number has no receipt to open
+                            onClick = receipt?.let { r -> { openReceipt(r) } },
+                        )
+                    }
                 }
             }
         }

@@ -85,7 +85,7 @@ interface PrmsApiService {
     suspend fun ownerTenants(@Query("id") id: Int?): Response<ResponseBody>
 
     @POST("owner/tenants.php")
-    suspend fun addTenant(@Body body: JsonObject): Response<ResponseBody>
+    suspend fun addTenant(@Body body: JsonObject, @Header("Idempotency-Key") idempotencyKey: String?): Response<ResponseBody>
 
     @PUT("owner/tenants.php")
     suspend fun updateTenant(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
@@ -99,6 +99,19 @@ interface PrmsApiService {
     /** Binary document (image or PDF); errors still come back as the JSON envelope. */
     @GET("owner/tenant_document.php")
     suspend fun tenantDocument(@Query("id") id: Int, @Query("type") type: String): Response<ResponseBody>
+
+    @Multipart
+    @POST("owner/tenant_document.php")
+    suspend fun uploadDraftDocument(
+        @Part("draft") draft: RequestBody,
+        @Part("type") type: RequestBody,
+        @Part("consent") consent: RequestBody,
+        @Part("replace_draft") replaceDraft: RequestBody?,
+        @Part file: MultipartBody.Part,
+    ): Response<ResponseBody>
+
+    @DELETE("owner/tenant_document.php")
+    suspend fun deleteDraftDocument(@Query("draft") token: String, @Query("type") type: String): Response<ResponseBody>
 
     @Multipart
     @POST("owner/tenant_document.php")

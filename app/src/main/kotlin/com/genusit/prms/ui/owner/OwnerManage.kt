@@ -99,6 +99,8 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val act by model.saveAction.state.collectAsStateWithLifecycle()
     val existing by model.existing.state.collectAsStateWithLifecycle()
     val scan by model.scan.collectAsStateWithLifecycle()
+    val uploads by model.uploads.collectAsStateWithLifecycle()
+    val uploadBusy = uploads.values.any { it is DocUpload.Uploading }
     val formCtx = androidx.compose.ui.platform.LocalContext.current
     EventEffect(model) {
         if (it == ScreenEvent.Saved) onSaved()
@@ -151,8 +153,10 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                 reading = scan is ScanState.Reading,
                 newCaptureTarget = model::newCaptureTarget,
                 onImage = { uri, type, file -> model.read(uri, type, file) },
+                uploads = uploads, onRetry = model::retryUpload, onRemove = model::removeDocument,
             )
             if (scan is ScanState.Unreadable) Text(stringResource(R.string.doc_unreadable), color = Palette.Warning, style = MaterialTheme.typography.bodyMedium)
+            if (scan is ScanState.InvalidImage) Text(stringResource(R.string.doc_invalid_image), color = Palette.Danger, style = MaterialTheme.typography.bodyMedium)
             (scan as? ScanState.Found)?.let { found ->
                 val isAadhaar = found.type == DocumentType.AADHAAR
                 DocumentReviewDialog(
@@ -171,9 +175,13 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             FormField(phone, { phone = it.filter { c -> c.isDigit() || c == '+' }.take(15) }, stringResource(R.string.phone), tried && !Validators.phone(phone), KeyboardType.Phone)
             FormField(email, { email = it.trim().take(150) }, stringResource(R.string.email_optional), tried && !emailOk, KeyboardType.Email)
             FormField(address, { address = it.take(500) }, stringResource(R.string.address), singleLine = false, minLines = 2)
+            // digits only (paste "1234 5678 9012" works too), up to 12; the count shows progress
             FormField(aadhaar, { aadhaar = it.filter(Char::isDigit).take(12) }, stringResource(R.string.aadhaar_number), tried && !aadhaarOk, KeyboardType.Number,
-                supporting = stringResource(R.string.aadhaar_hint))
-            FormField(pan, { pan = it.uppercase().filter(Char::isLetterOrDigit).take(10) }, stringResource(R.string.pan_number), tried && !panOk)
+                supporting = stringResource(R.string.aadhaar_hint) + " · ${aadhaar.length}/12", autoCorrect = false)
+            // PAN: ABCDE1234F — capital letters + digits, 10 characters
+            FormField(pan, { pan = it.uppercase().filter(Char::isLetterOrDigit).take(10) }, stringResource(R.string.pan_number), tried && !panOk,
+                KeyboardType.Ascii, supporting = stringResource(R.string.pan_hint) + " · ${pan.length}/10",
+                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Characters, autoCorrect = false)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.tenant_login), fontWeight = FontWeight.SemiBold)
@@ -187,9 +195,10 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                     tried && ((needPassword && password.length < 6) || (password.isNotEmpty() && password.length < 6)), password = true)
             }
             ActionError(act)
-            SubmitButton(stringResource(R.string.save), act) {
+            if (uploadBusy) Text(stringResource(R.string.doc_wait_upload), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            SubmitButton(stringResource(R.string.save), if (uploadBusy) ActionState.Running else act) {
                 tried = true
-                if (valid) {
+                if (valid && !uploadBusy) {
                     val input = TenantInput(
                         fullName = name.trim(), phone = phone, email = email.ifBlank { null }, address = address.trim(),
                         aadharNumber = aadhaar.ifBlank { null }, panNumber = pan.ifBlank { null },

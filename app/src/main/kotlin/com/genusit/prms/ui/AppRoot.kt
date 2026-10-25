@@ -9,6 +9,8 @@ import com.genusit.prms.ui.common.AppViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -126,7 +128,7 @@ private data class Tab(val route: String, val icon: ImageVector, val label: Int)
 private object Routes {
     // owner
     const val OWNER_HOME = "owner/home"; const val OWNER_TENANTS = "owner/tenants"; const val OWNER_INVOICES = "owner/invoices"
-    const val OWNER_MORE = "owner/more"; const val OWNER_COLLECT = "owner/collect"
+    const val OWNER_MORE = "owner/more"; const val OWNER_COLLECT = "owner/collect"; const val OWNER_PROPERTIES = "owner/properties"
     // employee
     const val EMP_HOME = "emp/home"; const val EMP_TENANTS = "emp/tenants"; const val EMP_COLLECTIONS = "emp/collections"
     const val EMP_COLLECT = "emp/collect"
@@ -144,18 +146,21 @@ private fun RoleShell(role: Role) {
     val current = entry?.destination?.route
 
     val tabs: List<Tab>
-    val fabRoute: String
+    /** Centre floating action (agent: collect rent, tenant: raise a complaint). The owner has a plain 5-item bar. */
+    val fabRoute: String?
     val fabLabel: Int
     val start: String
     when (role) {
         Role.OWNER -> {
+            // Home | Tenants | Bills | Properties | More — "collect payment" moved to the Bills screen's top bar
             tabs = listOf(
                 Tab(Routes.OWNER_HOME, Icons.Filled.Home, R.string.nav_home),
                 Tab(Routes.OWNER_TENANTS, Icons.Filled.Groups, R.string.nav_tenants),
                 Tab(Routes.OWNER_INVOICES, Icons.AutoMirrored.Filled.ReceiptLong, R.string.nav_invoices),
+                Tab(Routes.OWNER_PROPERTIES, Icons.Filled.Apartment, R.string.nav_properties),
                 Tab(Routes.OWNER_MORE, Icons.Filled.Menu, R.string.nav_more),
             )
-            fabRoute = Routes.OWNER_COLLECT; fabLabel = R.string.collect_payment; start = Routes.OWNER_HOME
+            fabRoute = null; fabLabel = R.string.collect_payment; start = Routes.OWNER_HOME
         }
         Role.EMPLOYEE -> {
             tabs = listOf(
@@ -181,9 +186,9 @@ private fun RoleShell(role: Role) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets.navigationBars,
-        bottomBar = { if (showBar) BottomBar(tabs, current, nav) },
+        bottomBar = { if (showBar) BottomBar(tabs, current, nav, centreGap = fabRoute != null) },
         floatingActionButton = {
-            if (showBar) {
+            if (showBar && fabRoute != null) {
                 // centre action docked into the bottom bar, as in the design reference
                 FloatingActionButton(
                     onClick = { nav.navigate(fabRoute) },
@@ -198,7 +203,9 @@ private fun RoleShell(role: Role) {
         floatingActionButtonPosition = FabPosition.Center,
     ) { inner ->
         NavHost(
-            nav, startDestination = start, modifier = Modifier.padding(inner),
+            // consumeWindowInsets + imePadding: with edge-to-edge the window is not resized for the keyboard,
+            // so every screen is lifted above it here and the focused field scrolls into view
+            nav, startDestination = start, modifier = Modifier.padding(inner).consumeWindowInsets(inner).imePadding(),
             // short, light transitions: fade + a small slide (no heavy effects on everyday screens)
             enterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(220)) { it / 14 } },
             exitTransition = { fadeOut(tween(150)) },
@@ -222,11 +229,11 @@ private fun RoleShell(role: Role) {
                     openInvoices = { nav.navigateTab(Routes.OWNER_INVOICES) },
                     openSubscription = { nav.navigate("owner/subscription") },
                     openNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
-                    openProperties = { nav.navigate("owner/properties") },
+                    openProperties = { nav.navigateTab(Routes.OWNER_PROPERTIES) },
                     openTenants = { nav.navigateTab(Routes.OWNER_TENANTS) },
                     openDueInvoices = { nav.navigate("owner/bills/due") },
                     openOpenQueries = { nav.navigate("owner/queries?status=open") },
-                    openPayments = { nav.navigate("owner/payments") },
+                    openPayments = { nav.navigate("owner/payments?period=month") },
                     openReports = { nav.navigate("owner/reports") },
                 )
             }
@@ -247,7 +254,9 @@ private fun RoleShell(role: Role) {
             composable("owner/tenant-form/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 TenantFormScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onSaved = back)
             }
-            composable(Routes.OWNER_INVOICES) { OwnerInvoicesScreen(openInvoice = { nav.navigate("owner/invoice/$it") }) }
+            composable(Routes.OWNER_INVOICES) {
+                OwnerInvoicesScreen(openInvoice = { nav.navigate("owner/invoice/$it") }, onCollect = { nav.navigate(Routes.OWNER_COLLECT) })
+            }
             composable("owner/invoice/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 InvoiceDetailScreen(it.arguments?.getInt("id") ?: 0, onBack = back, recordPayment = { id -> nav.navigate("owner/pay/$id") }, openReceipt = openReceipt)
             }
@@ -262,11 +271,13 @@ private fun RoleShell(role: Role) {
             composable(Routes.OWNER_COLLECT) { OwnerInvoicesScreen(openInvoice = { nav.navigate("owner/pay/$it") }, onlyOpen = true, onBack = back) }
             composable(Routes.OWNER_MORE) {
                 OwnerMoreScreen(
-                    open = { route -> nav.navigate(route) },
+                    open = { route -> if (route == Routes.OWNER_PROPERTIES) nav.navigateTab(route) else nav.navigate(route) },
                 )
             }
-            composable("owner/properties") {
-                PropertiesScreen(onBack = back, addProperty = { nav.navigate("owner/property/new") }, editProperty = { id -> nav.navigate("owner/property/edit/$id") })
+            composable(Routes.OWNER_PROPERTIES) {
+                // a bottom-bar tab: no back arrow when it is the current tab
+                PropertiesScreen(onBack = null,
+                    addProperty = { nav.navigate("owner/property/new") }, editProperty = { id -> nav.navigate("owner/property/edit/$id") })
             }
             composable("owner/property/edit/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 EditPropertyScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onDone = back)
@@ -298,7 +309,9 @@ private fun RoleShell(role: Role) {
             composable("owner/reports") { ReportsScreen(onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") }, openReceipt = openReceipt) }
             composable("owner/referrals") { ReferralScreen(onBack = back) }
             composable("owner/property/new") { AddPropertyScreen(onBack = back, onSaved = { nav.popBackStack() }) }
-            composable("owner/payments") { OwnerPaymentsScreen(onBack = back, openReceipt = openReceipt) }
+            composable("owner/payments?period={period}", listOf(navArgument("period") { type = NavType.StringType; defaultValue = "3m" })) {
+                OwnerPaymentsScreen(onBack = back, openReceipt = openReceipt)
+            }
             composable("owner/subscription") { SubscriptionScreen(onBack = back) }
 
             /* employee */
@@ -361,10 +374,10 @@ private fun NavHostController.navigateTab(route: String) {
 }
 
 @Composable
-private fun BottomBar(tabs: List<Tab>, current: String?, nav: NavHostController) {
+private fun BottomBar(tabs: List<Tab>, current: String?, nav: NavHostController, centreGap: Boolean) {
     NavigationBar(containerColor = Color.White, tonalElevation = 6.dp) {
         tabs.forEachIndexed { index, tab ->
-            if (index == 2) {
+            if (centreGap && index == 2) {
                 // gap for the centre floating action button
                 NavigationBarItem(selected = false, onClick = {}, enabled = false, icon = { Spacer(Modifier.size(24.dp)) }, label = { Text("") })
             }

@@ -68,10 +68,28 @@ class GetEditableTenantUseCase @Inject constructor(private val repo: TenantAdmin
     suspend operator fun invoke(id: Int): TenantEditable = repo.editable(id)
 }
 
-/** Adds ([id] = 0) or updates a tenant. Returns the tenant id (the new one when adding). */
+/**
+ * Adds ([id] = 0) or updates a tenant, attaching any draft documents named in [input].
+ * [idempotencyKey] makes a retried "add" safe (the server returns the tenant created the first time).
+ */
 class SaveTenantUseCase @Inject constructor(private val repo: TenantAdminRepository) {
-    suspend operator fun invoke(id: Int, input: TenantInput): Int =
-        if (id == 0) repo.add(input).id else { repo.update(id, input); id }
+    suspend operator fun invoke(id: Int, input: TenantInput, idempotencyKey: String? = null): SaveTenantResult {
+        val sent = listOfNotNull(input.aadhaarDraft?.let { "aadhaar" }, input.panDraft?.let { "pan" })
+        val (tenantId, attached) = if (id == 0) repo.add(input, idempotencyKey).let { it.id to it.documents } else id to repo.update(id, input)
+        return SaveTenantResult(tenantId, sent.all { attached[it] == true })
+    }
+}
+
+/** Uploads a captured document photo as a draft right away (the tenant may not exist yet). */
+class UploadDraftDocumentUseCase @Inject constructor(private val repo: TenantAdminRepository) {
+    suspend operator fun invoke(type: TenantDocType, file: java.io.File, consent: Boolean, replaceToken: String?): String {
+        require(consent) { "consent required" }
+        return repo.uploadDraft(type, file, "image/jpeg", consent, replaceToken)
+    }
+}
+
+class DeleteDraftDocumentUseCase @Inject constructor(private val repo: TenantAdminRepository) {
+    suspend operator fun invoke(type: TenantDocType, token: String) = repo.deleteDraft(type, token)
 }
 
 class DeleteTenantUseCase @Inject constructor(private val repo: TenantAdminRepository) {

@@ -103,6 +103,41 @@ class ApiIntegrationTest {
         assertTrue(body.contains("name=\"id\"") && body.contains("name=\"type\"") && body.contains("pan") && body.contains("name=\"consent\"") && body.contains("name=\"file\"; filename=\"pan.jpg\""), body.take(400))
     }
 
+    @Test fun draftDocumentsAndIdempotentTenantCreate() = runTest {
+        val repo = TenantAdminRepositoryImpl(api, caller)
+        token = "TOK"
+        val tmp = java.io.File.createTempFile("doc", ".jpg").apply { writeBytes(byteArrayOf(-1, -40, -1, 0)); deleteOnExit() }
+        enqueue(201, """{"status":"success","message":"Document uploaded.","data":{"draft_token":"0123456789abcdef0123456789abcdef","type":"aadhaar"}}""")
+        val tok = repo.uploadDraft(TenantDocType.AADHAAR, tmp, "image/jpeg", consent = true, replaceToken = "ffffffffffffffffffffffffffffffff")
+        assertEquals("0123456789abcdef0123456789abcdef", tok)
+        val up = server.takeRequest().body.readUtf8()
+        assertTrue(up.contains("name=\"draft\"") && up.contains("name=\"replace_draft\"") && up.contains("ffffffffffffffffffffffffffffffff") && up.contains("name=\"consent\""), up.take(300))
+
+        enqueue(201, """{"status":"success","message":"Tenant added.","data":{"id":"41","documents":{"aadhaar":true}}}""")
+        val input = com.genusit.prms.domain.model.TenantInput(fullName = "A", phone = "9000000001", aadhaarDraft = tok)
+        val created = repo.add(input, "key-1")
+        assertEquals(41, created.id); assertEquals(mapOf("aadhaar" to true), created.documents)
+        val cr = server.takeRequest()
+        assertEquals("key-1", cr.getHeader("Idempotency-Key"))
+        assertTrue(cr.body.readUtf8().contains("\"aadhaar_draft\":\"$tok\""))
+
+        enqueue(200, """{"status":"success","message":"Tenant updated.","data":null}""")
+        assertEquals(emptyMap(), repo.update(41, input.copy(aadhaarDraft = null)))
+        assertTrue(!server.takeRequest().body.readUtf8().contains("aadhaar_draft"))
+        enqueue(200, """{"status":"success","message":"Tenant updated.","data":{"id":41,"documents":{"pan":false}}}""")
+        assertEquals(mapOf("pan" to false), repo.update(41, input))
+        server.takeRequest()
+
+        enqueue(200, """{"status":"success","message":"Removed.","data":null}""")
+        repo.deleteDraft(TenantDocType.PAN, tok)
+        val del = server.takeRequest()
+        assertEquals("DELETE", del.method); assertTrue(del.path!!.endsWith("owner/tenant_document.php?draft=$tok&type=pan"))
+
+        enqueue(422, """{"status":"error","code":"DRAFT_EXPIRED","message":"The document photo has expired."}""")
+        try { repo.add(input, "key-2"); fail("expected DRAFT_EXPIRED") } catch (e: ApiException) { assertEquals("DRAFT_EXPIRED", e.code) }
+        server.takeRequest()
+    }
+
     @Test fun loginSendsJsonAndHeaders() = runTest {
         enqueue(200, ok)
         val r = AuthRepositoryImpl(api, caller).login("abhi", "secret", "mr")

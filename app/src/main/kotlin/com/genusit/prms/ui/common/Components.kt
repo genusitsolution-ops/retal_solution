@@ -274,6 +274,14 @@ fun StatusChip(status: String, label: String?) {
 @Composable
 fun dateText(value: String?): String = Dates.display(value, stringArrayResource(R.array.months).toList())
 
+/** "October 2026" for a date in that month (the current month when [value] is missing). */
+@Composable
+fun monthYearText(value: String?): String {
+    val d = Dates.parse(value) ?: java.time.LocalDate.now()
+    val months = stringArrayResource(R.array.months)
+    return "${months.getOrElse(d.monthValue - 1) { d.monthValue.toString() }} ${d.year}"
+}
+
 /* ───────── subscription banner (owner & employee) ───────── */
 
 @Composable

@@ -21,6 +21,7 @@ import com.genusit.prms.domain.model.RevenueRow
 import com.genusit.prms.domain.model.Role
 import com.genusit.prms.domain.model.TenantInput
 import com.genusit.prms.domain.model.TenantDocType
+import com.genusit.prms.domain.model.SaveTenantResult
 import com.genusit.prms.domain.model.DocumentFile
 import com.genusit.prms.domain.repository.SessionRepository
 import com.genusit.prms.domain.usecase.*
@@ -150,6 +151,8 @@ sealed interface ScanState {
     /** Suggestions to review; nothing is copied into the form until the user confirms. */
     data class Found(val type: DocumentType, val fields: DocumentFields) : ScanState
     data object Unreadable : ScanState
+    /** The file could not be opened as an image (nothing is uploaded). */
+    data object InvalidImage : ScanState
 }
 
 /** Add (id = 0) or edit a tenant. */
@@ -158,77 +161,121 @@ class TenantFormViewModel @Inject constructor(
     handle: SavedStateHandle,
     getEditable: GetEditableTenantUseCase,
     private val saveTenant: SaveTenantUseCase,
-    private val uploadDocument: UploadTenantDocumentUseCase,
+    private val uploadDraft: UploadDraftDocumentUseCase,
+    private val deleteDraft: DeleteDraftDocumentUseCase,
     private val scanner: DocumentScanner,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val id = handle.intArg()
     /** Existing values for the edit form (not loaded when adding). */
     val existing = loadable(autoLoad = id != 0) { getEditable(id) }
-    val saveAction = action<Unit>()
+    val saveAction = action<SaveTenantResult>()
 
     private val _scan = MutableStateFlow<ScanState>(ScanState.Idle)
     val scan: StateFlow<ScanState> = _scan.asStateFlow()
-    /** Compressed photo of the last document read (kept in the private cache only). */
-    private var documentImage: File? = null
 
-    private var documentType: DocumentType? = null
-    private var documentUploadFailed = false
+    /** Upload state of the Aadhaar / PAN photo (uploaded as a draft as soon as it is captured). */
+    private val _uploads = MutableStateFlow<Map<DocumentType, DocUpload>>(emptyMap())
+    val uploads: StateFlow<Map<DocumentType, DocUpload>> = _uploads.asStateFlow()
+    private val uploadJobs = mutableMapOf<DocumentType, kotlinx.coroutines.Job>()
+
+    /** True while a photo is still being sent — the form waits so the tenant never misses its document. */
+    val uploading: Boolean get() = _uploads.value.values.any { it is DocUpload.Uploading }
 
     /**
-     * Saves the tenant, then stores the photo of the document that was read (the tenant's consent was
-     * given before the photo could be taken) — like choosing the Aadhaar file in the web form.
-     * A failed photo upload never undoes the save; the owner is told and can upload it from the tenant page.
+     * Saves the tenant with the uploaded drafts attached. The idempotency key of [saveAction] is reused when
+     * the owner retries after a failure, so a retried "add" never creates a second tenant.
      */
-    fun save(input: TenantInput) = saveAction.run(onSuccess = {
-        sendEvent(if (documentUploadFailed) ScreenEvent.SavedDocumentFailed else ScreenEvent.Saved)
-    }) {
-        val tenantId = saveTenant(id, input)
-        val image = documentImage
-        val type = documentType
-        documentUploadFailed = false
-        if (image != null && type != null && tenantId > 0) {
-            try {
-                uploadDocument(tenantId, if (type == DocumentType.PAN) TenantDocType.PAN else TenantDocType.AADHAAR, image, "image/jpeg", consent = true)
-                scanner.discard(image); documentImage = null
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                documentUploadFailed = true
-            }
-        }
+    fun save(input: TenantInput) {
+        if (uploading) return
+        val tokens = _uploads.value.mapValues { (it.value as? DocUpload.Uploaded)?.token }
+        val withDocs = input.copy(aadhaarDraft = tokens[DocumentType.AADHAAR], panDraft = tokens[DocumentType.PAN])
+        saveAction.run(onSuccess = { r ->
+            _uploads.value.values.forEach { scanner.discard(it.preview) }
+            _uploads.value = emptyMap()
+            sendEvent(if (r.documentsAttached) ScreenEvent.Saved else ScreenEvent.SavedDocumentFailed)
+        }) { key -> saveTenant(id, withDocs, key) }
     }
 
     fun newCaptureTarget(): Pair<File, Uri> = scanner.newCaptureTarget()
 
-    /** OCR runs off the main thread; [captureFile] (the raw camera photo) is deleted afterwards. */
+    /**
+     * Photo captured or chosen: compress + straighten it, read it with on-device OCR (suggestions to review)
+     * and upload it right away. [captureFile] (the raw camera photo) is deleted afterwards.
+     * The capture buttons are enabled only after the tenant's consent is ticked.
+     */
     fun read(source: Uri, type: DocumentType, captureFile: File? = null) {
         if (_scan.value is ScanState.Reading) return
         _scan.value = ScanState.Reading
         viewModelScope.launch {
             _scan.value = try {
                 val r = scanner.scan(source, type)
-                scanner.discard(documentImage)
-                documentImage = r.image
-                documentType = type
+                startUpload(type, r.image)
                 if (r.fields.isEmpty) ScanState.Unreadable else ScanState.Found(type, r.fields)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                ScanState.Unreadable
+                ScanState.InvalidImage
             } finally {
                 scanner.discard(captureFile)
             }
         }
     }
 
+    /** Sends the photo again after a failed upload. */
+    fun retryUpload(type: DocumentType) {
+        val failed = _uploads.value[type] as? DocUpload.Failed ?: return
+        startUpload(type, failed.preview)
+    }
+
+    /** Removes the photo from the form (and the draft from the server). */
+    fun removeDocument(type: DocumentType) {
+        uploadJobs.remove(type)?.cancel()
+        val current = _uploads.value[type] ?: return
+        _uploads.value = _uploads.value - type
+        scanner.discard(current.preview)
+        (current as? DocUpload.Uploaded)?.let { up ->
+            viewModelScope.launch { runCatching { deleteDraft(type.toDocType(), up.token) } }
+        }
+    }
+
+    private fun startUpload(type: DocumentType, image: File) {
+        val previous = _uploads.value[type]
+        val replaceToken = (previous as? DocUpload.Uploaded)?.token
+        if (previous != null && previous.preview != image) scanner.discard(previous.preview)
+        uploadJobs.remove(type)?.cancel()
+        _uploads.value = _uploads.value + (type to DocUpload.Uploading(image))
+        uploadJobs[type] = viewModelScope.launch {
+            val next = try {
+                // success is shown only after the server confirms it stored the file
+                DocUpload.Uploaded(image, uploadDraft(type.toDocType(), image, consent = true, replaceToken = replaceToken))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                expiry.onError(e)
+                DocUpload.Failed(image, com.genusit.prms.ui.common.UiError.from(e))
+            }
+            _uploads.value = _uploads.value + (type to next)
+        }
+    }
+
     fun dismissScan() { _scan.value = ScanState.Idle }
 
     override fun onCleared() {
-        // identity-document photos never outlive the form
-        scanner.discard(documentImage)
+        // identity-document photos never outlive the form (unused server drafts expire after 24 h)
+        _uploads.value.values.forEach { scanner.discard(it.preview) }
         super.onCleared()
     }
+}
+
+private fun DocumentType.toDocType(): TenantDocType = if (this == DocumentType.PAN) TenantDocType.PAN else TenantDocType.AADHAAR
+
+/** Upload state of one document photo in the tenant form. */
+sealed interface DocUpload {
+    val preview: File
+    data class Uploading(override val preview: File) : DocUpload
+    data class Uploaded(override val preview: File, val token: String) : DocUpload
+    data class Failed(override val preview: File, val error: com.genusit.prms.ui.common.UiError) : DocUpload
 }
 
 /* ═════════════════════════ invoices & payments ═════════════════════════ */
@@ -277,10 +324,29 @@ class RecordPaymentViewModel @Inject constructor(
 
 @HiltViewModel
 class OwnerPaymentsViewModel @Inject constructor(
+    handle: SavedStateHandle,
     getPayments: GetOwnerPaymentsUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val payments = loadable { getPayments() }
+    /** "month" = exactly the dashboard's "collected this month" (1st … last day of this month). */
+    private val _period = MutableStateFlow(PaymentPeriod.from(handle.get<String>("period")))
+    val period: StateFlow<PaymentPeriod> = _period.asStateFlow()
+    val payments = paramLoadable<PaymentPeriod, com.genusit.prms.domain.model.OwnerPayments> { p ->
+        val (from, to) = p.range()
+        getPayments(from, to)
+    }.also { it.load(_period.value) }
+
+    fun select(p: PaymentPeriod) { _period.value = p; payments.load(p) }
+}
+
+enum class PaymentPeriod(val key: String) {
+    MONTH("month"), LAST_3_MONTHS("3m"), YEAR("year");
+    fun range(): Pair<String, String> = when (this) {
+        MONTH -> Dates.thisMonth()
+        LAST_3_MONTHS -> Dates.lastMonths(3)
+        YEAR -> Dates.thisYear()
+    }
+    companion object { fun from(key: String?) = entries.firstOrNull { it.key == key } ?: LAST_3_MONTHS }
 }
 
 /* ═════════════════════════ rooms ═════════════════════════ */

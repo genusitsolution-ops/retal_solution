@@ -220,6 +220,10 @@ data class OwnerSummary(
     @SerialName("pending_amount") val pendingAmount: Double = 0.0,
     @SerialName("this_month_billed") val thisMonthBilled: Double = 0.0,
     @SerialName("this_month_collected") val thisMonthCollected: Double = 0.0,
+    /** Number of payment records behind [thisMonthCollected] and the exact dates used (same rule as the Payments screen). */
+    @SerialName("this_month_payments") val thisMonthPayments: Int = 0,
+    @SerialName("month_from") val monthFrom: String? = null,
+    @SerialName("month_to") val monthTo: String? = null,
     @SerialName("emp_collected_month") val employeeCollectedMonth: Double = 0.0,
     @SerialName("open_queries") val openQueries: Int = 0,
 )
@@ -285,7 +289,12 @@ data class NewProperty(
 )
 
 @Serializable
-data class CreatedId(val id: Int = 0, @SerialName("ticket_id") val ticketId: String? = null)
+data class CreatedId(
+    val id: Int = 0,
+    @SerialName("ticket_id") val ticketId: String? = null,
+    /** owner/tenants.php: which draft documents were attached ({"aadhaar":true}). */
+    val documents: Map<String, Boolean> = emptyMap(),
+)
 
 @Serializable
 data class TenantRow(
