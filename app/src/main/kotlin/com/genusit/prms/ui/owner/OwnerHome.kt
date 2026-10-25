@@ -45,6 +45,12 @@ fun OwnerHomeScreen(
     openInvoices: () -> Unit,
     openSubscription: () -> Unit,
     openNotifications: () -> Unit,
+    openProperties: () -> Unit = {},
+    openTenants: () -> Unit = {},
+    openDueInvoices: () -> Unit = openInvoices,
+    openOpenQueries: () -> Unit = {},
+    openPayments: () -> Unit = {},
+    openReports: () -> Unit = {},
 ) {
     val model: OwnerHomeViewModel = hiltViewModel()
     val vm = model.dashboard
@@ -67,21 +73,22 @@ fun OwnerHomeScreen(
                         label = stringResource(R.string.collected_this_month),
                         amount = s.thisMonthCollected,
                         footer = stringResource(R.string.billed_and_pending, Money.format(s.thisMonthBilled), Money.format(s.pendingAmount)),
+                        onClick = openPayments,
                     )
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatTile(Icons.Filled.Apartment, stringResource(R.string.rooms_occupied), "${s.occupiedProperties}/${s.properties}", Palette.Brand, Modifier.weight(1f))
-                        StatTile(Icons.Filled.Groups, stringResource(R.string.tenants), s.tenants.toString(), Palette.Info, Modifier.weight(1f))
+                        StatTile(Icons.Filled.Apartment, stringResource(R.string.rooms_occupied), "${s.occupiedProperties}/${s.properties}", Palette.Brand, Modifier.weight(1f), onClick = openProperties)
+                        StatTile(Icons.Filled.Groups, stringResource(R.string.tenants), s.tenants.toString(), Palette.Info, Modifier.weight(1f), onClick = openTenants)
                     }
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatTile(Icons.AutoMirrored.Filled.ReceiptLong, stringResource(R.string.pending_invoices_n, s.pendingInvoices), Money.compact(s.pendingAmount), Palette.Danger, Modifier.weight(1f), onClick = openInvoices)
-                        StatTile(Icons.Filled.QuestionAnswer, stringResource(R.string.open_queries), s.openQueries.toString(), Palette.Warning, Modifier.weight(1f))
+                        StatTile(Icons.AutoMirrored.Filled.ReceiptLong, stringResource(R.string.pending_invoices_n, s.pendingInvoices), Money.compact(s.pendingAmount), Palette.Danger, Modifier.weight(1f), onClick = openDueInvoices)
+                        StatTile(Icons.Filled.QuestionAnswer, stringResource(R.string.open_queries), s.openQueries.toString(), Palette.Warning, Modifier.weight(1f), onClick = openOpenQueries)
                     }
                 }
-                item { BilledCollectedChart(d.chart) }
+                item { BilledCollectedChart(d.chart, onClick = openReports) }
                 item { SectionHeader(stringResource(R.string.recent_invoices), stringResource(R.string.view_all), openInvoices) }
                 if (d.recentInvoices.isEmpty()) item { EmptyState(stringResource(R.string.no_invoices)) }
                 items(d.recentInvoices, key = { it.id }) { inv -> InvoiceRow(inv, showTenant = true) { openInvoice(inv.id) } }

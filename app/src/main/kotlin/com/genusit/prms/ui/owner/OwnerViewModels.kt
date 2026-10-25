@@ -1,6 +1,15 @@
 package com.genusit.prms.ui.owner
 
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
+import com.genusit.prms.domain.util.DocumentFields
+import com.genusit.prms.domain.util.DocumentType
+import com.genusit.prms.platform.DocumentScanner
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.io.File
 import com.genusit.prms.domain.model.CollectionsReport
 import com.genusit.prms.domain.model.EmployeeInput
 import com.genusit.prms.domain.model.MeterReading
@@ -68,12 +77,22 @@ class OwnerTenantDetailViewModel @Inject constructor(
     fun delete() = deleteAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { deleteTenant(id) }
 }
 
+/** Reading an ID document photo in the tenant form. */
+sealed interface ScanState {
+    data object Idle : ScanState
+    data object Reading : ScanState
+    /** Suggestions to review; nothing is copied into the form until the user confirms. */
+    data class Found(val type: DocumentType, val fields: DocumentFields) : ScanState
+    data object Unreadable : ScanState
+}
+
 /** Add (id = 0) or edit a tenant. */
 @HiltViewModel
 class TenantFormViewModel @Inject constructor(
     handle: SavedStateHandle,
     getEditable: GetEditableTenantUseCase,
     private val saveTenant: SaveTenantUseCase,
+    private val scanner: DocumentScanner,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val id = handle.intArg()
@@ -81,7 +100,42 @@ class TenantFormViewModel @Inject constructor(
     val existing = loadable(autoLoad = id != 0) { getEditable(id) }
     val saveAction = action<Unit>()
 
+    private val _scan = MutableStateFlow<ScanState>(ScanState.Idle)
+    val scan: StateFlow<ScanState> = _scan.asStateFlow()
+    /** Compressed photo of the last document read (kept in the private cache only). */
+    private var documentImage: File? = null
+
     fun save(input: TenantInput) = saveAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { saveTenant(id, input) }
+
+    fun newCaptureTarget(): Pair<File, Uri> = scanner.newCaptureTarget()
+
+    /** OCR runs off the main thread; [captureFile] (the raw camera photo) is deleted afterwards. */
+    fun read(source: Uri, type: DocumentType, captureFile: File? = null) {
+        if (_scan.value is ScanState.Reading) return
+        _scan.value = ScanState.Reading
+        viewModelScope.launch {
+            _scan.value = try {
+                val r = scanner.scan(source, type)
+                scanner.discard(documentImage)
+                documentImage = r.image
+                if (r.fields.isEmpty) ScanState.Unreadable else ScanState.Found(type, r.fields)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                ScanState.Unreadable
+            } finally {
+                scanner.discard(captureFile)
+            }
+        }
+    }
+
+    fun dismissScan() { _scan.value = ScanState.Idle }
+
+    override fun onCleared() {
+        // identity-document photos never outlive the form
+        scanner.discard(documentImage)
+        super.onCleared()
+    }
 }
 
 /* ═════════════════════════ invoices & payments ═════════════════════════ */

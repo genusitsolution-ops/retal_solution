@@ -13,12 +13,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/* FiMobile-inspired palette: indigo/blue brand, soft grey canvas, white rounded cards. */
+/* Premium indigo/violet identity: deep navy header, indigo→violet accents, airy canvas, white cards. */
 object Palette {
     val Brand = Color(0xFF4F46E5)
     val BrandDark = Color(0xFF1E3A8A)
     val BrandSoft = Color(0xFFE0E7FF)
-    val Canvas = Color(0xFFF4F6FB)
+    val Accent = Color(0xFF7C3AED)
+    val Shadow = Color(0xFF4F46E5).copy(alpha = .16f)
+    val Canvas = Color(0xFFF5F6FC)
     val Card = Color(0xFFFFFFFF)
     val Ink = Color(0xFF0F172A)
     val Muted = Color(0xFF64748B)
@@ -32,8 +34,8 @@ object Palette {
     val Info = Color(0xFF0891B2)
     val InfoSoft = Color(0xFFCFFAFE)
 
-    val WalletGradient = Brush.linearGradient(listOf(Color(0xFF4F46E5), Color(0xFF1E40AF), Color(0xFF1E3A8A)))
-    val HeaderGradient = Brush.verticalGradient(listOf(Color(0xFF1E3A8A), Color(0xFF4F46E5)))
+    val WalletGradient = Brush.linearGradient(listOf(Color(0xFF7C3AED), Color(0xFF4F46E5), Color(0xFF1E3A8A)))
+    val HeaderGradient = Brush.verticalGradient(listOf(Color(0xFF1E1B4B), Color(0xFF3730A3), Color(0xFF4F46E5)))
 }
 
 private val colors = lightColorScheme(
@@ -53,7 +55,7 @@ private val colors = lightColorScheme(
 )
 
 private val typography = Typography(
-    headlineMedium = TextStyle(fontWeight = FontWeight.ExtraBold, fontSize = 26.sp, lineHeight = 34.sp),
+    headlineMedium = TextStyle(fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, lineHeight = 38.sp, letterSpacing = (-0.3).sp),
     titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 28.sp),
     titleMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 24.sp),
     bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp),
@@ -64,7 +66,7 @@ private val typography = Typography(
 
 private val shapes = Shapes(
     small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(16.dp),
+    medium = RoundedCornerShape(18.dp),
     large = RoundedCornerShape(24.dp),
 )
 

@@ -27,6 +27,17 @@
             </intent-filter>
         </activity>
 
+        <!-- Camera output for tenant document capture (app cache only, shared with the camera app for one shot) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- Stores the per-app language on Android 12 and below (AppCompat) -->
         <service
             android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

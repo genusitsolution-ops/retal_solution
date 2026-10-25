@@ -1,5 +1,10 @@
 package com.genusit.prms.ui.common
 
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -86,12 +91,18 @@ fun PaymentRow(title: String, subtitle: String, amount: Double, onClick: (() -> 
 
 /** Six-month billed vs collected bars (no chart library needed). */
 @Composable
-fun BilledCollectedChart(points: List<ChartPoint>) {
+fun BilledCollectedChart(points: List<ChartPoint>, onClick: (() -> Unit)? = null) {
     if (points.isEmpty()) return
     val max = points.maxOf { maxOf(it.billed, it.collected) }.takeIf { it > 0 } ?: 1.0
-    AppCard {
+    // bars grow in once when the data arrives
+    val grow = remember { Animatable(0f) }
+    LaunchedEffect(points) { grow.snapTo(0f); grow.animateTo(1f, tween(700)) }
+    AppCard(onClick = onClick) {
         Column {
-            Text(stringResource(R.string.billed_vs_collected), style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.billed_vs_collected), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                if (onClick != null) OpenHint()
+            }
             Spacer(Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(Palette.BrandSoft))
@@ -104,9 +115,10 @@ fun BilledCollectedChart(points: List<ChartPoint>) {
                 points.forEach { p ->
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(Modifier.height(104.dp), verticalAlignment = Alignment.Bottom) {
-                            Box(Modifier.width(9.dp).fillMaxHeight((p.billed / max).toFloat().coerceIn(0.02f, 1f)).clip(RoundedCornerShape(4.dp)).background(Palette.BrandSoft))
+                            Box(Modifier.width(9.dp).fillMaxHeight(((p.billed / max).toFloat() * grow.value).coerceIn(0.02f, 1f)).clip(RoundedCornerShape(4.dp)).background(Palette.BrandSoft))
                             Spacer(Modifier.width(3.dp))
-                            Box(Modifier.width(9.dp).fillMaxHeight((p.collected / max).toFloat().coerceIn(0.02f, 1f)).clip(RoundedCornerShape(4.dp)).background(Palette.Brand))
+                            Box(Modifier.width(9.dp).fillMaxHeight(((p.collected / max).toFloat() * grow.value).coerceIn(0.02f, 1f)).clip(RoundedCornerShape(4.dp))
+                                .background(Brush.verticalGradient(listOf(Palette.Accent, Palette.Brand))))
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(p.monthLabel.substringBefore(' ').take(4), style = MaterialTheme.typography.labelMedium, maxLines = 1,

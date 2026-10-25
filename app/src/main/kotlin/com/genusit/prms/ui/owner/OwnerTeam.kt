@@ -261,10 +261,10 @@ fun EmployeeDetailScreen(id: Int, onBack: () -> Unit, edit: () -> Unit, openRece
 private val QUERY_FILTERS = listOf("" to R.string.all, "open" to R.string.st_open, "in_progress" to R.string.st_in_progress, "resolved" to R.string.st_resolved, "closed" to R.string.st_closed)
 
 @Composable
-fun OwnerQueriesScreen(onBack: () -> Unit, openQuery: (Int) -> Unit) {
+fun OwnerQueriesScreen(onBack: () -> Unit, openQuery: (Int) -> Unit, initialFilter: String = "") {
     val vm = hiltViewModel<OwnerQueriesViewModel>().queries
     val state by vm.state.collectAsStateWithLifecycle()
-    var filter by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf(initialFilter) }
     LaunchedEffect(Unit) { if (state !is UiState.Loading) vm.refresh() }
     ScreenScaffold(stringResource(R.string.complaints), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { list ->

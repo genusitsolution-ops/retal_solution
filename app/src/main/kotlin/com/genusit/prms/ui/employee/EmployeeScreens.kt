@@ -68,7 +68,13 @@ import com.genusit.prms.ui.owner.SearchField
 import com.genusit.prms.ui.theme.Palette
 
 @Composable
-fun EmployeeHomeScreen(collect: (tenantId: Int, invoiceId: Int) -> Unit, openReceipt: (String) -> Unit, openNotifications: () -> Unit) {
+fun EmployeeHomeScreen(
+    collect: (tenantId: Int, invoiceId: Int) -> Unit,
+    openReceipt: (String) -> Unit,
+    openNotifications: () -> Unit,
+    openTenants: () -> Unit = {},
+    openCollections: () -> Unit = {},
+) {
     val model: AgentHomeViewModel = hiltViewModel()
     val vm = model.dashboard
     val state by vm.state.collectAsStateWithLifecycle()
@@ -87,12 +93,13 @@ fun EmployeeHomeScreen(collect: (tenantId: Int, invoiceId: Int) -> Unit, openRec
                     WalletCard(
                         stringResource(R.string.collected_this_month), d.summary.monthCollected,
                         stringResource(R.string.all_time_n, Money.format(d.summary.allTimeCollected), d.summary.totalTransactions),
+                        onClick = openCollections,
                     )
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatTile(Icons.Filled.Apartment, stringResource(R.string.assigned_rooms), d.summary.assignedProperties.toString(), Palette.Brand, Modifier.weight(1f))
-                        StatTile(Icons.Filled.Groups, stringResource(R.string.active_tenants), d.summary.activeTenants.toString(), Palette.Info, Modifier.weight(1f))
+                        StatTile(Icons.Filled.Apartment, stringResource(R.string.assigned_rooms), d.summary.assignedProperties.toString(), Palette.Brand, Modifier.weight(1f), onClick = openTenants)
+                        StatTile(Icons.Filled.Groups, stringResource(R.string.active_tenants), d.summary.activeTenants.toString(), Palette.Info, Modifier.weight(1f), onClick = openTenants)
                     }
                 }
                 item { SectionHeader(stringResource(R.string.pending_dues)) }

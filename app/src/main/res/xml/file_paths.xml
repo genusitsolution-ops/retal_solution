@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- tenant document photos: app-private cache, never public storage -->
+    <cache-path name="documents" path="documents/" />
+</paths>

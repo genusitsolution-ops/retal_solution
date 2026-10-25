@@ -148,19 +148,19 @@ fun OwnerTenantDetailScreen(id: Int, onBack: () -> Unit, openInvoice: (Int) -> U
     }
 }
 
-private val INVOICE_FILTERS = listOf("" to R.string.all, "pending" to R.string.st_pending, "partial" to R.string.st_partial, "overdue" to R.string.st_overdue, "paid" to R.string.st_paid)
+private val INVOICE_FILTERS = listOf("" to R.string.all, "due" to R.string.all_due, "pending" to R.string.st_pending, "partial" to R.string.st_partial, "overdue" to R.string.st_overdue, "paid" to R.string.st_paid)
 
 /** Invoice list; with [onlyOpen] it is the "pick an invoice to collect" screen behind the FAB. */
 @Composable
-fun OwnerInvoicesScreen(openInvoice: (Int) -> Unit, onlyOpen: Boolean = false, onBack: (() -> Unit)? = null) {
+fun OwnerInvoicesScreen(openInvoice: (Int) -> Unit, onlyOpen: Boolean = false, onBack: (() -> Unit)? = null, initialFilter: String = "") {
     val vm = hiltViewModel<OwnerInvoicesViewModel>().invoices
     val state by vm.state.collectAsStateWithLifecycle()
-    var filter by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf(initialFilter) }
     var query by rememberSaveable { mutableStateOf("") }
     ScreenScaffold(stringResource(if (onlyOpen) R.string.collect_select_invoice else R.string.invoices), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { list ->
             val shown = list.filter { inv ->
-                (if (onlyOpen) inv.isOpen else filter.isEmpty() || inv.status == filter) &&
+                (if (onlyOpen) inv.isOpen else filter.isEmpty() || (filter == "due" && inv.isOpen) || inv.status == filter) &&
                     (query.isBlank() || (inv.tenantName ?: "").contains(query, true) || inv.invoiceNumber.contains(query, true) || (inv.propertyCode ?: "").contains(query, true))
             }
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

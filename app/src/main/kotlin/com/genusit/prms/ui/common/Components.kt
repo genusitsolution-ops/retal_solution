@@ -1,5 +1,21 @@
 package com.genusit.prms.ui.common
 
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -89,19 +105,22 @@ fun ScreenScaffold(
 /** Renders loading / error / data for a screen's [UiState]. */
 @Composable
 fun <T> StateContent(state: UiState<T>, onRetry: () -> Unit, modifier: Modifier = Modifier, content: @Composable (T) -> Unit) {
-    when (state) {
-        is UiState.Loading -> LoadingBox(modifier)
-        is UiState.Error -> ErrorBox(state.error, onRetry, modifier)
-        is UiState.Data -> Box(modifier.fillMaxSize()) {
-            content(state.value)
-            if (state.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter))
+    // short cross-fade between loading / error / content (keyed by the kind of state, not the data)
+    Crossfade(targetState = state, contentKey = { it::class }, animationSpec = tween(220), label = "state") { s ->
+        when (s) {
+            is UiState.Loading -> LoadingBox(modifier)
+            is UiState.Error -> ErrorBox(s.error, onRetry, modifier)
+            is UiState.Data -> Box(modifier.fillMaxSize()) {
+                content(s.value)
+                if (s.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = Palette.Brand, trackColor = Palette.BrandSoft)
+            }
         }
     }
 }
 
 @Composable
 fun LoadingBox(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Palette.Brand, strokeWidth = 3.dp) }
 }
 
 @Composable
@@ -114,11 +133,13 @@ fun errorText(e: UiError): String = when {
 @Composable
 fun ErrorBox(error: UiError, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Icon(if (error.isNetwork) Icons.Filled.CloudOff else Icons.Filled.WarningAmber, null, tint = Palette.Warning, modifier = Modifier.size(48.dp))
-        Spacer(Modifier.height(12.dp))
-        Text(errorText(error), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(Modifier.size(84.dp).clip(CircleShape).background(Palette.WarningSoft), contentAlignment = Alignment.Center) {
+            Icon(if (error.isNetwork) Icons.Filled.CloudOff else Icons.Filled.WarningAmber, null, tint = Palette.Warning, modifier = Modifier.size(42.dp))
+        }
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onRetry) {
+        Text(errorText(error), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(18.dp))
+        Button(onClick = onRetry, shape = RoundedCornerShape(14.dp), modifier = Modifier.heightIn(min = 48.dp)) {
             Icon(Icons.Filled.Refresh, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.retry))
         }
     }
@@ -126,10 +147,12 @@ fun ErrorBox(error: UiError, onRetry: () -> Unit, modifier: Modifier = Modifier)
 
 @Composable
 fun EmptyState(text: String, icon: ImageVector = Icons.Filled.Inbox, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(icon, null, tint = Palette.Muted.copy(alpha = .5f), modifier = Modifier.size(52.dp))
-        Spacer(Modifier.height(10.dp))
-        Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+    Column(modifier.fillMaxWidth().padding(vertical = 36.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(76.dp).clip(CircleShape).background(Palette.BrandSoft.copy(alpha = .6f)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = Palette.Brand.copy(alpha = .7f), modifier = Modifier.size(36.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
     }
 }
 
@@ -137,22 +160,44 @@ fun EmptyState(text: String, icon: ImageVector = Icons.Filled.Inbox, modifier: M
 
 @Composable
 fun AppCard(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
-    val m = modifier.fillMaxWidth()
-    Card(
-        modifier = if (onClick != null) m.clip(MaterialTheme.shapes.medium).clickable(onClick = onClick) else m,
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = Palette.Card),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) { Box(Modifier.padding(16.dp)) { content() } }
+    val shape = MaterialTheme.shapes.medium
+    val base = modifier.fillMaxWidth().shadow(6.dp, shape, ambientColor = Palette.Shadow, spotColor = Palette.Shadow)
+    val colors = CardDefaults.cardColors(containerColor = Palette.Card)
+    val border = BorderStroke(1.dp, Palette.Line.copy(alpha = .7f))
+    if (onClick != null) {
+        // Material card with onClick: ripple, button semantics for TalkBack, and a gentle press scale
+        val interaction = remember { MutableInteractionSource() }
+        val pressed by interaction.collectIsPressedAsState()
+        val scale by animateFloatAsState(if (pressed) .97f else 1f, animationSpec = tween(120), label = "press")
+        Card(
+            onClick = onClick, interactionSource = interaction,
+            modifier = base.graphicsLayer { scaleX = scale; scaleY = scale },
+            shape = shape, colors = colors, border = border, elevation = CardDefaults.cardElevation(0.dp),
+        ) { Box(Modifier.padding(16.dp)) { content() } }
+    } else {
+        Card(modifier = base, shape = shape, colors = colors, border = border, elevation = CardDefaults.cardElevation(0.dp)) {
+            Box(Modifier.padding(16.dp)) { content() }
+        }
+    }
+}
+
+/** Small "opens something" hint shown on clickable dashboard cards. */
+@Composable
+fun OpenHint(tint: Color = Palette.Muted) {
+    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = tint.copy(alpha = .8f), modifier = Modifier.size(20.dp))
 }
 
 /** Gradient "wallet" card from the FiMobile reference — the main figure of each dashboard. */
 @Composable
-fun WalletCard(label: String, amount: Double, footer: String? = null, modifier: Modifier = Modifier, extra: @Composable () -> Unit = {}) {
-    Box(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Palette.WalletGradient).padding(20.dp)
-    ) {
-        Column {
+fun WalletCard(label: String, amount: Double, footer: String? = null, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, extra: @Composable () -> Unit = {}) {
+    val shape = RoundedCornerShape(26.dp)
+    val base = modifier.fillMaxWidth().shadow(14.dp, shape, ambientColor = Palette.Brand, spotColor = Palette.Brand).clip(shape).background(Palette.WalletGradient)
+    Box(if (onClick != null) base.clickable(onClick = onClick, role = Role.Button) else base) {
+        // soft decorative circles (purely visual)
+        Box(Modifier.align(Alignment.TopEnd).offset(x = 40.dp, y = (-50).dp).size(160.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f)))
+        Box(Modifier.align(Alignment.BottomEnd).offset(x = (-30).dp, y = 60.dp).size(120.dp).clip(CircleShape).background(Color.White.copy(alpha = .06f)))
+        if (onClick != null) Box(Modifier.align(Alignment.TopEnd).padding(14.dp)) { OpenHint(Color.White) }
+        Column(Modifier.padding(22.dp)) {
             Text(label, color = Color.White.copy(alpha = .85f), style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(6.dp))
             Text(Money.format(amount), color = Color.White, style = MaterialTheme.typography.headlineMedium)
@@ -169,8 +214,12 @@ fun WalletCard(label: String, amount: Double, footer: String? = null, modifier: 
 fun StatTile(icon: ImageVector, label: String, value: String, tint: Color, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     AppCard(modifier, onClick) {
         Column {
-            Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(tint.copy(alpha = .12f)), contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Brush.linearGradient(listOf(tint.copy(alpha = .18f), tint.copy(alpha = .08f)))), contentAlignment = Alignment.Center) {
+                    Icon(icon, null, tint = tint, modifier = Modifier.size(21.dp))
+                }
+                Spacer(Modifier.weight(1f))
+                if (onClick != null) OpenHint()
             }
             Spacer(Modifier.height(10.dp))
             Text(value, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -183,7 +232,9 @@ fun StatTile(icon: ImageVector, label: String, value: String, tint: Color, modif
 fun SectionHeader(title: String, action: String? = null, onAction: (() -> Unit)? = null) {
     Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        if (action != null && onAction != null) TextButton(onClick = onAction) { Text(action) }
+        if (action != null && onAction != null) TextButton(onClick = onAction) {
+            Text(action, fontWeight = FontWeight.SemiBold); Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp))
+        }
     }
 }
 

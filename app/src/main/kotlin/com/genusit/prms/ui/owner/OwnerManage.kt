@@ -1,5 +1,6 @@
 package com.genusit.prms.ui.owner
 
+import com.genusit.prms.domain.util.DocumentType
 import com.genusit.prms.ui.common.ErrorBox
 import com.genusit.prms.ui.common.ScreenEvent
 import com.genusit.prms.ui.common.EventEffect
@@ -97,6 +98,7 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val model: TenantFormViewModel = hiltViewModel()
     val act by model.saveAction.state.collectAsStateWithLifecycle()
     val existing by model.existing.state.collectAsStateWithLifecycle()
+    val scan by model.scan.collectAsStateWithLifecycle()
     EventEffect(model) { if (it == ScreenEvent.Saved) onSaved() }
 
     var loaded by rememberSaveable { mutableStateOf(id == 0) }
@@ -138,6 +140,26 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             return@ScreenScaffold
         }
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            DocumentCaptureCard(
+                reading = scan is ScanState.Reading,
+                newCaptureTarget = model::newCaptureTarget,
+                onImage = { uri, type, file -> model.read(uri, type, file) },
+            )
+            if (scan is ScanState.Unreadable) Text(stringResource(R.string.doc_unreadable), color = Palette.Warning, style = MaterialTheme.typography.bodyMedium)
+            (scan as? ScanState.Found)?.let { found ->
+                val isAadhaar = found.type == DocumentType.AADHAAR
+                DocumentReviewDialog(
+                    type = found.type, name = found.fields.name, number = found.fields.number, address = found.fields.address,
+                    currentName = name, currentNumber = if (isAadhaar) aadhaar else pan, currentAddress = address,
+                    onApply = { a ->
+                        a.name?.let { name = it.take(150) }
+                        a.number?.let { n -> if (isAadhaar) aadhaar = n.filter(Char::isDigit).take(12) else pan = n.uppercase().filter(Char::isLetterOrDigit).take(10) }
+                        a.address?.let { address = it.take(500) }
+                        model.dismissScan()
+                    },
+                    onDismiss = model::dismissScan,
+                )
+            }
             FormField(name, { name = it.take(150) }, stringResource(R.string.full_name), tried && name.isBlank())
             FormField(phone, { phone = it.filter { c -> c.isDigit() || c == '+' }.take(15) }, stringResource(R.string.phone), tried && !Validators.phone(phone), KeyboardType.Phone)
             FormField(email, { email = it.trim().take(150) }, stringResource(R.string.email_optional), tried && !emailOk, KeyboardType.Email)

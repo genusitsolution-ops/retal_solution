@@ -71,7 +71,7 @@ import com.genusit.prms.ui.owner.MenuRow
 import com.genusit.prms.ui.theme.Palette
 
 @Composable
-fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit) {
+fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit, openInvoices: () -> Unit = {}, openPayments: () -> Unit = {}) {
     val model: TenantHomeViewModel = hiltViewModel()
     val vm = model.dashboard
     val state by vm.state.collectAsStateWithLifecycle()
@@ -96,6 +96,7 @@ fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit) 
                             Dates.isPast(nd.dueDate) -> stringResource(R.string.overdue_since, dateText(nd.dueDate))
                             else -> stringResource(R.string.next_due_on, dateText(nd.dueDate))
                         },
+                        onClick = openInvoices,
                     )
                 }
                 d.allocation?.let { a ->

@@ -84,6 +84,9 @@ android {
 dependencies {
     implementation(project(":data"))
     coreLibraryDesugaring(libs.desugar.jdk.libs)
+    // on-device OCR for tenant documents (bundled Latin model: works offline, nothing leaves the phone)
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.androidx.exifinterface)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)

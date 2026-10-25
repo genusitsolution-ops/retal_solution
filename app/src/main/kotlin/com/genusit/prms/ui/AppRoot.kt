@@ -1,5 +1,10 @@
 package com.genusit.prms.ui
 
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
 import com.genusit.prms.ui.common.AppViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.background
@@ -190,7 +195,14 @@ private fun RoleShell(role: Role) {
         },
         floatingActionButtonPosition = FabPosition.Center,
     ) { inner ->
-        NavHost(nav, startDestination = start, modifier = Modifier.padding(inner)) {
+        NavHost(
+            nav, startDestination = start, modifier = Modifier.padding(inner),
+            // short, light transitions: fade + a small slide (no heavy effects on everyday screens)
+            enterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(220)) { it / 14 } },
+            exitTransition = { fadeOut(tween(150)) },
+            popEnterTransition = { fadeIn(tween(220)) },
+            popExitTransition = { fadeOut(tween(150)) + slideOutHorizontally(tween(220)) { it / 14 } },
+        ) {
             val back: () -> Unit = { nav.popBackStack() }
             val openReceipt: (String) -> Unit = { nav.navigate("receipt/$it") }
 
@@ -208,6 +220,12 @@ private fun RoleShell(role: Role) {
                     openInvoices = { nav.navigateTab(Routes.OWNER_INVOICES) },
                     openSubscription = { nav.navigate("owner/subscription") },
                     openNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
+                    openProperties = { nav.navigate("owner/properties") },
+                    openTenants = { nav.navigateTab(Routes.OWNER_TENANTS) },
+                    openDueInvoices = { nav.navigate("owner/bills/due") },
+                    openOpenQueries = { nav.navigate("owner/queries?status=open") },
+                    openPayments = { nav.navigate("owner/payments") },
+                    openReports = { nav.navigate("owner/reports") },
                 )
             }
             composable(Routes.OWNER_TENANTS) { OwnerTenantsScreen(openTenant = { nav.navigate("owner/tenant/$it") }, addTenant = { nav.navigate("owner/tenant-form/0") }) }
@@ -225,6 +243,11 @@ private fun RoleShell(role: Role) {
             }
             composable("owner/pay/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 RecordPaymentScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onDone = { rc -> nav.popBackStack(); openReceipt(rc) })
+            }
+            // bills already filtered (e.g. "due" from the dashboard), with a back arrow
+            composable("owner/bills/{status}", listOf(navArgument("status") { type = NavType.StringType })) {
+                OwnerInvoicesScreen(openInvoice = { id -> nav.navigate("owner/invoice/$id") }, onBack = back,
+                    initialFilter = it.arguments?.getString("status").orEmpty())
             }
             composable(Routes.OWNER_COLLECT) { OwnerInvoicesScreen(openInvoice = { nav.navigate("owner/pay/$it") }, onlyOpen = true, onBack = back) }
             composable(Routes.OWNER_MORE) {
@@ -256,7 +279,9 @@ private fun RoleShell(role: Role) {
             composable("owner/employee-form/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 EmployeeFormScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onSaved = back)
             }
-            composable("owner/queries") { OwnerQueriesScreen(onBack = back, openQuery = { id -> nav.navigate("owner/query/$id") }) }
+            composable("owner/queries?status={status}", listOf(navArgument("status") { type = NavType.StringType; defaultValue = "" })) {
+                OwnerQueriesScreen(onBack = back, openQuery = { id -> nav.navigate("owner/query/$id") }, initialFilter = it.arguments?.getString("status").orEmpty())
+            }
             composable("owner/query/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 QueryDetailScreen(it.arguments?.getInt("id") ?: 0, Role.OWNER, onBack = back)
             }
@@ -272,6 +297,8 @@ private fun RoleShell(role: Role) {
                     collect = { tenantId, invoiceId -> nav.navigate("emp/collect?tenant=$tenantId&invoice=$invoiceId") },
                     openReceipt = openReceipt,
                     openNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
+                    openTenants = { nav.navigateTab(Routes.EMP_TENANTS) },
+                    openCollections = { nav.navigateTab(Routes.EMP_COLLECTIONS) },
                 )
             }
             composable(Routes.EMP_TENANTS) { EmployeeTenantsScreen(collect = { t, i -> nav.navigate("emp/collect?tenant=$t&invoice=$i") }) }
@@ -296,6 +323,8 @@ private fun RoleShell(role: Role) {
                 TenantHomeScreen(
                     openInvoice = { nav.navigate("ten/invoice/$it") },
                     openNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
+                    openInvoices = { nav.navigateTab(Routes.TEN_INVOICES) },
+                    openPayments = { nav.navigateTab(Routes.TEN_PAYMENTS) },
                 )
             }
             composable(Routes.TEN_INVOICES) { TenantInvoicesScreen(openInvoice = { nav.navigate("ten/invoice/$it") }) }
