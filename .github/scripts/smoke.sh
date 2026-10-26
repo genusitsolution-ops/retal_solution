@@ -21,7 +21,8 @@ sleep 20
 adb exec-out screencap -p > shots/02-after-sign-in.png
 python3 .github/scripts/ui.py dump shots/02-after-sign-in.txt
 # back to the top (keyboard hidden first), then Hindi and Marathi
-top() { adb shell input keyevent 111; for i in 1 2 3; do adb shell input swipe 540 500 540 1800 250; done; sleep 1; }
+hidekb() { adb shell dumpsys input_method | grep -q "mInputShown=true" && adb shell input keyevent 4; sleep 1; }
+top() { hidekb; for i in 1 2 3; do adb shell input swipe 540 500 540 1800 250; done; sleep 1; }
 bottom() { for i in 1 2 3; do adb shell input swipe 540 1800 540 400 250; done; sleep 1; }
 top
 python3 .github/scripts/ui.py tap-text "हिं" ; sleep 6; adb exec-out screencap -p > shots/03-hindi.png; python3 .github/scripts/ui.py dump shots/03-hindi.txt
@@ -34,10 +35,10 @@ bottom
 python3 .github/scripts/ui.py tap-text "New property owner? Create an account" ; sleep 4
 adb exec-out screencap -p > shots/05-signup.png; python3 .github/scripts/ui.py dump shots/05-signup.txt
 python3 .github/scripts/ui.py tap-edit 0 && adb shell input text "A"
-adb shell input keyevent 111; sleep 1
+hidekb
 bottom
 python3 .github/scripts/ui.py tap-text "Create account" ; sleep 2
-adb shell input keyevent 111; sleep 1
+hidekb
 top
 adb exec-out screencap -p > shots/06-signup-checks.png; python3 .github/scripts/ui.py dump shots/06-signup-checks.txt
 adb shell input keyevent 4; sleep 2
