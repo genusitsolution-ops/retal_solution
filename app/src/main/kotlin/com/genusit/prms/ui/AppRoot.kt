@@ -221,6 +221,10 @@ private fun RoleShell(role: Role) {
             composable("receipt/{no}", listOf(navArgument("no") { type = NavType.StringType })) {
                 ReceiptScreen(it.arguments?.getString("no").orEmpty(), onBack = back)
             }
+            // one cash handover; role=owner (confirm / reject) or role=agent (cancel)
+            composable("handover/{id}?role={role}", listOf(navArgument("id") { type = NavType.IntType }, navArgument("role") { type = NavType.StringType; defaultValue = "owner" })) {
+                com.genusit.prms.ui.owner.SettlementDetailScreen(onBack = back, openReceipt = openReceipt)
+            }
 
             /* owner */
             composable(Routes.OWNER_HOME) {
@@ -317,6 +321,13 @@ private fun RoleShell(role: Role) {
             }
             composable("owner/reports") { ReportsScreen(onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") }, openReceipt = openReceipt) }
             composable("owner/referrals") { ReferralScreen(onBack = back) }
+            composable("owner/collections-hub") {
+                com.genusit.prms.ui.owner.CollectionDashboardScreen(onBack = back, openEmployee = { id -> nav.navigate("owner/collections-hub/employee/$id") },
+                    openSettlement = { id -> nav.navigate("handover/$id?role=owner") }, openReceipt = openReceipt)
+            }
+            composable("owner/collections-hub/employee/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
+                com.genusit.prms.ui.owner.EmployeeCollectionScreen(onBack = back, openSettlement = { id -> nav.navigate("handover/$id?role=owner") }, openReceipt = openReceipt)
+            }
             composable("owner/property/new") { AddPropertyScreen(onBack = back, onSaved = { nav.popBackStack() }) }
             composable("owner/payments?period={period}", listOf(navArgument("period") { type = NavType.StringType; defaultValue = "3m" })) {
                 OwnerPaymentsScreen(onBack = back, openReceipt = openReceipt)
@@ -331,7 +342,17 @@ private fun RoleShell(role: Role) {
                     openNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
                     openTenants = { nav.navigateTab(Routes.EMP_TENANTS) },
                     openCollections = { nav.navigateTab(Routes.EMP_COLLECTIONS) },
+                    openHandover = { nav.navigate("emp/handover") },
                 )
+            }
+            composable("emp/handover") {
+                com.genusit.prms.ui.employee.AgentHandoverScreen(onBack = back, submit = { nav.navigate("emp/handover/new") },
+                    openSettlement = { id -> nav.navigate("handover/$id?role=agent") })
+            }
+            composable("emp/handover/new") {
+                com.genusit.prms.ui.employee.SubmitHandoverScreen(onBack = back, onDone = { id ->
+                    nav.navigate("handover/$id?role=agent") { popUpTo("emp/handover/new") { inclusive = true } }
+                })
             }
             composable(Routes.EMP_TENANTS) { EmployeeTenantsScreen(collect = { t, i -> nav.navigate("emp/collect?tenant=$t&invoice=$i") }) }
             composable(Routes.EMP_COLLECTIONS) { EmployeeCollectionsScreen(openReceipt = openReceipt) }

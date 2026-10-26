@@ -203,6 +203,30 @@ interface PrmsApiService {
     @POST("owner/employees.php")
     suspend fun employeeAction(@Query("action") action: String, @Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
 
+    /* ───────── owner: collections & cash handovers ───────── */
+
+    /** [view] = dashboard | employee | list | detail; empty filters are left out. */
+    @GET("owner/settlements.php")
+    suspend fun ownerSettlements(
+        @Query("view") view: String,
+        @Query("id") id: Int? = null,
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+        @Query("employee_id") employeeId: Int? = null,
+        @Query("property_id") propertyId: Int? = null,
+        @Query("tenant_id") tenantId: Int? = null,
+        @Query("mode") mode: String? = null,
+        @Query("collector") collector: String? = null,
+        @Query("settlement") settlement: String? = null,
+        @Query("status") status: String? = null,
+        @Query("page") page: Int? = null,
+        @Query("per_page") perPage: Int? = null,
+    ): Response<ResponseBody>
+
+    /** `{"action":"confirm"|"reject"|"record", …}` */
+    @POST("owner/settlements.php")
+    suspend fun ownerSettlementAction(@Body body: JsonObject, @Header("Idempotency-Key") idempotencyKey: String?): Response<ResponseBody>
+
     /* ───────── owner: complaints & subscription ───────── */
 
     @GET("owner/queries.php")
@@ -233,6 +257,16 @@ interface PrmsApiService {
 
     @POST("employee/collections.php")
     suspend fun agentCollect(@Body body: JsonObject, @Header("Idempotency-Key") idempotencyKey: String?): Response<ResponseBody>
+
+    /** [view] = balance | list | detail */
+    @GET("employee/settlements.php")
+    suspend fun agentSettlements(
+        @Query("view") view: String, @Query("id") id: Int? = null, @Query("status") status: String? = null, @Query("page") page: Int? = null,
+    ): Response<ResponseBody>
+
+    /** `{"action":"submit"|"cancel", …}` */
+    @POST("employee/settlements.php")
+    suspend fun agentSettlementAction(@Body body: JsonObject, @Header("Idempotency-Key") idempotencyKey: String?): Response<ResponseBody>
 
     @GET("employee/profile.php")
     suspend fun agentProfile(): Response<ResponseBody>

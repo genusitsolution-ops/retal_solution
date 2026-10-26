@@ -74,6 +74,7 @@ fun EmployeeHomeScreen(
     openNotifications: () -> Unit,
     openTenants: () -> Unit = {},
     openCollections: () -> Unit = {},
+    openHandover: () -> Unit = {},
 ) {
     val model: AgentHomeViewModel = hiltViewModel()
     val vm = model.dashboard
@@ -102,6 +103,7 @@ fun EmployeeHomeScreen(
                         StatTile(Icons.Filled.Groups, stringResource(R.string.active_tenants), d.summary.activeTenants.toString(), Palette.Info, Modifier.weight(1f), onClick = openTenants)
                     }
                 }
+                item { HandoverHomeCard(openHandover) }
                 item { SectionHeader(stringResource(R.string.pending_dues)) }
                 if (d.pendingInvoices.isEmpty()) item { EmptyState(stringResource(R.string.no_pending_invoices)) }
                 items(d.pendingInvoices, key = { it.id }) { inv ->

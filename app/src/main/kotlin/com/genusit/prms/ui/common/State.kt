@@ -73,6 +73,8 @@ sealed interface ScreenEvent {
     data object PasswordChanged : ScreenEvent
     /** A charge was added – close the "add charge" dialog. */
     data object ChargeAdded : ScreenEvent
+    /** A cash handover was submitted or recorded – open it. */
+    data class HandoverSaved(val settlementId: Int) : ScreenEvent
 }
 
 /* ═════════════════════════ session expiry ═════════════════════════ */

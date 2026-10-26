@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apartment
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Bolt
@@ -98,6 +99,7 @@ fun OwnerMoreScreen(open: (String) -> Unit) {
             MenuRow(Icons.Filled.Bolt, Palette.Warning, stringResource(R.string.charges), stringResource(R.string.charges_menu_sub)) { open("owner/charges") }
             MenuRow(Icons.Filled.Badge, Palette.Brand, stringResource(R.string.employees), stringResource(R.string.employees_sub)) { open("owner/employees") }
             MenuRow(Icons.Filled.QuestionAnswer, Palette.Danger, stringResource(R.string.complaints), stringResource(R.string.complaints_sub)) { open("owner/queries") }
+            MenuRow(Icons.Filled.AccountBalanceWallet, Palette.Accent, stringResource(R.string.ho_dashboard_title), stringResource(R.string.ho_dashboard_sub)) { open("owner/collections-hub") }
             MenuRow(Icons.Filled.Assessment, Palette.Info, stringResource(R.string.reports), stringResource(R.string.reports_sub)) { open("owner/reports") }
             MenuRow(Icons.Filled.CurrencyRupee, Palette.Success, stringResource(R.string.payments), stringResource(R.string.payments_sub)) { open("owner/payments") }
             MenuRow(Icons.Filled.WorkspacePremium, Palette.Warning, stringResource(R.string.subscription), stringResource(R.string.subscription_sub)) { open("owner/subscription") }
