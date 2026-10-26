@@ -93,6 +93,17 @@ interface PrmsApiService {
     @DELETE("owner/tenants.php")
     suspend fun deleteTenant(@Query("id") id: Int): Response<ResponseBody>
 
+    /* ───────── public (login screen) ───────── */
+
+    @GET("common/app_config.php")
+    suspend fun appConfig(): Response<ResponseBody>
+
+    @POST("auth/register.php")
+    suspend fun register(@Body body: JsonObject): Response<ResponseBody>
+
+    @GET
+    suspend fun download(@retrofit2.http.Url url: String): Response<ResponseBody>
+
     @GET("owner/tenant_history.php")
     suspend fun tenantHistory(@Query("id") id: Int): Response<ResponseBody>
 

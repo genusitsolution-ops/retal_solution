@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.Assessment
@@ -91,6 +92,7 @@ fun MenuRow(icon: ImageVector, tint: Color, title: String, subtitle: String? = n
 fun OwnerMoreScreen(open: (String) -> Unit) {
     ScreenScaffold(stringResource(R.string.nav_more)) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            MenuRow(Icons.AutoMirrored.Filled.ReceiptLong, Palette.Accent, stringResource(R.string.generate_bill), stringResource(R.string.generate_bill_sub)) { open("owner/generate") }
             MenuRow(Icons.Filled.Apartment, Palette.Brand, stringResource(R.string.properties), stringResource(R.string.properties_sub)) { open("owner/properties") }
             MenuRow(Icons.Filled.Key, Palette.Info, stringResource(R.string.allocations), stringResource(R.string.allocations_sub)) { open("owner/allocations") }
             MenuRow(Icons.Filled.Bolt, Palette.Warning, stringResource(R.string.charges), stringResource(R.string.charges_menu_sub)) { open("owner/charges") }

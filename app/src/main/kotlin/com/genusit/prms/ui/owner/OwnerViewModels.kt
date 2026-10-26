@@ -383,7 +383,8 @@ class EditPropertyViewModel @Inject constructor(
     val deleteAction = action<Unit>()
 
     fun save(p: NewProperty, status: String?) = saveAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { updateProperty(id, p, status) }
-    fun delete() = deleteAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { deleteProperty(id) }
+    /** The server re-checks occupancy and history inside a transaction; its reason is shown when it refuses. */
+    fun delete() = deleteAction.run(onSuccess = { sendEvent(ScreenEvent.Deleted) }) { deleteProperty(id) }
 }
 
 /* ═════════════════════════ charges ═════════════════════════ */

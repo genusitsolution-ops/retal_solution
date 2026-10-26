@@ -170,4 +170,17 @@ class DomainTest {
         assertEquals(com.genusit.prms.domain.model.SaveTenantResult(3, true), save(3, base.copy(aadhaarDraft = "x"), null))
         assertEquals(com.genusit.prms.domain.model.SaveTenantResult(7, true), save(0, base, "k"))
     }
+
+    @Test fun registerInputChecks() {
+        val uc = com.genusit.prms.domain.usecase.RegisterOwnerUseCase(object : com.genusit.prms.domain.repository.PublicRepository {
+            override suspend fun appConfig() = com.genusit.prms.domain.model.AppConfig()
+            override suspend fun register(input: com.genusit.prms.domain.model.RegisterInput) = com.genusit.prms.domain.model.RegisterResult()
+            override suspend fun image(url: String) = ByteArray(0)
+        })
+        val ok = com.genusit.prms.domain.model.RegisterInput("Asha Patil", "9123456789", "asha@example.com", "asha.p", "Rental2026")
+        assertEquals(emptySet(), uc.check(ok, "Rental2026"))
+        val bad = uc.check(com.genusit.prms.domain.model.RegisterInput("A", "12", "nope", "a", "short"), "other")
+        assertEquals(com.genusit.prms.domain.usecase.RegisterOwnerUseCase.Problem.entries.toSet(), bad)
+        assertTrue(com.genusit.prms.domain.usecase.RegisterOwnerUseCase.Problem.PASSWORD in uc.check(ok.copy(password = "onlyletters"), "onlyletters"))
+    }
 }

@@ -138,6 +138,37 @@ class ApiIntegrationTest {
         server.takeRequest()
     }
 
+    @Test fun publicConfigRegisterAndBrandingImage() = runTest {
+        val base = server.url("/rentalsolutionfinal/api/v1/").toString()
+        val cfgNet = NetworkConfig(base, "PRMS-Android/test", debugLogging = false)
+        val repo = com.genusit.prms.data.repository.PublicRepositoryImpl(api, caller, cfgNet)
+        enqueue(200, """{"status":"success","message":"OK","data":{"version":"3","branding":{"name":"Acme Rentals","tagline":"Homes","show_tagline":true,"logo_url":"${server.url("/rentalsolutionfinal/uploads/branding/b.png")}","login_logo_url":null},"signup":{"mode":"approval","enabled":true},"referral":{"enabled":true}}}""")
+        val c = repo.appConfig()
+        assertEquals(3, c.version); assertEquals("Acme Rentals", c.branding.name); assertTrue(c.signup.enabled && c.referral.enabled)
+        assertTrue(server.takeRequest().path!!.endsWith("common/app_config.php"))
+
+        enqueue(201, """{"status":"success","message":"Thank you!","data":{"status":"pending_approval","trial":null,"referral":null}}""")
+        val r = repo.register(com.genusit.prms.domain.model.RegisterInput("A B", "9123456789", "a@b.in", "ab12", "Secret123", "RSABCDEF"))
+        assertEquals("pending_approval", r.status); assertTrue(!r.isActive)
+        val body = server.takeRequest().body.readUtf8()
+        assertTrue(body.contains("\"referral_code\":\"RSABCDEF\"") && !body.contains("user_type"), body)
+
+        enqueue(422, """{"status":"error","code":"REFERRAL_SELF","message":"An owner cannot refer themselves."}""")
+        try { repo.register(com.genusit.prms.domain.model.RegisterInput("A B", "9123456789", "a@b.in", "ab12", "Secret123")); fail() } catch (e: ApiException) { assertEquals("REFERRAL_SELF", e.code) }
+        server.takeRequest()
+
+        val png = byteArrayOf(-119, 80, 78, 71, 13, 10, 26, 10)
+        server.enqueue(MockResponse().setResponseCode(200).setHeader("Content-Type", "image/png").setBody(okio.Buffer().write(png)))
+        assertTrue(repo.image(c.branding.logoUrl!!).contentEquals(png))
+        server.takeRequest()
+        // other hosts are never contacted
+        try { repo.image("https://evil.example.com/x.png"); fail() } catch (e: ApiException) { assertEquals(ApiException.BAD_RESPONSE, e.code) }
+        assertEquals(null, repo.sameServer("ftp://x/y"))
+        val https = com.genusit.prms.data.repository.PublicRepositoryImpl(api, caller, NetworkConfig("https://www.genusitsolution.com/rentalsolutionfinal/api/v1/", "t", false))
+        assertEquals("https://www.genusitsolution.com/rentalsolutionfinal/uploads/branding/b.png", https.sameServer("https://genusitsolution.com/rentalsolutionfinal/uploads/branding/b.png"))
+        assertEquals(null, https.sameServer("http://www.genusitsolution.com/rentalsolutionfinal/uploads/branding/b.png"))
+    }
+
     @Test fun loginSendsJsonAndHeaders() = runTest {
         enqueue(200, ok)
         val r = AuthRepositoryImpl(api, caller).login("abhi", "secret", "mr")

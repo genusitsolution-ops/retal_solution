@@ -53,6 +53,7 @@ fun OwnerHomeScreen(
     openOpenQueries: () -> Unit = {},
     openPayments: () -> Unit = {},
     openReports: () -> Unit = {},
+    generateBill: () -> Unit = {},
 ) {
     val model: OwnerHomeViewModel = hiltViewModel()
     val vm = model.dashboard
@@ -90,6 +91,8 @@ fun OwnerHomeScreen(
                         onClick = openPayments,
                     )
                 }
+                // the bill workflow: pick an occupied room → month & charges → preview → save
+                item { GenerateBillCard(onClick = generateBill) }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatTile(Icons.Filled.Apartment, stringResource(R.string.rooms_occupied), "${s.occupiedProperties}/${s.properties}", Palette.Brand, Modifier.weight(1f), onClick = openProperties)

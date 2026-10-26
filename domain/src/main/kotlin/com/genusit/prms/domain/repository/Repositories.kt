@@ -163,3 +163,11 @@ interface TenantPortalRepository {
     suspend fun payments(): TenantPayments
     suspend fun profile(): Profile
 }
+
+/** Public endpoints used before sign-in (login screen). */
+interface PublicRepository {
+    suspend fun appConfig(): AppConfig
+    suspend fun register(input: RegisterInput): RegisterResult
+    /** Downloads a branding image (same server only). */
+    suspend fun image(url: String): ByteArray
+}

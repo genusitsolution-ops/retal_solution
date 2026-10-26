@@ -235,6 +235,7 @@ private fun RoleShell(role: Role) {
                     openOpenQueries = { nav.navigate("owner/queries?status=open") },
                     openPayments = { nav.navigate("owner/payments?period=month") },
                     openReports = { nav.navigate("owner/reports") },
+                    generateBill = { nav.navigate("owner/generate") },
                 )
             }
             composable(Routes.OWNER_TENANTS) { OwnerTenantsScreen(openTenant = { nav.navigate("owner/tenant/$it") }, addTenant = { nav.navigate("owner/tenant-form/0") }) }
@@ -287,8 +288,16 @@ private fun RoleShell(role: Role) {
                 AllocationsScreen(onBack = back, newAllocation = { nav.navigate("owner/allocation/new") }, generateInvoice = { id -> nav.navigate("owner/generate/$id") })
             }
             composable("owner/allocation/new") { NewAllocationScreen(onBack = back, onDone = back) }
+            composable("owner/generate") {
+                com.genusit.prms.ui.owner.GenerateBillPickerScreen(onBack = back, pick = { id -> nav.navigate("owner/generate/$id") },
+                    newAllocation = { nav.navigate("owner/allocation/new") })
+            }
             composable("owner/generate/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
-                GenerateInvoiceScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onDone = { invId -> nav.popBackStack(); nav.navigate("owner/invoice/$invId") })
+                GenerateInvoiceScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onDone = { invId ->
+                    // the saved bill replaces the generate steps (room picker included) in the back stack
+                    val fromPicker = nav.previousBackStackEntry?.destination?.route == "owner/generate"
+                    nav.navigate("owner/invoice/$invId") { popUpTo(if (fromPicker) "owner/generate" else "owner/generate/{id}") { inclusive = true } }
+                })
             }
             composable("owner/employees") {
                 EmployeesScreen(onBack = back, openEmployee = { id -> nav.navigate("owner/employee/$id") }, addEmployee = { nav.navigate("owner/employee-form/0") })

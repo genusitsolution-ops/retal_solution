@@ -39,6 +39,7 @@ abstract class RepositoryModule {
     @Binds @Singleton abstract fun session(impl: SessionStore): SessionRepository
     @Binds @Singleton abstract fun auth(impl: AuthRepositoryImpl): AuthRepository
     @Binds @Singleton abstract fun common(impl: CommonRepositoryImpl): CommonRepository
+    @Binds @Singleton abstract fun public(impl: com.genusit.prms.data.repository.PublicRepositoryImpl): com.genusit.prms.domain.repository.PublicRepository
     @Binds @Singleton abstract fun properties(impl: PropertyRepositoryImpl): PropertyRepository
     @Binds @Singleton abstract fun tenantAdmin(impl: TenantAdminRepositoryImpl): TenantAdminRepository
     @Binds @Singleton abstract fun billing(impl: BillingRepositoryImpl): BillingRepository

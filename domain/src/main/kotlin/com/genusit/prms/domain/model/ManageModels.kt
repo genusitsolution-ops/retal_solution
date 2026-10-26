@@ -421,3 +421,58 @@ enum class TenantDocType(val apiValue: String) { AADHAAR("aadhaar"), PAN("pan") 
 class DocumentFile(val bytes: ByteArray, val contentType: String) {
     val isPdf: Boolean get() = contentType.startsWith("application/pdf")
 }
+
+/* ───────── public app configuration (GET common/app_config.php) and owner sign-up ───────── */
+
+@Serializable
+data class AppConfig(
+    val version: Int = 0,
+    val branding: AppBranding = AppBranding(),
+    val signup: SignupInfo = SignupInfo(),
+    val referral: ReferralInfo = ReferralInfo(),
+)
+
+@Serializable
+data class AppBranding(
+    val name: String = "",
+    val tagline: String = "",
+    @SerialName("show_tagline") val showTagline: Boolean = true,
+    @SerialName("logo_url") val logoUrl: String? = null,
+    @SerialName("login_logo_url") val loginLogoUrl: String? = null,
+)
+
+@Serializable
+data class SignupInfo(val mode: String = "off", val enabled: Boolean = false)
+
+@Serializable
+data class ReferralInfo(val enabled: Boolean = false)
+
+/** Body for POST auth/register.php — the role is always Owner (decided by the server). */
+@Serializable
+data class RegisterInput(
+    @SerialName("full_name") val fullName: String,
+    val phone: String,
+    val email: String,
+    val username: String,
+    val password: String,
+    @SerialName("referral_code") val referralCode: String? = null,
+)
+
+@Serializable
+data class RegisterResult(
+    /** "active" (sign in now) or "pending_approval" (Super Admin approves first). */
+    val status: String = "",
+    val trial: TrialInfo? = null,
+    /** "recorded", "not_recorded" or null when no code was given. */
+    val referral: String? = null,
+) {
+    val isActive: Boolean get() = status == "active"
+}
+
+@Serializable
+data class TrialInfo(
+    @SerialName("package_name") val packageName: String? = null,
+    @SerialName("start_date") val startDate: String? = null,
+    @SerialName("end_date") val endDate: String? = null,
+    @SerialName("days_left") val daysLeft: Int? = null,
+)

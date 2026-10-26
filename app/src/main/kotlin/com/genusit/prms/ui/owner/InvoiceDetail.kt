@@ -140,6 +140,8 @@ fun InvoiceDetailScreen(id: Int, onBack: () -> Unit, recordPayment: (Int) -> Uni
     ScreenScaffold(stringResource(R.string.invoice), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { inv ->
             InvoiceBody(inv, showTenant = true, openReceipt = openReceipt) {
+                BillShareActions(inv)
+                Spacer(Modifier.height(8.dp))
                 if (inv.isOpen) Button(onClick = { recordPayment(inv.id) }, modifier = Modifier.fillMaxWidth().height(50.dp)) {
                     Icon(Icons.Filled.Payments, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.record_payment))
                 }

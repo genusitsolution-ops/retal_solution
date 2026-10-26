@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -238,8 +239,21 @@ fun EditPropertyScreen(id: Int, onBack: () -> Unit, onDone: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     val saveState by model.saveAction.state.collectAsStateWithLifecycle()
     val delState by model.deleteAction.state.collectAsStateWithLifecycle()
-    EventEffect(model) { if (it == ScreenEvent.Saved) onDone() }
+    val toastCtx = androidx.compose.ui.platform.LocalContext.current
+    EventEffect(model) {
+        if (it == ScreenEvent.Saved) onDone()
+        if (it == ScreenEvent.Deleted) {
+            android.widget.Toast.makeText(toastCtx, toastCtx.getString(R.string.room_deleted), android.widget.Toast.LENGTH_SHORT).show()
+            onDone()
+        }
+    }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    var occupiedInfo by rememberSaveable { mutableStateOf(false) }
+    var refusalShown by rememberSaveable { mutableStateOf<String?>(null) }
+    // the server's reason (occupied, has history, linked records, network…) is shown in a dialog, never ignored
+    val delError = (delState as? ActionState.Failed)?.error
+    val delMessage = delError?.let { com.genusit.prms.ui.common.errorText(it) }
+    LaunchedEffect(delState) { if (delState is ActionState.Failed) refusalShown = delMessage }
 
     ScreenScaffold(stringResource(R.string.edit_room), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { p ->
@@ -279,8 +293,27 @@ fun EditPropertyScreen(id: Int, onBack: () -> Unit, onDone: () -> Unit) {
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 Text(stringResource(R.string.delete_room_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ActionError(delState)
-                OutlinedButton(onClick = { confirmDelete = true }, enabled = !occupied, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.Delete, null, tint = Palette.Danger); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.delete_room), color = Palette.Danger)
+                // always tappable: an occupied room explains why it cannot be deleted instead of doing nothing
+                OutlinedButton(onClick = { if (occupied) occupiedInfo = true else confirmDelete = true }, enabled = delState !is ActionState.Running,
+                    modifier = Modifier.fillMaxWidth()) {
+                    if (delState is ActionState.Running) androidx.compose.material3.CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    else Icon(Icons.Filled.Delete, null, tint = Palette.Danger)
+                    Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.delete_room), color = Palette.Danger)
+                }
+                if (occupiedInfo) androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { occupiedInfo = false },
+                    icon = { Icon(Icons.Filled.Delete, null, tint = Palette.Danger) },
+                    title = { Text(stringResource(R.string.cannot_delete_room)) },
+                    text = { Text(p.activeTenantName?.let { n -> stringResource(R.string.room_occupied_delete_msg_name, n) } ?: stringResource(R.string.room_occupied_delete_msg)) },
+                    confirmButton = { androidx.compose.material3.TextButton(onClick = { occupiedInfo = false }) { Text(stringResource(R.string.ok)) } },
+                )
+                refusalShown?.let { msg ->
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { refusalShown = null },
+                        title = { Text(stringResource(R.string.cannot_delete_room)) },
+                        text = { Text(msg) },
+                        confirmButton = { androidx.compose.material3.TextButton(onClick = { refusalShown = null }) { Text(stringResource(R.string.ok)) } },
+                    )
                 }
             }
         }
@@ -549,6 +582,7 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                 val prev = remember(ctx) { mutableStateMapOf<Int, String>().apply { ctx.variableCharges.forEach { put(it.tcId, it.lastReading?.let { r -> trimNum(r) } ?: "") } } }
                 val curr = remember(ctx) { mutableStateMapOf<Int, String>() }
                 var tried by rememberSaveable { mutableStateOf(false) }
+                var previewing by rememberSaveable { mutableStateOf(false) }
                 val readings = ctx.variableCharges.map { v ->
                     Triple(v, Money.parse(prev[v.tcId] ?: ""), Money.parse(curr[v.tcId] ?: ""))
                 }
@@ -556,6 +590,7 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                 val estimate = ctx.baseRent + ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.sumOf { it.amount } +
                     readings.sumOf { (v, p, c) -> if (p != null && c != null && c >= p) (c - p) * v.rate else 0.0 }
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StepHeader(2, stringResource(R.string.bill_step_charges))
                     AppCard {
                         Column {
                             Text(ctx.tenantName, style = MaterialTheme.typography.titleMedium)
@@ -590,13 +625,34 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                     if (ctx.variableCharges.isNotEmpty()) Text(stringResource(R.string.reading_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     LabelValue(stringResource(R.string.estimated_total), Money.format(estimate), bold = true)
                     ActionError(act)
-                    SubmitButton(stringResource(R.string.generate_bill), act) {
+                    // step 3: preview, then save (the server calculates the final amounts and the bill number)
+                    SubmitButton(stringResource(R.string.bill_preview), act) {
                         tried = true
-                        if (!ctx.alreadyExists && readingsOk) model.generate(
-                            ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.map { it.tcId },
-                            readings.mapNotNull { (v, p, c) -> if (p != null && c != null) MeterReading(v.tcId, p, c) else null },
+                        if (!ctx.alreadyExists && readingsOk) previewing = true
+                    }
+                    if (previewing) {
+                        val unitWord = stringResource(R.string.units)
+                        val lines = buildList {
+                            add(PreviewLine(stringResource(R.string.base_rent), null, ctx.baseRent))
+                            ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.forEach { add(PreviewLine(it.name, null, it.amount)) }
+                            readings.forEach { (v, p, c) ->
+                                if (p != null && c != null && c >= p) add(PreviewLine(v.name, "${trimNum(c - p)} ${v.unitLabel ?: unitWord} × ${Money.format(v.rate)}", (c - p) * v.rate))
+                            }
+                        }
+                        BillPreviewDialog(
+                            tenant = ctx.tenantName, room = ctx.propertyName, period = ctx.periodLabel, lines = lines, otherOutstanding = ctx.otherOutstanding,
+                            saving = act is ActionState.Running,
+                            onConfirm = {
+                                model.generate(
+                                    ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.map { it.tcId },
+                                    readings.mapNotNull { (v, p, c) -> if (p != null && c != null) MeterReading(v.tcId, p, c) else null },
+                                )
+                            },
+                            onDismiss = { previewing = false },
                         )
                     }
+                    // a refused save (e.g. bill already exists) closes the preview so the server's reason is visible
+                    LaunchedEffect(act) { if (act is ActionState.Failed) previewing = false }
                 }
             }
         }

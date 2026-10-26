@@ -158,3 +158,24 @@ Tests: `ApiIntegrationTest.tenantDetailHistoryAndDocuments` (detail fields, hist
 | Typed Aadhaar/PAN not visible | Edge-to-edge window is not resized for the keyboard (no IME insets) → fields lower in the form stayed hidden under the keyboard while typing; OEM "force dark" could also recolour field text | `imePadding()` (after consuming the bar insets) on the role shell, so every screen is lifted above the keyboard and the focused field scrolls into view; explicit field text/cursor/selection colours; `forceDarkAllowed=false`; Aadhaar digits ≤ 12 with counter, PAN capital letters + digits ≤ 10, autocorrect off |
 | Centre + button overlapped the bar | FAB docked over a 4-item bar | Owner bar: Home · Tenants · Bills · Properties · More (no FAB); "Collect payment" button on the Bills tab; Properties is a tab |
 | Document upload as part of capture | Photo was uploaded only after saving (1.4) | Photo is compressed, OCR'd and uploaded at once as a server draft (owner-only, 24 h); progress / uploaded / failed + Retry / Remove; Save waits for uploads; the draft token is sent with the tenant and attached by the server; retried "add" uses an Idempotency-Key (no duplicate tenant); a retake replaces the old draft |
+
+## 1.6.0 (26 Oct 2026)
+
+| Feature | App | Server |
+|---|---|---|
+| Generate bill from Home | "Generate bill" card on Home and in More → step 1 pick an occupied room (active allocations) → step 2 month, fixed charges, meter readings → step 3 preview → save → bill opens; Share (text) and Print / Save as PDF on every bill | Unchanged, reused: `owner/invoices.php` `action=context` / `action=generate` (`InvoiceService`: server totals, unique bill number, one bill per room per month, transaction) |
+| Owner self-registration + referral | "New property owner? Create an account" on the login screen; referral code field when referrals are on; result shows "waiting for approval" or the trial dates | `POST auth/register.php` (public, Owner role only, validation, duplicate email/phone/username, 5 attempts / 15 min / IP); Super Admin → Owner Registrations: mode off / approval / instant, approve (activates, starts the configured trial, records the referral through the existing `Referral::attach`) or reject |
+| Room delete | Delete is always tappable: occupied room → explanation dialog; otherwise confirmation; the server's reason (occupied, history with counts, linked records, network) is shown in a dialog; success → "Room deleted" and the list reloads | `DELETE owner/properties.php`: room row locked (`FOR UPDATE`), occupancy + history re-checked in the same transaction, agent assignments removed with the room, foreign-key failures reported as `HAS_LINKED_RECORDS`, never a false success |
+| In-app branding | Login screen + Settings show the published name, tagline and logo; cached in app storage (works offline), refreshed when the login screen opens; built-in icon/name when nothing is published | Super Admin → Mobile App Branding: draft → phone preview → Publish (version++); `GET common/app_config.php` (public) |
+
+### API reference (new in 1.6)
+- `GET /api/v1/common/app_config.php` → `{version, branding:{name, tagline, show_tagline, logo_url, login_logo_url}, signup:{mode, enabled}, referral:{enabled}}`
+- `POST /api/v1/auth/register.php` `{full_name, phone, email, username, password, referral_code?}` → 201 `{status: active|pending_approval, trial?, referral?}`; errors `SIGNUP_DISABLED` 403, `VALIDATION`/`REFERRAL_INVALID`/`REFERRAL_SELF`/`REFERRAL_DISABLED` 422, `EMAIL_TAKEN`/`PHONE_TAKEN`/`USERNAME_TAKEN` 409, `TOO_MANY_ATTEMPTS` 429
+- `DELETE /api/v1/owner/properties.php?id=N` → 200, or 409 `ROOM_OCCUPIED` / `HAS_HISTORY` / `HAS_LINKED_RECORDS`, 404
+
+### Launcher (home-screen) icon
+The icon on the phone's home screen is packaged inside the APK; Android does not let a server replace it.
+Uploading a logo in the admin panel changes the login screen and in-app logo only. To change the launcher icon:
+1. `python3 tools/launcher_icon.py logo-1024.png "#4F46E5" app/src/main/res` (needs Pillow) — writes all densities;
+2. bump `versionCode`, push → CI builds the APK → install / publish the update.
+(Android's "activity-alias" trick can switch between icons that are already inside the APK, but cannot download a new one.)

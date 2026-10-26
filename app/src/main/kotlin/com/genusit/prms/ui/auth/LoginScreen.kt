@@ -75,8 +75,17 @@ fun LoginScreen() {
     // Debug builds only: which server was called and the technical reason it failed.
     val debugInfo = ui.debugInfo
     val lang = AppLanguage.current()
+    // name, tagline and logo published by the Super Admin (cached; built-in look when absent or offline)
+    val brandingModel: BrandingViewModel = hiltViewModel()
+    val brand by brandingModel.branding.collectAsStateWithLifecycle()
+    var signingUp by rememberSaveable { mutableStateOf(false) }
 
     fun submit() = model.submit(username, password, lang)
+
+    if (signingUp) {
+        SignupScreen(brand, onBack = { signingUp = false })
+        return
+    }
 
     Box(Modifier.fillMaxSize().background(Palette.HeaderGradient)) {
         Column(
@@ -94,12 +103,12 @@ fun LoginScreen() {
                 }
             }
             Spacer(Modifier.height(36.dp))
-            Box(Modifier.size(72.dp).clip(RoundedCornerShape(22.dp)).background(Color.White.copy(alpha = .15f)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.Apartment, null, tint = Color.White, modifier = Modifier.size(38.dp))
-            }
+            BrandLogo(brand.loginLogo, 72.dp)
             Spacer(Modifier.height(14.dp))
-            Text(stringResource(R.string.app_name), color = Color.White, style = MaterialTheme.typography.headlineMedium)
-            Text(stringResource(R.string.login_tagline), color = Color.White.copy(alpha = .8f), style = MaterialTheme.typography.bodyMedium)
+            Text(brand.name ?: stringResource(R.string.app_name), color = Color.White, style = MaterialTheme.typography.headlineMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            if (brand.showTagline) Text(brand.tagline ?: stringResource(R.string.login_tagline), color = Color.White.copy(alpha = .8f),
+                style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Spacer(Modifier.height(28.dp))
 
             Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
@@ -147,6 +156,14 @@ fun LoginScreen() {
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(stringResource(R.string.login_roles_hint), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+            // shown unless the Super Admin turned self-registration off (unknown → shown; the server decides)
+            if (brand.signupEnabled != false) {
+                Spacer(Modifier.height(16.dp))
+                androidx.compose.material3.OutlinedButton(onClick = { signingUp = true }, modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = .7f))) {
+                    Text(stringResource(R.string.new_owner_signup), color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

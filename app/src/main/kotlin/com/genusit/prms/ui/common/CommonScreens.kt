@@ -1,5 +1,9 @@
 package com.genusit.prms.ui.common
 
+import androidx.compose.ui.draw.clip
+
+import androidx.compose.foundation.background
+
 import com.genusit.prms.platform.AppLanguage
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Arrangement
@@ -141,8 +145,19 @@ fun SettingsScreen(role: Role, onBack: (() -> Unit)?) {
     var confirmLogout by rememberSaveable { mutableStateOf(false) }
     val session by model.session.collectAsStateWithLifecycle()
 
+    val brand by hiltViewModel<com.genusit.prms.ui.auth.BrandingViewModel>().branding.collectAsStateWithLifecycle()
+
     ScreenScaffold(stringResource(R.string.settings), onBack = onBack) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // published app branding (logo + name), same as the login screen
+            Row(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(Palette.HeaderGradient).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                com.genusit.prms.ui.auth.BrandLogo(brand.logo, 44.dp)
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(brand.name ?: stringResource(R.string.app_name), color = Color.White, style = MaterialTheme.typography.titleMedium)
+                    if (brand.showTagline) Text(brand.tagline ?: stringResource(R.string.login_tagline), color = Color.White.copy(alpha = .8f), style = MaterialTheme.typography.labelMedium)
+                }
+            }
             AppCard {
                 Column {
                     Text(session?.name ?: "", style = MaterialTheme.typography.titleLarge)
