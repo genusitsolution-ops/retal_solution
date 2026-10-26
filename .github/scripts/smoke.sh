@@ -22,8 +22,11 @@ adb exec-out screencap -p > shots/02-after-sign-in.png
 python3 .github/scripts/ui.py dump shots/02-after-sign-in.txt
 # back to the top (keyboard hidden first), then Hindi and Marathi
 hidekb() { adb shell dumpsys input_method | grep -q "mInputShown=true" && adb shell input keyevent 4; sleep 1; }
-top() { hidekb; for i in 1 2 3; do adb shell input swipe 540 500 540 1800 250; done; sleep 1; }
-bottom() { for i in 1 2 3; do adb shell input swipe 540 1800 540 400 250; done; sleep 1; }
+# swipe coordinates from the real screen size (the CI emulator is small)
+read W H < <(adb shell wm size | grep -o '[0-9]*x[0-9]*' | tail -1 | tr 'x' ' ')
+X=$((W / 2)); Y1=$((H * 25 / 100)); Y2=$((H * 85 / 100))
+top() { hidekb; for i in 1 2 3; do adb shell input swipe $X $Y1 $X $Y2 250; done; sleep 1; }
+bottom() { for i in 1 2 3; do adb shell input swipe $X $Y2 $X $Y1 250; done; sleep 1; }
 top
 python3 .github/scripts/ui.py tap-text "हिं" ; sleep 6; adb exec-out screencap -p > shots/03-hindi.png; python3 .github/scripts/ui.py dump shots/03-hindi.txt
 top
