@@ -25,6 +25,20 @@ adb shell input swipe 540 500 540 1700 300; sleep 1
 python3 .github/scripts/ui.py tap-text "हिं" ; sleep 6; adb exec-out screencap -p > shots/03-hindi.png; python3 .github/scripts/ui.py dump shots/03-hindi.txt
 adb shell input swipe 540 500 540 1700 300; sleep 1
 python3 .github/scripts/ui.py tap-text "मरा" ; sleep 6; adb exec-out screencap -p > shots/04-marathi.png; python3 .github/scripts/ui.py dump shots/04-marathi.txt
+# owner sign-up form (back to English first). Only the app's own checks run: nothing is submitted to the server.
+adb shell input swipe 540 500 540 1700 300; sleep 1
+python3 .github/scripts/ui.py tap-text "EN" ; sleep 5
+adb shell input swipe 540 1700 540 400 300; sleep 1
+python3 .github/scripts/ui.py tap-text "New property owner? Create an account" ; sleep 4
+adb exec-out screencap -p > shots/05-signup.png; python3 .github/scripts/ui.py dump shots/05-signup.txt
+python3 .github/scripts/ui.py tap-edit 0 && adb shell input text "A"
+adb shell input keyevent 4; sleep 1
+adb shell input swipe 540 1700 540 400 300; sleep 1
+python3 .github/scripts/ui.py tap-text "Create account" ; sleep 2
+adb shell input swipe 540 500 540 1700 300; sleep 1
+adb exec-out screencap -p > shots/06-signup-checks.png; python3 .github/scripts/ui.py dump shots/06-signup-checks.txt
+adb shell input keyevent 4; sleep 2
+adb exec-out screencap -p > shots/07-back-to-login.png
 adb shell pidof $PKG > shots/pid.txt || true
 adb logcat -d -s AndroidRuntime:E PrmsApi:W okhttp.OkHttpClient:I > shots/logcat.txt || true
 exit 0

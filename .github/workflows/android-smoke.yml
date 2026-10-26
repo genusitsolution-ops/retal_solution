@@ -51,6 +51,7 @@ jobs:
           script: |
             ./gradlew :app:connectedDebugAndroidTest || true
             mkdir -p shots && adb pull /data/local/tmp/form-keyboard.png shots/00-form-keyboard.png || true
+            adb pull /data/local/tmp/bill-preview.png shots/00-bill-preview.png || true
             bash .github/scripts/smoke.sh
 
       - name: Report
