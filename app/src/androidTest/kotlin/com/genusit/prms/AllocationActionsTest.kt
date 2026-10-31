@@ -42,7 +42,8 @@ class AllocationActionsTest {
         val vacate = rule.onNodeWithText("Vacate").assertIsDisplayed().getUnclippedBoundsInRoot()
         val bill = rule.onNodeWithText("Generate bill").assertIsDisplayed().getUnclippedBoundsInRoot()
         // one text line: about as tall as the "Generate bill" label, and wider than tall
-        assertTrue("Vacate wraps (h=${vacate.height}, w=${vacate.width})", vacate.width > vacate.height && vacate.height <= bill.height + 1.dp)
+        val vw = vacate.right - vacate.left; val vh = vacate.bottom - vacate.top; val bh = bill.bottom - bill.top
+        assertTrue("Vacate wraps (h=$vh, w=$vw)", vw > vh && vh <= bh + 1.dp)
         rule.onNodeWithText("Collect deposit").assertIsDisplayed()
         Thread.sleep(300)
         InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /data/local/tmp/allocation-actions.png").close()
