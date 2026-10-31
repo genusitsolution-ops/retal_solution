@@ -505,7 +505,6 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
                                 if (!a.isActive) a.settlementAmount?.let { LabelValue(stringResource(R.string.settlement), Money.format(it), bold = true) }
                                 if (a.isActive) AllocationActions(a.depositBalance > 0, onBill = { generateInvoice(a.id) },
                                     onDeposit = { deposit.reset(); depositFor = a.id }, onVacate = { close.reset(); closeFor = a.id })
-                                }
                             }
                         }
                     }
