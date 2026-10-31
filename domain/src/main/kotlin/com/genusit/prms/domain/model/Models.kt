@@ -52,8 +52,6 @@ data class LoginResult(
     val user: LoginUser = LoginUser(),
     val lang: String? = null,
     val subscription: SubscriptionBrief? = null,
-    /** Changes whenever the profile photo changes; null = no photo (owners and tenants). */
-    @SerialName("photo_version") val photoVersion: String? = null,
 )
 
 @Serializable
@@ -66,6 +64,8 @@ data class Me(
     val username: String? = null,
     val lang: String? = null,
     val subscription: SubscriptionBrief? = null,
+    /** Changes whenever the profile photo changes; null = no photo (owners and tenants). */
+    @SerialName("photo_version") val photoVersion: String? = null,
 )
 
 @Serializable

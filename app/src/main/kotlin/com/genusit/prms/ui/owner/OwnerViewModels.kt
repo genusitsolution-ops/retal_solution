@@ -196,8 +196,6 @@ class TenantFormViewModel @Inject constructor(
 
     fun clearPhoto() { _photo.value?.let { scanner.discard(it.file) }; _photo.value = null }
 
-    override fun onCleared() { _photo.value?.let { scanner.discard(it.file) }; super.onCleared() }
-
     /** Existing values for the edit form (not loaded when adding). */
     val existing = loadable(autoLoad = id != 0) { getEditable(id) }
     val saveAction = action<SaveTenantResult>()
@@ -304,6 +302,7 @@ class TenantFormViewModel @Inject constructor(
     override fun onCleared() {
         // identity-document photos never outlive the form (unused server drafts expire after 24 h)
         _uploads.value.values.forEach { scanner.discard(it.preview) }
+        _photo.value?.let { scanner.discard(it.file) }
         super.onCleared()
     }
 }
