@@ -543,13 +543,58 @@ class EmployeeFormViewModel @Inject constructor(
     handle: SavedStateHandle,
     getEmployee: GetEmployeeUseCase,
     private val saveEmployee: SaveEmployeeUseCase,
+    private val scanner: DocumentScanner,
+    private val uploadPhoto: com.genusit.prms.domain.usecase.UploadProfilePhotoUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val id = handle.intArg()
     val existing = loadable(autoLoad = id != 0) { getEmployee(id) }
-    val saveAction = action<Unit>()
+    val saveAction = action<Int>()
 
-    fun save(input: EmployeeInput) = saveAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { saveEmployee(id, input) }
+    /** New employee's profile photo: compressed on the phone now, uploaded once the employee is saved. */
+    private val _photo = MutableStateFlow<File?>(null)
+    val photo: StateFlow<File?> = _photo.asStateFlow()
+    private val _photoBusy = MutableStateFlow(false)
+    val photoBusy: StateFlow<Boolean> = _photoBusy.asStateFlow()
+
+    fun newCaptureTarget(): Pair<File, Uri> = scanner.newCaptureTarget()
+
+    fun pickPhoto(source: Uri, captureFile: File?) {
+        if (_photoBusy.value) return
+        _photoBusy.value = true
+        viewModelScope.launch {
+            try {
+                val f = scanner.compress(source, com.genusit.prms.ui.common.PhotoSpec.MAX_SIDE, com.genusit.prms.ui.common.PhotoSpec.QUALITY)
+                _photo.value?.let { scanner.discard(it) }
+                _photo.value = f
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // unreadable image: nothing is kept
+            } finally {
+                scanner.discard(captureFile); _photoBusy.value = false
+            }
+        }
+    }
+
+    fun clearPhoto() { _photo.value?.let { scanner.discard(it) }; _photo.value = null }
+
+    fun save(input: EmployeeInput) = saveAction.run(onSuccess = { savedId ->
+        val pending = _photo.value
+        if (pending == null) sendEvent(ScreenEvent.Saved)
+        else viewModelScope.launch {
+            // the employee exists now: attach the photo (a failure keeps the employee and says so)
+            val ok = try { uploadPhoto(com.genusit.prms.domain.model.PhotoSubject.EMPLOYEE, savedId, pending, false); true }
+            catch (e: CancellationException) { throw e } catch (e: Exception) { expiry.onError(e); false }
+            clearPhoto()
+            sendEvent(if (ok) ScreenEvent.Saved else ScreenEvent.SavedPhotoFailed)
+        }
+    }) { saveEmployee(id, input) }
+
+    override fun onCleared() {
+        _photo.value?.let { scanner.discard(it) }
+        super.onCleared()
+    }
 }
 
 @HiltViewModel
@@ -636,10 +681,17 @@ class ReferralViewModel @Inject constructor(
 class SubscriptionViewModel @Inject constructor(
     getSubscription: GetSubscriptionUseCase,
     private val requestRenewalUseCase: RequestRenewalUseCase,
+    private val selectPackageUseCase: com.genusit.prms.domain.usecase.SelectPackageUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val subscription = loadable { getSubscription() }
     val renewal = action<Unit>()
+    /** Choosing a package: the server prices it and returns the invoice to pay (opens the payment screen). */
+    val choose = action<Int>()
 
     fun requestRenewal() = renewal.run(onSuccess = { subscription.refresh() }) { requestRenewalUseCase() }
+
+    fun selectPackage(packageId: Int) = choose.run(onSuccess = { invoiceId ->
+        choose.reset(); subscription.refresh(); sendEvent(ScreenEvent.InvoiceCreated(invoiceId))
+    }) { selectPackageUseCase(packageId).invoiceId }
 }

@@ -16,6 +16,8 @@ dependencies {
     api(libs.kotlinx.coroutines.core)
     // JSR-330 @Inject only (no DI framework in the domain layer)
     api(libs.javax.inject)
+    // QR code for the UPI payment link (pure Java, no Android dependency)
+    api(libs.zxing.core)
     testImplementation(kotlin("test"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

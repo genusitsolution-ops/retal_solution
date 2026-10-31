@@ -159,10 +159,18 @@ fun SettingsScreen(role: Role, onBack: (() -> Unit)?) {
                 }
             }
             AppCard {
-                Column {
-                    Text(session?.name ?: "", style = MaterialTheme.typography.titleLarge)
-                    Text(stringResource(when (role) { Role.OWNER -> R.string.role_owner; Role.EMPLOYEE -> R.string.role_employee; else -> R.string.role_tenant }),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (role == Role.EMPLOYEE) {
+                        // set by the owner; shown here read-only
+                        val me = (model.me.state.collectAsStateWithLifecycle().value as? UiState.Data)?.value
+                        com.genusit.prms.ui.common.Avatar(com.genusit.prms.domain.model.PhotoSubject.EMPLOYEE, null, me?.photoVersion, session?.name ?: "", 56.dp)
+                        Spacer(Modifier.width(12.dp))
+                    }
+                    Column {
+                        Text(session?.name ?: "", style = MaterialTheme.typography.titleLarge)
+                        Text(stringResource(when (role) { Role.OWNER -> R.string.role_owner; Role.EMPLOYEE -> R.string.role_employee; else -> R.string.role_tenant }),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
             AppCard {

@@ -332,7 +332,10 @@ private fun RoleShell(role: Role) {
             composable("owner/payments?period={period}", listOf(navArgument("period") { type = NavType.StringType; defaultValue = "3m" })) {
                 OwnerPaymentsScreen(onBack = back, openReceipt = openReceipt)
             }
-            composable("owner/subscription") { SubscriptionScreen(onBack = back) }
+            composable("owner/subscription") { SubscriptionScreen(onBack = back, openPayment = { nav.navigate("owner/subscription/pay/$it") }) }
+            composable("owner/subscription/pay/{id}", arguments = listOf(navArgument("id") { type = NavType.IntType })) { e ->
+                com.genusit.prms.ui.owner.SubscriptionPaymentScreen(e.arguments?.getInt("id") ?: 0, onBack = back, onSubmitted = back)
+            }
 
             /* employee */
             composable(Routes.EMP_HOME) {

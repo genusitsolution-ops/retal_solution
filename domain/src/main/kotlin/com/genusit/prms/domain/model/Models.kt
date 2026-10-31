@@ -399,6 +399,7 @@ data class SubscriptionInvoice(
     val status: String = "unpaid",
     @SerialName("status_label") val statusLabel: String? = null,
     @SerialName("package_name") val packageName: String? = null,
+    @SerialName("package_id") @Serializable(with = FlexIntOrNullSerializer::class) val packageId: Int? = null,
 )
 
 @Serializable
@@ -431,7 +432,18 @@ data class SubscriptionStatus(
     @SerialName("can_request_renewal") val canRequestRenewal: Boolean = false,
     val invoices: List<SubscriptionInvoice> = emptyList(),
     val history: List<SubscriptionHistoryRow> = emptyList(),
-)
+    // 1.9: renewal / upgrade
+    @SerialName("package_id") @Serializable(with = FlexIntOrNullSerializer::class) val packageId: Int? = null,
+    @SerialName("current_start_date") val currentStartDate: String? = null,
+    val packages: List<PlanPackage> = emptyList(),
+    @SerialName("display_status") val displayStatus: PlanDisplayStatus? = null,
+    val requests: List<RenewalRequest> = emptyList(),
+    @SerialName("open_invoice_id") @Serializable(with = FlexIntOrNullSerializer::class) val openInvoiceId: Int? = null,
+) {
+    /** The package the owner is on right now, when it is one that can be bought (has features). */
+    val currentPackage: PlanPackage? get() = packages.firstOrNull { it.id == packageId }
+    val pendingRequest: RenewalRequest? get() = requests.firstOrNull { it.status == "pending" }
+}
 
 /* ───────── employee ───────── */
 
@@ -592,4 +604,4 @@ object FlexIntOrNullSerializer : kotlinx.serialization.KSerializer<Int?> {
 }
 
 /** Whose profile photo (owner or tenant). Separate from Aadhaar / PAN documents. */
-enum class PhotoSubject(val apiValue: String) { OWNER("owner"), TENANT("tenant") }
+enum class PhotoSubject(val apiValue: String) { OWNER("owner"), TENANT("tenant"), EMPLOYEE("employee") }

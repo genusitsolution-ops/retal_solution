@@ -200,4 +200,32 @@ class SubscriptionRepositoryImpl @Inject constructor(
 ) : SubscriptionRepository {
     override suspend fun status(): SubscriptionStatus = caller.get(SubscriptionStatus.serializer()) { api.subscription() }
     override suspend fun requestRenewal() { caller.run { api.subscriptionAction(buildJsonObject { put("action", "request_renewal") }) } }
+
+    override suspend fun selectPackage(packageId: Int): SelectedPackage = caller.get(SelectedPackage.serializer()) {
+        api.subscriptionAction(buildJsonObject { put("action", "select_package"); put("package_id", packageId) })
+    }
+
+    override suspend fun paymentOptions(invoiceId: Int): PaymentClaimsData = caller.get(PaymentClaimsData.serializer()) { api.paymentClaims(invoiceId) }
+
+    override suspend fun submitPayment(input: RenewalPaymentInput, screenshot: java.io.File): RenewalRequest? {
+        val text = "text/plain".toMediaType()
+        val type = if (screenshot.name.endsWith(".png", true)) "image/png" else "image/jpeg"
+        val part = okhttp3.MultipartBody.Part.createFormData("screenshot", "payment." + (if (type == "image/png") "png" else "jpg"), screenshot.asRequestBody(type.toMediaType()))
+        return caller.get(SubmittedRequest.serializer()) {
+            api.submitPaymentClaim(
+                input.invoiceId.toString().toRequestBody(text), input.utr.toRequestBody(text), input.paidOn.toRequestBody(text),
+                String.format(java.util.Locale.US, "%.2f", input.amount).toRequestBody(text), (input.note ?: "").toRequestBody(text), part,
+            )
+        }.claim
+    }
+
+    override suspend fun startGateway(invoiceId: Int): GatewayStart = caller.get(GatewayStart.serializer()) {
+        api.startGatewayPayment(buildJsonObject { put("invoice_id", invoiceId) })
+    }
+
+    override suspend fun gatewayStatus(id: Int): GatewayStatus = caller.get(GatewayStatus.serializer()) { api.gatewayPayment(id) }
+
+    override suspend fun screenshot(requestId: Int): ByteArray = caller.download { api.paymentScreenshot(requestId) }.first
+
+    override suspend fun staticQr(): ByteArray = caller.download { api.paymentQrImage() }.first
 }

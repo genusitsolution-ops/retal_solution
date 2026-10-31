@@ -27,6 +27,7 @@ data class Branding(
     val loginLogo: File?,
     val signupEnabled: Boolean?,
     val referralEnabled: Boolean,
+    val trial: com.genusit.prms.domain.model.TrialInfo? = null,
 )
 
 /**
@@ -64,6 +65,7 @@ class BrandingStore @Inject constructor(
             ?: logoFile(cfg.version, "logo").takeIf { it.isFile && it.length() > 0 },
         signupEnabled = cfg.signup.enabled,
         referralEnabled = cfg.referral.enabled,
+        trial = cfg.trial?.takeIf { it.enabled },
     )
 
     suspend fun refresh() = lock.withLock {

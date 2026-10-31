@@ -74,7 +74,6 @@ import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.ConfirmDialog
 import com.genusit.prms.ui.common.EmptyState
 import com.genusit.prms.ui.common.FormField
-import com.genusit.prms.ui.common.IconBadge
 import com.genusit.prms.ui.common.InvoiceRow
 import com.genusit.prms.ui.common.LabelValue
 import com.genusit.prms.ui.common.LoadingBox
@@ -109,7 +108,7 @@ fun EmployeesScreen(onBack: () -> Unit, openEmployee: (Int) -> Unit, addEmployee
                     items(list, key = { it.id }) { e ->
                         AppCard(onClick = { openEmployee(e.id) }) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconBadge(Icons.Filled.Badge, if (e.status == "active") Palette.Brand else Palette.Muted)
+                                com.genusit.prms.ui.common.Avatar(com.genusit.prms.domain.model.PhotoSubject.EMPLOYEE, e.id, e.photoVersion, e.fullName)
                                 Spacer(Modifier.width(12.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(e.fullName, fontWeight = FontWeight.SemiBold)
@@ -135,7 +134,16 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val model: EmployeeFormViewModel = hiltViewModel()
     val act by model.saveAction.state.collectAsStateWithLifecycle()
     val existing by model.existing.state.collectAsStateWithLifecycle()
-    EventEffect(model) { if (it == ScreenEvent.Saved) onSaved() }
+    val pendingPhoto by model.photo.collectAsStateWithLifecycle()
+    val photoBusy by model.photoBusy.collectAsStateWithLifecycle()
+    val formCtx = androidx.compose.ui.platform.LocalContext.current
+    EventEffect(model) {
+        if (it == ScreenEvent.Saved) onSaved()
+        if (it == ScreenEvent.SavedPhotoFailed) {
+            android.widget.Toast.makeText(formCtx, formCtx.getString(R.string.emp_photo_failed_after_save), android.widget.Toast.LENGTH_LONG).show()
+            onSaved()
+        }
+    }
     var loaded by rememberSaveable { mutableStateOf(id == 0) }
     var name by rememberSaveable { mutableStateOf("") }
     var phone by rememberSaveable { mutableStateOf("") }
@@ -168,6 +176,12 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             return@ScreenScaffold
         }
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (id != 0) {
+                val version = (existing as? UiState.Data)?.value?.photoVersion
+                com.genusit.prms.ui.common.ProfilePhotoCard(com.genusit.prms.domain.model.PhotoSubject.EMPLOYEE, id, version, name, consentRequired = false,
+                    onChanged = { model.existing.refresh() })
+            } else com.genusit.prms.ui.common.PendingPhotoCard(pendingPhoto, name, photoBusy, consentRequired = false, newCaptureTarget = model::newCaptureTarget,
+                onPicked = { uri, file, _ -> model.pickPhoto(uri, file) }, onClear = model::clearPhoto)
             FormField(name, { name = it.take(150) }, stringResource(R.string.full_name), bad(EmployeeFormRules.Problem.NAME),
                 supporting = if (bad(EmployeeFormRules.Problem.NAME)) stringResource(R.string.emp_err_name) else null, capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words)
             FormField(phone, { phone = it.filter { c -> c.isDigit() || c == '+' }.take(15) }, stringResource(R.string.phone), bad(EmployeeFormRules.Problem.PHONE), KeyboardType.Phone,
@@ -190,7 +204,7 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             ActionError(act)
             SubmitButton(stringResource(R.string.save), act) {
                 tried = true
-                if (problems.isEmpty()) {
+                if (problems.isEmpty() && !photoBusy) {
                     val input = EmployeeInput(name.trim(), phone, email.ifBlank { null }, if (id == 0) username else null, password.ifEmpty { null })
                     model.save(input)
                 }
@@ -220,6 +234,8 @@ fun EmployeeDetailScreen(id: Int, onBack: () -> Unit, edit: () -> Unit, openRece
                     AppCard {
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                com.genusit.prms.ui.common.Avatar(com.genusit.prms.domain.model.PhotoSubject.EMPLOYEE, e.id, e.photoVersion, e.fullName, 56.dp)
+                                Spacer(Modifier.width(12.dp))
                                 Text(e.fullName, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                                 StatusChip(e.status, stringResource(if (e.status == "active") R.string.st_active else R.string.st_inactive))
                             }

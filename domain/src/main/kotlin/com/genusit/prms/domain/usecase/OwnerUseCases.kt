@@ -190,8 +190,11 @@ class GetEmployeeUseCase @Inject constructor(private val repo: TeamRepository) {
 
 /** Adds ([id] = 0) or updates a collection agent. */
 class SaveEmployeeUseCase @Inject constructor(private val repo: TeamRepository) {
-    suspend operator fun invoke(id: Int, input: EmployeeInput) {
-        if (id == 0) repo.add(input) else repo.update(id, input)
+    /** Returns the employee's id (the new id when adding). */
+    suspend operator fun invoke(id: Int, input: EmployeeInput): Int {
+        if (id == 0) return repo.add(input).id
+        repo.update(id, input)
+        return id
     }
 }
 
@@ -215,4 +218,34 @@ class GetSubscriptionUseCase @Inject constructor(private val repo: SubscriptionR
 
 class RequestRenewalUseCase @Inject constructor(private val repo: SubscriptionRepository) {
     suspend operator fun invoke() = repo.requestRenewal()
+}
+
+class SelectPackageUseCase @Inject constructor(private val repo: SubscriptionRepository) {
+    suspend operator fun invoke(packageId: Int) = repo.selectPackage(packageId)
+}
+
+class GetPaymentOptionsUseCase @Inject constructor(private val repo: SubscriptionRepository) {
+    suspend operator fun invoke(invoiceId: Int) = repo.paymentOptions(invoiceId)
+}
+
+/** Sends the payment details (reference normalised like the server does) with the screenshot. */
+class SubmitRenewalPaymentUseCase @Inject constructor(private val repo: SubscriptionRepository) {
+    suspend operator fun invoke(input: RenewalPaymentInput, screenshot: java.io.File) =
+        repo.submitPayment(input.copy(utr = com.genusit.prms.domain.util.RenewalRules.normalizeUtr(input.utr)), screenshot)
+}
+
+class StartGatewayPaymentUseCase @Inject constructor(private val repo: SubscriptionRepository) {
+    suspend operator fun invoke(invoiceId: Int) = repo.startGateway(invoiceId)
+}
+
+class GetGatewayStatusUseCase @Inject constructor(private val repo: SubscriptionRepository) {
+    suspend operator fun invoke(id: Int) = repo.gatewayStatus(id)
+}
+
+class GetPaymentScreenshotUseCase @Inject constructor(private val repo: SubscriptionRepository) {
+    suspend operator fun invoke(requestId: Int) = repo.screenshot(requestId)
+}
+
+class GetStaticPaymentQrUseCase @Inject constructor(private val repo: SubscriptionRepository) {
+    suspend operator fun invoke() = repo.staticQr()
 }

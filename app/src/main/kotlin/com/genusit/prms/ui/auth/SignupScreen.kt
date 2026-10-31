@@ -141,6 +141,13 @@ fun SignupScreen(branding: Branding, onBack: () -> Unit) {
                 val done = (act as? ActionState.Done)?.result
                 if (done != null) SignupResult(done, onBack)
                 else Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // the free trial the new owner gets immediately (configured by the Super Admin)
+                    branding.trial?.let { t ->
+                        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Palette.BrandSoft).padding(12.dp)) {
+                            Text(stringResource(R.string.signup_trial_title, t.packageName, t.days), fontWeight = FontWeight.Bold, color = Palette.Brand)
+                            Text(stringResource(R.string.signup_trial_sub, t.maxProperties, t.maxTenants), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                     FormField(name, { name = it.take(150) }, stringResource(R.string.full_name), bad(Problem.NAME), capitalization = KeyboardCapitalization.Words)
                     FormField(phone, { phone = it.filter { c -> c.isDigit() || c == '+' }.take(15) }, stringResource(R.string.phone), bad(Problem.PHONE), KeyboardType.Phone)
                     FormField(email, { email = it.trim().take(150) }, stringResource(R.string.email), bad(Problem.EMAIL), KeyboardType.Email, autoCorrect = false)

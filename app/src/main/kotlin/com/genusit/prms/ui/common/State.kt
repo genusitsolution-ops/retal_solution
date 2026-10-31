@@ -77,6 +77,8 @@ sealed interface ScreenEvent {
     data object SavedPhotoFailed : ScreenEvent
     /** A cash handover was submitted or recorded – open it. */
     data class HandoverSaved(val settlementId: Int) : ScreenEvent
+    /** Open this web page in the browser (online payment page). */
+    data class OpenUrl(val url: String) : ScreenEvent
 }
 
 /* ═════════════════════════ session expiry ═════════════════════════ */

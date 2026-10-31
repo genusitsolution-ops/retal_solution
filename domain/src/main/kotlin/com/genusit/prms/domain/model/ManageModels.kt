@@ -224,6 +224,7 @@ data class EmployeeRow(
     @SerialName("assigned_props") val assignedProps: Int = 0,
     @SerialName("total_collections") val totalCollections: Int = 0,
     @SerialName("total_collected") val totalCollected: Double = 0.0,
+    @SerialName("photo_version") val photoVersion: String? = null,
 )
 
 @Serializable
@@ -238,6 +239,7 @@ data class EmployeeDetail(
     @SerialName("last_login") val lastLogin: String? = null,
     @SerialName("assigned_properties") val assignedProperties: List<AssignedProperty> = emptyList(),
     @SerialName("recent_collections") val recentCollections: List<CollectionRow> = emptyList(),
+    @SerialName("photo_version") val photoVersion: String? = null,
 )
 
 @Serializable
@@ -465,6 +467,17 @@ data class AppConfig(
     val branding: AppBranding = AppBranding(),
     val signup: SignupInfo = SignupInfo(),
     val referral: ReferralInfo = ReferralInfo(),
+    /** The free trial a new owner gets right away (from the Super Admin's billing settings); null when off. */
+    val trial: TrialInfo? = null,
+)
+
+@Serializable
+data class TrialInfo(
+    val enabled: Boolean = false,
+    val days: Int = 0,
+    @SerialName("package_name") val packageName: String = "",
+    @SerialName("max_properties") val maxProperties: Int = 0,
+    @SerialName("max_tenants") val maxTenants: Int = 0,
 )
 
 @Serializable

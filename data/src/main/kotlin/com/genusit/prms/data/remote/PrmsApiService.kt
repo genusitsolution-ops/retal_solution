@@ -261,6 +261,38 @@ interface PrmsApiService {
     @POST("owner/subscription.php")
     suspend fun subscriptionAction(@Body body: JsonObject): Response<ResponseBody>
 
+    /* ───────── owner: subscription payment (renewal requests) ───────── */
+
+    /** Payment details for [invoiceId] (exact amount, UPI link) and the owner's renewal requests. */
+    @GET("owner/payment_claims.php")
+    suspend fun paymentClaims(@Query("invoice_id") invoiceId: Int?): Response<ResponseBody>
+
+    /** Manual UPI payment details with the screenshot (multipart). */
+    @Multipart
+    @POST("owner/payment_claims.php")
+    suspend fun submitPaymentClaim(
+        @Part("invoice_id") invoiceId: RequestBody,
+        @Part("utr") utr: RequestBody,
+        @Part("paid_on") paidOn: RequestBody,
+        @Part("amount") amount: RequestBody,
+        @Part("note") note: RequestBody,
+        @Part screenshot: MultipartBody.Part,
+    ): Response<ResponseBody>
+
+    @GET("owner/payment_claims.php")
+    suspend fun paymentScreenshot(@Query("screenshot") requestId: Int): Response<ResponseBody>
+
+    @GET("owner/payment_claims.php?qr_image=1")
+    suspend fun paymentQrImage(): Response<ResponseBody>
+
+    /** Online payment: the server creates the payment link for the invoice total. */
+    @POST("owner/payment_gateway.php")
+    suspend fun startGatewayPayment(@Body body: JsonObject): Response<ResponseBody>
+
+    /** The server re-checks the payment with the gateway before answering. */
+    @GET("owner/payment_gateway.php")
+    suspend fun gatewayPayment(@Query("id") id: Int): Response<ResponseBody>
+
     /* ───────── collection agent ───────── */
 
     @GET("employee/dashboard.php")

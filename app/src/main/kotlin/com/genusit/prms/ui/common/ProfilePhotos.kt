@@ -254,3 +254,30 @@ fun ProfilePhotoCard(subject: PhotoSubject, id: Int?, version: String?, name: St
         }
     }
 }
+
+/**
+ * Photo chosen before the record exists (add employee): shown from the compressed file on the phone and
+ * uploaded by the form once the record is saved.
+ */
+@Composable
+fun PendingPhotoCard(file: File?, name: String, busy: Boolean, consentRequired: Boolean,
+                     newCaptureTarget: () -> Pair<File, Uri>, onPicked: (uri: Uri, captureFile: File?, consent: Boolean) -> Unit, onClear: () -> Unit) {
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val bmp by produceState<Bitmap?>(null, file) {
+                    value = file?.let { f -> withContext(Dispatchers.IO) { runCatching { BitmapFactory.decodeFile(f.absolutePath, BitmapFactory.Options().apply { inSampleSize = 4 }) }.getOrNull() } }
+                }
+                AvatarImage(bmp, name, 72.dp)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.photo_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(if (file != null) R.string.photo_after_save else R.string.photo_sub), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Palette.Brand)
+            PhotoPickerButtons(consentRequired = consentRequired, enabled = !busy, newCaptureTarget = newCaptureTarget, onPicked = onPicked)
+            if (file != null) TextButton(onClick = onClear) { Text(stringResource(R.string.photo_remove), color = Palette.Danger) }
+        }
+    }
+}

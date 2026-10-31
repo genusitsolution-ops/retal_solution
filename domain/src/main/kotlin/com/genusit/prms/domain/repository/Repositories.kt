@@ -144,6 +144,16 @@ interface ReportRepository {
 interface SubscriptionRepository {
     suspend fun status(): SubscriptionStatus
     suspend fun requestRenewal()
+    /** Owner chooses the package to buy; returns the invoice to pay and its payment details. */
+    suspend fun selectPackage(packageId: Int): SelectedPackage
+    /** Payment details for one unpaid invoice plus the owner's renewal requests. */
+    suspend fun paymentOptions(invoiceId: Int): PaymentClaimsData
+    /** Manual UPI: payment details with the payment screenshot (a JPEG / PNG file). */
+    suspend fun submitPayment(input: RenewalPaymentInput, screenshot: java.io.File): RenewalRequest?
+    suspend fun startGateway(invoiceId: Int): GatewayStart
+    suspend fun gatewayStatus(id: Int): GatewayStatus
+    suspend fun screenshot(requestId: Int): ByteArray
+    suspend fun staticQr(): ByteArray
 }
 
 /** Collection agent (employee) features. */
