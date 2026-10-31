@@ -201,22 +201,12 @@ fun PlanHero(s: SubscriptionStatus) {
                 flags.forEach { StatusChip(chipCode(it), statusLabel(it)) }
             }
             Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                DateBlock(stringResource(R.string.sub_start_date), dateText(s.currentStartDate ?: s.startDate), Modifier.weight(1f))
-                DateBlock(stringResource(if (s.isTrial) R.string.sub_trial_ends else R.string.sub_expiry_date), dateText(s.endDate), Modifier.weight(1f))
-                DateBlock(stringResource(R.string.sub_days_remaining), (s.daysLeft?.coerceAtLeast(0) ?: 0).toString(), Modifier.weight(1f))
-            }
+            LabelValue(stringResource(R.string.sub_start_date), dateText(s.currentStartDate ?: s.startDate))
+            LabelValue(stringResource(if (s.isTrial) R.string.sub_trial_ends else R.string.sub_expiry_date), dateText(s.endDate))
+            LabelValue(stringResource(R.string.sub_days_remaining), (s.daysLeft?.coerceAtLeast(0) ?: 0).toString(), bold = true)
             if (s.state == "grace") Text(stringResource(R.string.sub_grace, dateText(s.graceEndDate)), color = Palette.Warning, modifier = Modifier.padding(top = 6.dp))
             if (s.restricted) Text(stringResource(R.string.sub_restricted), color = Palette.Danger, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
         }
-    }
-}
-
-@Composable
-private fun DateBlock(label: String, value: String, modifier: Modifier) {
-    Column(modifier) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-        Text(value, fontWeight = FontWeight.Bold)
     }
 }
 

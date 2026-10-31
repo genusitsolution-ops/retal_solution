@@ -56,8 +56,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -263,9 +261,10 @@ fun PaymentBreakdown(p: PaymentOptions) {
         Column {
             Text(stringResource(R.string.pay_selected_package), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(i.packageName, style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.pay_period) + ": " + dateText(i.periodStart) + " – " + dateText(i.periodEnd),
+                style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(6.dp))
             LabelValue(stringResource(R.string.pay_duration), stringResource(R.string.n_days, i.durationDays))
-            LabelValue(stringResource(R.string.pay_period), dateText(i.periodStart) + " – " + dateText(i.periodEnd))
             LabelValue(stringResource(R.string.invoice_no), i.invoiceNumber)
             LabelValue(stringResource(R.string.base_price_incl, i.includedUnits), Money.format(i.baseAmount))
             if (i.extraUnits > 0) LabelValue(stringResource(R.string.extra_rooms_calc, i.extraUnits, Money.format(i.extraUnitPrice)), Money.format(i.extraAmount))
@@ -351,10 +350,10 @@ fun UpiQrPanel(upi: com.genusit.prms.domain.model.UpiDetails) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val qr by produceState<Bitmap?>(null, upi.uri) { value = withContext(Dispatchers.Default) { runCatching { qrBitmap(upi.uri) }.getOrNull() } }
         val desc = stringResource(R.string.pay_qr_desc, Money.format(upi.amount))
-        Box(Modifier.size(240.dp).clip(RoundedCornerShape(12.dp)).background(Color.White).padding(8.dp)
-            .testTag("upi_qr").semantics { contentDescription = desc }, contentAlignment = Alignment.Center) {
+        Box(Modifier.size(240.dp).clip(RoundedCornerShape(12.dp)).background(Color.White).padding(8.dp).testTag("upi_qr"), contentAlignment = Alignment.Center) {
             val b = qr
-            if (b != null) Image(b.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            // the description is set only once the QR image is drawn
+            if (b != null) Image(b.asImageBitmap(), contentDescription = desc, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
             else CircularProgressIndicator(color = Palette.Brand)
         }
         Text(stringResource(R.string.pay_scan_hint, Money.format(upi.amount)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

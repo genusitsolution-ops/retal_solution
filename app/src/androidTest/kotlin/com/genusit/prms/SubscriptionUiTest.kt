@@ -102,7 +102,7 @@ class SubscriptionUiTest {
         rule.onNodeWithTag("pay_total").assertIsDisplayed()
         rule.onNodeWithText("Professional").assertIsDisplayed()
         rule.onNodeWithText("90 days").assertIsDisplayed()
-        rule.waitUntil(5000) { runCatching { rule.onNodeWithContentDescription("UPI QR code for ₹3,538.82").assertExists(); true }.getOrDefault(false) }
+        rule.waitUntil(15000) { runCatching { rule.onNodeWithContentDescription("UPI QR code for ₹3,538.82").assertExists(); true }.getOrDefault(false) }
         rule.onNodeWithText("rentalsol@testbank").assertExists()
         rule.onNodeWithText("Open UPI app").assertExists()
         Thread.sleep(500)
