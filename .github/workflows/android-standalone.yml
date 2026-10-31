@@ -59,6 +59,17 @@ jobs:
           gh release create "$TAG" "PRMS-${TAG}.apk" --draft --target "${{ github.sha }}" \
             --title "Android debug build ${{ github.run_number }}" --notes "Debug APK built from ${{ github.sha }}"
 
+      - name: Compile on-device tests
+        id: atest
+        run: ./gradlew :app:compileDebugAndroidTestKotlin --stacktrace 2>&1 | tee atest-output.txt; exit ${PIPESTATUS[0]}
+
+      - name: Show on-device test compile errors
+        if: failure() && steps.atest.outcome == 'failure'
+        run: |
+          grep -E "^e: " atest-output.txt | head -20 | while IFS= read -r l; do
+            echo "::error title=androidTest::$(echo "$l" | sed 's#file:///home/runner/work/retal_solution/retal_solution/##' | cut -c1-400)"
+          done
+
       - name: Lint
         id: lint
         run: ./gradlew :app:lintDebug
