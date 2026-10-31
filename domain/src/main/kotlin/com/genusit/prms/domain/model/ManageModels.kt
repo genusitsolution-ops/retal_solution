@@ -31,6 +31,7 @@ data class TenantEditable(
     val username: String? = null,
     @SerialName("has_account") val hasAccount: Boolean = false,
     val status: String = "active",
+    @SerialName("photo_version") val photoVersion: String? = null,
 )
 
 /** Body for POST owner/tenants.php (create) and PUT ?id=N (update). Null fields are not sent. */
@@ -100,8 +101,20 @@ data class Allocation(
     @SerialName("property_code") val propertyCode: String? = null,
     val city: String? = null,
     @SerialName("base_rent") val baseRent: Double = 0.0,
+    @SerialName("property_name") val propertyName: String? = null,
 ) {
     val isActive: Boolean get() = status == "active"
+
+    /** Search on the Allocations screen: tenant name, room / property code or name, city, mobile number. */
+    fun matches(query: String): Boolean {
+        val q = query.trim()
+        if (q.isEmpty()) return true
+        if (listOfNotNull(tenantName, propertyCode, propertyName, city).any { it.contains(q, ignoreCase = true) }) return true
+        // a phone number typed with spaces, "+" or "-" still matches
+        val isPhone = q.all { it.isDigit() || it == ' ' || it == '+' || it == '-' }
+        val digits = q.filter { it.isDigit() }
+        return isPhone && digits.length >= 3 && (tenantPhone ?: "").filter { it.isDigit() }.contains(digits)
+    }
 }
 
 @Serializable
@@ -161,7 +174,29 @@ data class InvoiceContext(
     @SerialName("fixed_charges") val fixedCharges: List<FixedChargeLine> = emptyList(),
     @SerialName("variable_charges") val variableCharges: List<VariableChargeLine> = emptyList(),
     @SerialName("other_outstanding") val otherOutstanding: Double = 0.0,
+    /** Active charges of the owner not yet on this tenancy (app 1.8); they can be added from the bill screen. */
+    @SerialName("available_charges") val availableCharges: List<AvailableCharge> = emptyList(),
 )
+
+/** An active charge that is not yet on this tenancy. [type] = fixed | variable. */
+@Serializable
+data class AvailableCharge(
+    val id: Int = 0,
+    val name: String = "",
+    val type: String = "fixed",
+    val amount: Double = 0.0,
+    val rate: Double = 0.0,
+    @SerialName("unit_label") val unitLabel: String? = null,
+    @SerialName("last_reading") @Serializable(with = FlexDoubleOrNull::class) val lastReading: Double? = null,
+) {
+    val isMeter: Boolean get() = type == "variable"
+}
+
+/**
+ * A not-yet-added charge put on this bill. [everyMonth] also adds it to the tenancy's monthly
+ * charges; a meter charge carries its readings.
+ */
+data class ExtraCharge(val chargeId: Int, val everyMonth: Boolean, val previous: Double? = null, val current: Double? = null)
 
 /** One meter reading for a variable charge (units = curr − prev, server re-checks). */
 data class MeterReading(val tcId: Int, val previous: Double, val current: Double)

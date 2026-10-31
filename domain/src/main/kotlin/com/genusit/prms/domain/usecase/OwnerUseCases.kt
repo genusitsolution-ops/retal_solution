@@ -138,8 +138,10 @@ class GetInvoiceContextUseCase @Inject constructor(private val repo: BillingRepo
 }
 
 class GenerateInvoiceUseCase @Inject constructor(private val repo: BillingRepository) {
-    suspend operator fun invoke(allocationId: Int, month: Int, year: Int, fixedChargeIds: List<Int>, readings: List<MeterReading>): GeneratedInvoice =
-        repo.generateInvoice(allocationId, month, year, fixedChargeIds, readings)
+    suspend operator fun invoke(
+        allocationId: Int, month: Int, year: Int, fixedChargeIds: List<Int>, readings: List<MeterReading>,
+        skipVarIds: List<Int> = emptyList(), extras: List<com.genusit.prms.domain.model.ExtraCharge> = emptyList(),
+    ): GeneratedInvoice = repo.generateInvoice(allocationId, month, year, fixedChargeIds, readings, skipVarIds, extras)
 }
 
 class CancelInvoiceUseCase @Inject constructor(private val repo: BillingRepository) {

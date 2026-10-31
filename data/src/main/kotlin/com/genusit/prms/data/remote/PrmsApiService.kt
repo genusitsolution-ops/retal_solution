@@ -203,6 +203,23 @@ interface PrmsApiService {
     @POST("owner/employees.php")
     suspend fun employeeAction(@Query("action") action: String, @Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
 
+    /* ───────── profile photos (owner / tenant) ───────── */
+
+    @GET("common/profile_photo.php")
+    suspend fun profilePhoto(@Query("type") type: String, @Query("id") id: Int?): Response<ResponseBody>
+
+    @Multipart
+    @POST("common/profile_photo.php")
+    suspend fun uploadProfilePhoto(
+        @Part("type") type: RequestBody,
+        @Part("id") id: RequestBody?,
+        @Part("consent") consent: RequestBody,
+        @Part photo: MultipartBody.Part,
+    ): Response<ResponseBody>
+
+    @DELETE("common/profile_photo.php")
+    suspend fun removeProfilePhoto(@Query("type") type: String, @Query("id") id: Int?): Response<ResponseBody>
+
     /* ───────── owner: collections & cash handovers ───────── */
 
     /** [view] = dashboard | employee | list | detail; empty filters are left out. */

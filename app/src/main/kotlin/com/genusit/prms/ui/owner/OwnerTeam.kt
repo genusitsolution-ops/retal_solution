@@ -66,6 +66,7 @@ import com.genusit.prms.domain.model.QueryDetail
 import com.genusit.prms.domain.model.Role
 import com.genusit.prms.domain.util.Dates
 import com.genusit.prms.domain.util.Money
+import com.genusit.prms.domain.util.EmployeeFormRules
 import com.genusit.prms.domain.util.Validators
 import com.genusit.prms.ui.common.ActionError
 import com.genusit.prms.ui.common.ActionState
@@ -141,6 +142,7 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     var email by rememberSaveable { mutableStateOf("") }
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var confirm by rememberSaveable { mutableStateOf("") }
     var tried by rememberSaveable { mutableStateOf(false) }
     // copy the stored values into the form once, when they arrive
     LaunchedEffect(existing) {
@@ -149,9 +151,15 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             name = e.fullName; phone = e.phone.orEmpty(); email = e.email.orEmpty(); username = e.username.orEmpty(); loaded = true
         }
     }
-    val emailOk = email.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    val pwOk = if (id == 0) password.length >= 6 else password.isEmpty() || password.length >= 6
-    val valid = name.isNotBlank() && Validators.phone(phone) && emailOk && username.length >= 3 && pwOk
+    val problems = EmployeeFormRules.problems(id == 0, name, phone, email, username, password, confirm)
+    fun bad(p: EmployeeFormRules.Problem) = p in problems && (tried || when (p) {
+        // shown while typing once the field has something in it; everything else after "Save"
+        EmployeeFormRules.Problem.PASSWORD_SHORT -> password.isNotEmpty()
+        EmployeeFormRules.Problem.PASSWORD_MISMATCH -> confirm.length >= password.length && confirm.isNotEmpty()
+        EmployeeFormRules.Problem.EMAIL -> email.contains('@') && email.substringAfter('@').contains('.')
+        else -> false
+    })
+    val pwRule = stringResource(R.string.emp_password_rule, Validators.EMPLOYEE_PASSWORD_MIN)
     ScreenScaffold(stringResource(if (id == 0) R.string.add_employee else R.string.edit_employee), onBack = onBack) { pad ->
         if (!loaded) {
             val failed = existing as? UiState.Error
@@ -160,16 +168,29 @@ fun EmployeeFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             return@ScreenScaffold
         }
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            FormField(name, { name = it.take(150) }, stringResource(R.string.full_name), tried && name.isBlank())
-            FormField(phone, { phone = it.filter { c -> c.isDigit() || c == '+' }.take(15) }, stringResource(R.string.phone), tried && !Validators.phone(phone), KeyboardType.Phone)
-            FormField(email, { email = it.trim().take(150) }, stringResource(R.string.email_optional), tried && !emailOk, KeyboardType.Email)
-            FormField(username, { username = it.trim().take(50) }, stringResource(R.string.username), tried && username.length < 3, enabled = id == 0)
-            FormField(password, { password = it.take(100) }, stringResource(if (id == 0) R.string.password else R.string.new_password_optional), tried && !pwOk, password = true)
+            FormField(name, { name = it.take(150) }, stringResource(R.string.full_name), bad(EmployeeFormRules.Problem.NAME),
+                supporting = if (bad(EmployeeFormRules.Problem.NAME)) stringResource(R.string.emp_err_name) else null, capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words)
+            FormField(phone, { phone = it.filter { c -> c.isDigit() || c == '+' }.take(15) }, stringResource(R.string.phone), bad(EmployeeFormRules.Problem.PHONE), KeyboardType.Phone,
+                supporting = if (bad(EmployeeFormRules.Problem.PHONE)) stringResource(R.string.emp_err_phone) else null)
+            FormField(email, { email = it.trim().take(150) }, stringResource(R.string.email_optional), bad(EmployeeFormRules.Problem.EMAIL), KeyboardType.Email, autoCorrect = false,
+                supporting = if (bad(EmployeeFormRules.Problem.EMAIL)) stringResource(R.string.emp_err_email) else null)
+            FormField(username, { username = it.trim().filter { c -> !c.isWhitespace() }.take(80) }, stringResource(R.string.username), bad(EmployeeFormRules.Problem.USERNAME), enabled = id == 0, autoCorrect = false,
+                supporting = if (id == 0) stringResource(if (bad(EmployeeFormRules.Problem.USERNAME)) R.string.emp_err_username else R.string.signup_username_hint) else null)
+            FormField(password, { password = it.take(100) }, stringResource(if (id == 0) R.string.password else R.string.new_password_optional),
+                bad(EmployeeFormRules.Problem.PASSWORD_REQUIRED) || bad(EmployeeFormRules.Problem.PASSWORD_SHORT), password = true, passwordToggle = true,
+                supporting = when {
+                    bad(EmployeeFormRules.Problem.PASSWORD_REQUIRED) -> stringResource(R.string.emp_err_password_required) + " " + pwRule
+                    bad(EmployeeFormRules.Problem.PASSWORD_SHORT) -> stringResource(R.string.emp_err_password_short, Validators.EMPLOYEE_PASSWORD_MIN)
+                    id != 0 -> stringResource(R.string.emp_password_keep) + " " + pwRule
+                    else -> pwRule
+                })
+            if (id == 0 || password.isNotEmpty()) FormField(confirm, { confirm = it.take(100) }, stringResource(R.string.emp_confirm_password), bad(EmployeeFormRules.Problem.PASSWORD_MISMATCH),
+                password = true, passwordToggle = true, supporting = if (bad(EmployeeFormRules.Problem.PASSWORD_MISMATCH)) stringResource(R.string.passwords_differ) else null)
             Text(stringResource(R.string.employee_form_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             ActionError(act)
             SubmitButton(stringResource(R.string.save), act) {
                 tried = true
-                if (valid) {
+                if (problems.isEmpty()) {
                     val input = EmployeeInput(name.trim(), phone, email.ifBlank { null }, if (id == 0) username else null, password.ifEmpty { null })
                     model.save(input)
                 }

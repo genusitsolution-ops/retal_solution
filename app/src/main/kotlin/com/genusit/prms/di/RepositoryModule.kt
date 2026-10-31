@@ -51,5 +51,6 @@ abstract class RepositoryModule {
     @Binds @Singleton abstract fun agent(impl: AgentRepositoryImpl): AgentRepository
     @Binds @Singleton abstract fun tenantPortal(impl: TenantPortalRepositoryImpl): TenantPortalRepository
     @Binds @Singleton abstract fun ownerSettlements(impl: com.genusit.prms.data.repository.OwnerSettlementRepositoryImpl): com.genusit.prms.domain.repository.OwnerSettlementRepository
+    @Binds @Singleton abstract fun photos(impl: com.genusit.prms.data.repository.PhotoRepositoryImpl): com.genusit.prms.domain.repository.PhotoRepository
     @Binds @Singleton abstract fun agentSettlements(impl: com.genusit.prms.data.repository.AgentSettlementRepositoryImpl): com.genusit.prms.domain.repository.AgentSettlementRepository
 }

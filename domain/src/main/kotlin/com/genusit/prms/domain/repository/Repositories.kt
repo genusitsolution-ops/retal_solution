@@ -80,7 +80,14 @@ interface BillingRepository {
     suspend fun payments(from: String? = null, to: String? = null): OwnerPayments
     suspend fun invoiceContext(allocationId: Int, month: Int, year: Int): InvoiceContext
     /** Totals are computed on the server from the owner's charges. */
-    suspend fun generateInvoice(allocationId: Int, month: Int, year: Int, fixedChargeIds: List<Int>, readings: List<MeterReading>): GeneratedInvoice
+    /**
+     * [skipVarIds]: meter charges on the tenancy deliberately not billed this month (the server refuses a
+     * meter charge that has neither a reading nor a skip). [extras]: charges not yet on the tenancy.
+     */
+    suspend fun generateInvoice(
+        allocationId: Int, month: Int, year: Int, fixedChargeIds: List<Int>, readings: List<MeterReading>,
+        skipVarIds: List<Int> = emptyList(), extras: List<com.genusit.prms.domain.model.ExtraCharge> = emptyList(),
+    ): GeneratedInvoice
     /** Only unpaid invoices can be cancelled (server answers NOT_CANCELLABLE otherwise). */
     suspend fun cancelInvoice(invoiceId: Int, reason: String)
     suspend fun charges(includeInactive: Boolean = false): List<Charge>

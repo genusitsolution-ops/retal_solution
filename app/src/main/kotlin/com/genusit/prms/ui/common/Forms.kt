@@ -1,5 +1,11 @@
 package com.genusit.prms.ui.common
 
+import androidx.compose.material.icons.filled.VisibilityOff
+
+import androidx.compose.material.icons.filled.Visibility
+
+import androidx.compose.material3.IconButton
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,7 +60,10 @@ fun FormField(
     capitalization: androidx.compose.ui.text.input.KeyboardCapitalization = androidx.compose.ui.text.input.KeyboardCapitalization.None,
     autoCorrect: Boolean = true,
     imeAction: androidx.compose.ui.text.input.ImeAction = androidx.compose.ui.text.input.ImeAction.Default,
+    /** Eye icon that shows / hides a [password] field's text. */
+    passwordToggle: Boolean = false,
 ) {
+    var shown by rememberSaveable { mutableStateOf(false) }
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
@@ -64,7 +73,15 @@ fun FormField(
         isError = isError,
         enabled = enabled,
         supportingText = supporting?.let { s -> { Text(s) } },
-        visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
+        visualTransformation = if (password && !shown) PasswordVisualTransformation() else VisualTransformation.None,
+        trailingIcon = if (password && passwordToggle) {
+            {
+                IconButton(onClick = { shown = !shown }) {
+                    Icon(if (shown) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                        contentDescription = stringResource(if (shown) R.string.hide_password else R.string.show_password))
+                }
+            }
+        } else null,
         keyboardOptions = KeyboardOptions(
             keyboardType = if (password) KeyboardType.Password else keyboard,
             capitalization = capitalization,

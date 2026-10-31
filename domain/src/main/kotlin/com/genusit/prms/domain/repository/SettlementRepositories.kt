@@ -28,3 +28,11 @@ interface AgentSettlementRepository {
     suspend fun submit(input: HandoverInput, idempotencyKey: String): SettlementDetail
     suspend fun cancel(id: Int): SettlementDetail
 }
+
+/** Profile photos (owner and tenant). [id] null = the signed-in user. */
+interface PhotoRepository {
+    /** Returns the new photo version. A tenant photo taken by the owner needs [consent]. */
+    suspend fun upload(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?, file: java.io.File, consent: Boolean): String
+    suspend fun remove(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?)
+    suspend fun download(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?): ByteArray
+}

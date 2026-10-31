@@ -182,6 +182,11 @@ fun SettingsScreen(role: Role, onBack: (() -> Unit)?) {
                     }
                 }
             }
+            if (role == Role.OWNER) {
+                val me = (model.me.state.collectAsStateWithLifecycle().value as? UiState.Data)?.value
+                if (me != null) ProfilePhotoCard(com.genusit.prms.domain.model.PhotoSubject.OWNER, null, me.photoVersion, me.fullName,
+                    consentRequired = false, onChanged = { model.me.refresh() })
+            }
             ProfileCard(model, role)
             ChangePasswordCard(model, role)
             OutlinedButton(onClick = { confirmLogout = true }, modifier = Modifier.fillMaxWidth().height(50.dp)) {

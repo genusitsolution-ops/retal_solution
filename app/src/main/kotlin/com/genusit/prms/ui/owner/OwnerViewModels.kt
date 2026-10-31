@@ -164,9 +164,40 @@ class TenantFormViewModel @Inject constructor(
     private val uploadDraft: UploadDraftDocumentUseCase,
     private val deleteDraft: DeleteDraftDocumentUseCase,
     private val scanner: DocumentScanner,
+    private val uploadPhoto: com.genusit.prms.domain.usecase.UploadProfilePhotoUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val id = handle.intArg()
+
+    /** New tenant's profile photo: compressed on the phone now, uploaded once the tenant is saved. */
+    data class PendingPhoto(val file: File, val consent: Boolean)
+    private val _photo = MutableStateFlow<PendingPhoto?>(null)
+    val photo: StateFlow<PendingPhoto?> = _photo.asStateFlow()
+    private val _photoBusy = MutableStateFlow(false)
+    val photoBusy: StateFlow<Boolean> = _photoBusy.asStateFlow()
+
+    fun pickPhoto(source: Uri, captureFile: File?, consent: Boolean) {
+        if (_photoBusy.value) return
+        _photoBusy.value = true
+        viewModelScope.launch {
+            try {
+                val f = scanner.compress(source, com.genusit.prms.ui.common.PhotoSpec.MAX_SIDE, com.genusit.prms.ui.common.PhotoSpec.QUALITY)
+                _photo.value?.let { scanner.discard(it.file) }
+                _photo.value = PendingPhoto(f, consent)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // unreadable image: nothing is kept
+            } finally {
+                scanner.discard(captureFile); _photoBusy.value = false
+            }
+        }
+    }
+
+    fun clearPhoto() { _photo.value?.let { scanner.discard(it.file) }; _photo.value = null }
+
+    override fun onCleared() { _photo.value?.let { scanner.discard(it.file) }; super.onCleared() }
+
     /** Existing values for the edit form (not loaded when adding). */
     val existing = loadable(autoLoad = id != 0) { getEditable(id) }
     val saveAction = action<SaveTenantResult>()
@@ -193,7 +224,16 @@ class TenantFormViewModel @Inject constructor(
         saveAction.run(onSuccess = { r ->
             _uploads.value.values.forEach { scanner.discard(it.preview) }
             _uploads.value = emptyMap()
-            sendEvent(if (r.documentsAttached) ScreenEvent.Saved else ScreenEvent.SavedDocumentFailed)
+            val pending = _photo.value
+            if (pending == null) {
+                sendEvent(if (r.documentsAttached) ScreenEvent.Saved else ScreenEvent.SavedDocumentFailed)
+            } else viewModelScope.launch {
+                // the tenant exists now: attach the photo (a failure keeps the tenant and says so)
+                val ok = try { uploadPhoto(com.genusit.prms.domain.model.PhotoSubject.TENANT, r.id, pending.file, pending.consent); true }
+                catch (e: CancellationException) { throw e } catch (e: Exception) { expiry.onError(e); false }
+                clearPhoto()
+                sendEvent(when { !r.documentsAttached -> ScreenEvent.SavedDocumentFailed; !ok -> ScreenEvent.SavedPhotoFailed; else -> ScreenEvent.Saved })
+            }
         }) { key -> saveTenant(id, withDocs, key) }
     }
 
@@ -475,6 +515,15 @@ class GenerateInvoiceViewModel @Inject constructor(
         val m = month.value; val y = year.value
         generateAction.run(onSuccess = { sendEvent(ScreenEvent.InvoiceCreated(it.id)) }) {
             generateInvoice(allocationId, m, y, fixedChargeIds, readings)
+        }
+    }
+
+    /** Saves the bill exactly as previewed: charges on the tenancy, skipped meters and not-yet-added charges. */
+    fun generate(ctx: com.genusit.prms.domain.model.InvoiceContext, sel: com.genusit.prms.domain.usecase.BillSelection) {
+        val m = month.value; val y = year.value
+        val calc = com.genusit.prms.domain.usecase.BillCalculator
+        generateAction.run(onSuccess = { sendEvent(ScreenEvent.InvoiceCreated(it.id)) }) {
+            generateInvoice(allocationId, m, y, calc.fixedIds(ctx, sel), calc.readings(ctx, sel), calc.skipped(ctx, sel), calc.extras(ctx, sel))
         }
     }
 }

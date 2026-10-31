@@ -24,8 +24,8 @@ android {
         applicationId = "com.genusit.prms"
         minSdk = 24
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.7.0"
+        versionCode = 9
+        versionName = "1.8.0"
         val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://www.genusitsolution.com/rentalsolutionfinal/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
         vectorDrawables { useSupportLibrary = true }

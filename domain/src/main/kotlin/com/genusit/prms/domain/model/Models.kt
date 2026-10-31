@@ -52,6 +52,8 @@ data class LoginResult(
     val user: LoginUser = LoginUser(),
     val lang: String? = null,
     val subscription: SubscriptionBrief? = null,
+    /** Changes whenever the profile photo changes; null = no photo (owners and tenants). */
+    @SerialName("photo_version") val photoVersion: String? = null,
 )
 
 @Serializable
@@ -312,6 +314,7 @@ data class TenantRow(
     @SerialName("property_code") val propertyCode: String? = null,
     val city: String? = null,
     val invoices: List<InvoiceSummary> = emptyList(),
+    @SerialName("photo_version") val photoVersion: String? = null,
 )
 
 @Serializable
@@ -333,6 +336,7 @@ data class TenantDetail(
     @SerialName("has_account") val hasAccount: Boolean = false,
     val username: String? = null,
     @SerialName("has_pan_doc") val hasPanDoc: Boolean = false,
+    @SerialName("photo_version") val photoVersion: String? = null,
 )
 
 @Serializable
@@ -586,3 +590,6 @@ object FlexIntOrNullSerializer : kotlinx.serialization.KSerializer<Int?> {
         return v.toInt()
     }
 }
+
+/** Whose profile photo (owner or tenant). Separate from Aadhaar / PAN documents. */
+enum class PhotoSubject(val apiValue: String) { OWNER("owner"), TENANT("tenant") }

@@ -87,7 +87,7 @@ fun OwnerTenantsScreen(openTenant: (Int) -> Unit, addTenant: (() -> Unit)? = nul
                 items(shown, key = { it.id }) { t ->
                     AppCard(onClick = { openTenant(t.id) }) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconBadge(Icons.Filled.Person, Palette.Brand)
+                            com.genusit.prms.ui.common.Avatar(com.genusit.prms.domain.model.PhotoSubject.TENANT, t.id, t.photoVersion, t.fullName)
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(t.fullName, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -153,6 +153,10 @@ fun OwnerTenantDetailScreen(
                             }
                         }
                     }
+                }
+                item {
+                    com.genusit.prms.ui.common.ProfilePhotoCard(com.genusit.prms.domain.model.PhotoSubject.TENANT, t.id, t.photoVersion, t.fullName,
+                        consentRequired = true, onChanged = { vm.refresh() })
                 }
                 item {
                     TenantDocumentsCard(

@@ -125,12 +125,22 @@ class BillingRepositoryImpl @Inject constructor(
     override suspend fun invoiceContext(allocationId: Int, month: Int, year: Int): InvoiceContext =
         caller.get(InvoiceContext.serializer()) { api.invoiceContext("context", allocationId, month, year) }
 
-    override suspend fun generateInvoice(allocationId: Int, month: Int, year: Int, fixedChargeIds: List<Int>, readings: List<MeterReading>): GeneratedInvoice {
+    override suspend fun generateInvoice(
+        allocationId: Int, month: Int, year: Int, fixedChargeIds: List<Int>, readings: List<MeterReading>,
+        skipVarIds: List<Int>, extras: List<com.genusit.prms.domain.model.ExtraCharge>,
+    ): GeneratedInvoice {
         val body = buildJsonObject {
             put("action", "generate"); put("allocation_id", allocationId); put("billing_month", month); put("billing_year", year)
             put("fixed_charge_ids", buildJsonArray { fixedChargeIds.forEach { add(it) } })
             putJsonObject("var") {
                 readings.forEach { r -> putJsonObject(r.tcId.toString()) { put("prev", r.previous); put("curr", r.current) } }
+            }
+            put("skip_var_ids", buildJsonArray { skipVarIds.forEach { add(it) } })
+            // charges not yet on the tenancy: "every month" ones are attached; meter ones carry their reading
+            put("attach_ids", buildJsonArray { extras.filter { it.everyMonth }.forEach { add(it.chargeId) } })
+            put("adhoc_fixed_ids", buildJsonArray { extras.filter { it.current == null && !it.everyMonth }.forEach { add(it.chargeId) } })
+            putJsonObject("adhoc_var") {
+                extras.filter { it.current != null }.forEach { e -> putJsonObject(e.chargeId.toString()) { put("prev", e.previous ?: 0.0); put("curr", e.current) } }
             }
         }
         return caller.get(GeneratedInvoice.serializer()) { api.ownerInvoiceAction(body, null) }

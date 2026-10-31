@@ -40,6 +40,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,7 +62,6 @@ import com.genusit.prms.R
 import com.genusit.prms.domain.model.AllocationClosed
 import com.genusit.prms.domain.model.CreatedId
 import com.genusit.prms.domain.model.GeneratedInvoice
-import com.genusit.prms.domain.model.MeterReading
 import com.genusit.prms.domain.model.NewAllocation
 import com.genusit.prms.domain.model.NewCharge
 import com.genusit.prms.domain.model.NewProperty
@@ -109,7 +109,13 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             android.widget.Toast.makeText(formCtx, formCtx.getString(R.string.doc_upload_failed_after_save), android.widget.Toast.LENGTH_LONG).show()
             onSaved()
         }
+        if (it == ScreenEvent.SavedPhotoFailed) {
+            android.widget.Toast.makeText(formCtx, formCtx.getString(R.string.photo_failed_after_save), android.widget.Toast.LENGTH_LONG).show()
+            onSaved()
+        }
     }
+    val pendingPhoto by model.photo.collectAsStateWithLifecycle()
+    val photoBusy by model.photoBusy.collectAsStateWithLifecycle()
 
     var loaded by rememberSaveable { mutableStateOf(id == 0) }
     var name by rememberSaveable { mutableStateOf("") }
@@ -150,6 +156,31 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             return@ScreenScaffold
         }
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // profile photo — kept apart from the Aadhaar / PAN documents below
+            if (id != 0) {
+                val version = (existing as? UiState.Data)?.value?.photoVersion
+                com.genusit.prms.ui.common.ProfilePhotoCard(com.genusit.prms.domain.model.PhotoSubject.TENANT, id, version, name, consentRequired = true,
+                    onChanged = { model.existing.refresh() })
+            } else AppCard {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val pf = pendingPhoto?.file
+                        val bmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, pf) {
+                            value = pf?.let { f -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { android.graphics.BitmapFactory.decodeFile(f.absolutePath, android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 }) }.getOrNull() } }
+                        }
+                        com.genusit.prms.ui.common.AvatarImage(bmp, name, 72.dp)
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.photo_title), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(if (pendingPhoto != null) R.string.photo_after_save else R.string.photo_sub), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    if (photoBusy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Palette.Brand)
+                    com.genusit.prms.ui.common.PhotoPickerButtons(consentRequired = true, enabled = !photoBusy, newCaptureTarget = model::newCaptureTarget,
+                        onPicked = { uri, file, consent -> model.pickPhoto(uri, file, consent) })
+                    if (pendingPhoto != null) TextButton(onClick = model::clearPhoto) { Text(stringResource(R.string.photo_remove), color = Palette.Danger) }
+                }
+            }
             DocumentCaptureCard(
                 reading = scan is ScanState.Reading,
                 newCaptureTarget = model::newCaptureTarget,
@@ -421,6 +452,7 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
     val cState by close.state.collectAsStateWithLifecycle()
     var depositFor by rememberSaveable { mutableStateOf(0) }
     var closeFor by rememberSaveable { mutableStateOf(0) }
+    var query by rememberSaveable { mutableStateOf("") }
     // reload when coming back (e.g. after a new allocation or a generated bill)
     LaunchedEffect(Unit) { if (state !is UiState.Loading) vm.refresh() }
 
@@ -430,7 +462,8 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
         floatingActionButton = { ExtendedFloatingActionButton(onClick = newAllocation, icon = { Icon(Icons.Filled.Key, null) }, text = { Text(stringResource(R.string.allocate_room)) }) },
     ) { outer ->
         ScreenScaffold(stringResource(R.string.allocations), onBack = onBack) { pad ->
-            StateContent(state, vm::refresh, Modifier.padding(pad).padding(outer)) { list ->
+            StateContent(state, vm::refresh, Modifier.padding(pad).padding(outer)) { all ->
+                val list = all.filter { it.matches(query) }
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -438,13 +471,20 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
                             FilterChip(selected = filter == "closed", onClick = { filter = "closed" }, label = { Text(stringResource(R.string.st_closed)) })
                         }
                     }
+                    item { SearchField(query) { query = it.take(60) } }
+                    if (query.isNotBlank()) item {
+                        Text(stringResource(R.string.alloc_search_count, list.size, all.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     item {
                         ActionError(dState); ActionError(cState)
                         (cState as? ActionState.Done<AllocationClosed>)?.result?.let { r ->
                             SuccessText(stringResource(R.string.settlement_result, Money.format(r.settlementAmount), Money.format(r.pendingRent)))
                         }
                     }
-                    if (list.isEmpty()) item { EmptyState(stringResource(R.string.no_allocations), Icons.Filled.MeetingRoom) }
+                    if (list.isEmpty()) item {
+                        if (all.isNotEmpty() && query.isNotBlank()) EmptyState(stringResource(R.string.alloc_no_match, query.trim()), Icons.Filled.MeetingRoom)
+                        else EmptyState(stringResource(R.string.no_allocations), Icons.Filled.MeetingRoom)
+                    }
                     items(list, key = { it.id }) { a ->
                         AppCard {
                             Column {
@@ -453,6 +493,7 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
                                         Text(a.tenantName ?: "—", fontWeight = FontWeight.SemiBold)
                                         Text(listOfNotNull(a.propertyCode, a.city).joinToString(", ") + " · " + dateText(a.allocationDate),
                                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (!a.tenantPhone.isNullOrBlank()) Text(a.tenantPhone!!, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     StatusChip(a.status, if (a.isActive) stringResource(R.string.st_active) else stringResource(R.string.st_closed))
                                 }
@@ -462,10 +503,8 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
                                 LabelValue(stringResource(R.string.deposit_collected), Money.format(a.depositCollected), Palette.Success)
                                 if (a.depositBalance > 0) LabelValue(stringResource(R.string.deposit_pending), Money.format(a.depositBalance), Palette.Danger, bold = true)
                                 if (!a.isActive) a.settlementAmount?.let { LabelValue(stringResource(R.string.settlement), Money.format(it), bold = true) }
-                                if (a.isActive) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    TextButton(onClick = { generateInvoice(a.id) }) { Icon(Icons.Filled.Receipt, null); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.generate_bill)) }
-                                    if (a.depositBalance > 0) TextButton(onClick = { deposit.reset(); depositFor = a.id }) { Text(stringResource(R.string.collect_deposit)) }
-                                    TextButton(onClick = { close.reset(); closeFor = a.id }) { Text(stringResource(R.string.vacate), color = Palette.Danger) }
+                                if (a.isActive) AllocationActions(a.depositBalance > 0, onBill = { generateInvoice(a.id) },
+                                    onDeposit = { deposit.reset(); depositFor = a.id }, onVacate = { close.reset(); closeFor = a.id })
                                 }
                             }
                         }
@@ -489,6 +528,26 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
             onConfirm = { notes -> closeFor = 0; model.close(a.id, notes) },
             onDismiss = { closeFor = 0 },
         )
+    }
+}
+
+/** Generate bill / Collect deposit / Vacate: whole buttons wrap to a new line on narrow screens, labels never break. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun AllocationActions(depositPending: Boolean, onBill: () -> Unit, onDeposit: () -> Unit, onVacate: () -> Unit) {
+    androidx.compose.foundation.layout.FlowRow(
+        Modifier.fillMaxWidth().padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        OutlinedButton(onClick = onBill) {
+            Icon(Icons.Filled.Receipt, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp))
+            Text(stringResource(R.string.generate_bill), maxLines = 1, softWrap = false)
+        }
+        if (depositPending) OutlinedButton(onClick = onDeposit) { Text(stringResource(R.string.collect_deposit), maxLines = 1, softWrap = false) }
+        OutlinedButton(onClick = onVacate, border = androidx.compose.foundation.BorderStroke(1.dp, Palette.Danger.copy(alpha = .5f))) {
+            Text(stringResource(R.string.vacate), color = Palette.Danger, maxLines = 1, softWrap = false)
+        }
     }
 }
 
@@ -578,17 +637,30 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                 Column(Modifier.weight(1f)) { ChoiceField(stringResource(R.string.year), (y0 - 1..y0 + 1).map { it to it.toString() }, year, { model.setPeriod(month, it) }) }
             }
             StateContent(state, vm::refresh) { ctx ->
+                val calc = com.genusit.prms.domain.usecase.BillCalculator
                 val fixedOn = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.fixedCharges.forEach { put(it.tcId, true) } } }
+                val meterOn = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.variableCharges.forEach { put(it.tcId, true) } } }
                 val prev = remember(ctx) { mutableStateMapOf<Int, String>().apply { ctx.variableCharges.forEach { put(it.tcId, it.lastReading?.let { r -> trimNum(r) } ?: "") } } }
                 val curr = remember(ctx) { mutableStateMapOf<Int, String>() }
+                // charges of the owner not yet on this tenancy: on the bill and "every month" by default
+                val extraOn = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.availableCharges.forEach { put(it.id, true) } } }
+                val extraMonthly = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.availableCharges.forEach { put(it.id, true) } } }
+                val xPrev = remember(ctx) { mutableStateMapOf<Int, String>().apply { ctx.availableCharges.forEach { put(it.id, it.lastReading?.let { r -> trimNum(r) } ?: "") } } }
+                val xCurr = remember(ctx) { mutableStateMapOf<Int, String>() }
                 var tried by rememberSaveable { mutableStateOf(false) }
                 var previewing by rememberSaveable { mutableStateOf(false) }
-                val readings = ctx.variableCharges.map { v ->
-                    Triple(v, Money.parse(prev[v.tcId] ?: ""), Money.parse(curr[v.tcId] ?: ""))
-                }
-                val readingsOk = readings.all { (_, p, c) -> (p == null && c == null) || (p != null && c != null && c >= p) }
-                val estimate = ctx.baseRent + ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.sumOf { it.amount } +
-                    readings.sumOf { (v, p, c) -> if (p != null && c != null && c >= p) (c - p) * v.rate else 0.0 }
+                val sel = com.genusit.prms.domain.usecase.BillSelection(
+                    fixedOn = fixedOn.filterValues { it }.keys,
+                    meterSkipped = meterOn.filterValues { !it }.keys,
+                    readings = ctx.variableCharges.associate { it.tcId to (Money.parse(prev[it.tcId] ?: "") to Money.parse(curr[it.tcId] ?: "")) },
+                    extraOn = extraOn.filterValues { it }.keys,
+                    extraEveryMonth = extraMonthly.filterValues { it }.keys,
+                    extraReadings = ctx.availableCharges.filter { it.isMeter }.associate { it.id to (Money.parse(xPrev[it.id] ?: "") to Money.parse(xCurr[it.id] ?: "")) },
+                )
+                val baseLabel = stringResource(R.string.base_rent)
+                val lines = calc.lines(ctx, sel, baseLabel)
+                val problems = calc.problems(ctx, sel)
+                val bad = problems.map { it.charge }.toSet()
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     StepHeader(2, stringResource(R.string.bill_step_charges))
                     AppCard {
@@ -601,6 +673,10 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                         }
                     }
                     if (ctx.alreadyExists) Text(stringResource(R.string.bill_exists_for_month), color = Palette.Danger, fontWeight = FontWeight.SemiBold)
+                    if (ctx.fixedCharges.isEmpty() && ctx.variableCharges.isEmpty() && ctx.availableCharges.isEmpty()) {
+                        Text(stringResource(R.string.bill_no_charges_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (ctx.fixedCharges.isNotEmpty() || ctx.variableCharges.isNotEmpty()) Text(stringResource(R.string.bill_monthly_charges), style = MaterialTheme.typography.titleSmall)
                     ctx.fixedCharges.forEach { f ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = fixedOn[f.tcId] == true, onCheckedChange = { fixedOn[f.tcId] = it })
@@ -608,46 +684,68 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                         }
                     }
                     ctx.variableCharges.forEach { v ->
+                        val on = meterOn[v.tcId] == true
+                        MeterCard(
+                            title = v.name + " · " + stringResource(R.string.per_unit_x, Money.format(v.rate), v.unitLabel ?: "unit"),
+                            checked = on, onChecked = { meterOn[v.tcId] = it },
+                            prev = prev[v.tcId] ?: "", onPrev = { prev[v.tcId] = amountInput(it) },
+                            curr = curr[v.tcId] ?: "", onCurr = { curr[v.tcId] = amountInput(it) },
+                            error = tried && on && v.name in bad,
+                            footer = if (!on) stringResource(R.string.bill_meter_skipped) else null,
+                        )
+                    }
+                    if (ctx.availableCharges.isNotEmpty()) {
+                        Text(stringResource(R.string.bill_other_charges), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.bill_other_charges_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    ctx.availableCharges.forEach { a ->
+                        val on = extraOn[a.id] == true
                         AppCard {
-                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text(v.name + " · " + stringResource(R.string.per_unit_x, Money.format(v.rate), v.unitLabel ?: "unit"), fontWeight = FontWeight.SemiBold)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Column(Modifier.weight(1f)) { FormField(prev[v.tcId] ?: "", { prev[v.tcId] = amountInput(it) }, stringResource(R.string.previous_reading), keyboard = KeyboardType.Decimal) }
-                                    Column(Modifier.weight(1f)) {
-                                        val p = Money.parse(prev[v.tcId] ?: ""); val c = Money.parse(curr[v.tcId] ?: "")
-                                        FormField(curr[v.tcId] ?: "", { curr[v.tcId] = amountInput(it) }, stringResource(R.string.current_reading),
-                                            isError = tried && ((p != null) != (c != null) || (p != null && c != null && c < p)), keyboard = KeyboardType.Decimal)
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(checked = on, onCheckedChange = { extraOn[a.id] = it })
+                                    Text(a.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                                    Text(if (a.isMeter) stringResource(R.string.per_unit_x, Money.format(a.rate), a.unitLabel ?: "unit") else Money.format(a.amount),
+                                        fontWeight = FontWeight.SemiBold)
+                                }
+                                if (on) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = extraMonthly[a.id] == true, onCheckedChange = { extraMonthly[a.id] = it })
+                                        Text(stringResource(R.string.bill_every_month), style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    if (a.isMeter) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Column(Modifier.weight(1f)) { FormField(xPrev[a.id] ?: "", { xPrev[a.id] = amountInput(it) }, stringResource(R.string.previous_reading), keyboard = KeyboardType.Decimal) }
+                                        Column(Modifier.weight(1f)) {
+                                            FormField(xCurr[a.id] ?: "", { xCurr[a.id] = amountInput(it) }, stringResource(R.string.current_reading),
+                                                isError = tried && a.name in bad, keyboard = KeyboardType.Decimal)
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    if (ctx.variableCharges.isNotEmpty()) Text(stringResource(R.string.reading_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    LabelValue(stringResource(R.string.estimated_total), Money.format(estimate), bold = true)
+                    if (tried) problems.forEach { pr ->
+                        Text(when (pr) {
+                            is com.genusit.prms.domain.usecase.BillProblem.MissingReading -> stringResource(R.string.bill_reading_missing, pr.charge)
+                            is com.genusit.prms.domain.usecase.BillProblem.LowerReading -> stringResource(R.string.bill_reading_lower, pr.charge)
+                        }, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                    }
+                    if (ctx.variableCharges.isNotEmpty() || ctx.availableCharges.any { it.isMeter }) Text(stringResource(R.string.reading_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    LabelValue(stringResource(R.string.estimated_total), Money.format(calc.total(lines)), bold = true)
                     ActionError(act)
                     // step 3: preview, then save (the server calculates the final amounts and the bill number)
                     SubmitButton(stringResource(R.string.bill_preview), act) {
                         tried = true
-                        if (!ctx.alreadyExists && readingsOk) previewing = true
+                        if (!ctx.alreadyExists && problems.isEmpty()) previewing = true
                     }
                     if (previewing) {
                         val unitWord = stringResource(R.string.units)
-                        val lines = buildList {
-                            add(PreviewLine(stringResource(R.string.base_rent), null, ctx.baseRent))
-                            ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.forEach { add(PreviewLine(it.name, null, it.amount)) }
-                            readings.forEach { (v, p, c) ->
-                                if (p != null && c != null && c >= p) add(PreviewLine(v.name, "${trimNum(c - p)} ${v.unitLabel ?: unitWord} × ${Money.format(v.rate)}", (c - p) * v.rate))
-                            }
-                        }
                         BillPreviewDialog(
-                            tenant = ctx.tenantName, room = ctx.propertyName, period = ctx.periodLabel, lines = lines, otherOutstanding = ctx.otherOutstanding,
+                            tenant = ctx.tenantName, room = ctx.propertyName, period = ctx.periodLabel,
+                            lines = lines.map { l -> PreviewLine(l.name, l.units?.let { u -> "${trimNum(u)} ${l.unitLabel ?: unitWord} × ${Money.format(l.rate ?: 0.0)}" }, l.amount) },
+                            otherOutstanding = ctx.otherOutstanding,
                             saving = act is ActionState.Running,
-                            onConfirm = {
-                                model.generate(
-                                    ctx.fixedCharges.filter { fixedOn[it.tcId] == true }.map { it.tcId },
-                                    readings.mapNotNull { (v, p, c) -> if (p != null && c != null) MeterReading(v.tcId, p, c) else null },
-                                )
-                            },
+                            onConfirm = { model.generate(ctx, sel) },
                             onDismiss = { previewing = false },
                         )
                     }
@@ -655,6 +753,27 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                     LaunchedEffect(act) { if (act is ActionState.Failed) previewing = false }
                 }
             }
+        }
+    }
+}
+
+/** A meter (per-unit) charge on the bill: on/off, previous and current reading. */
+@Composable
+private fun MeterCard(
+    title: String, checked: Boolean, onChecked: (Boolean) -> Unit,
+    prev: String, onPrev: (String) -> Unit, curr: String, onCurr: (String) -> Unit, error: Boolean, footer: String?,
+) {
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = checked, onCheckedChange = onChecked)
+                Text(title, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+            }
+            if (checked) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.weight(1f)) { FormField(prev, onPrev, stringResource(R.string.previous_reading), keyboard = KeyboardType.Decimal) }
+                Column(Modifier.weight(1f)) { FormField(curr, onCurr, stringResource(R.string.current_reading), isError = error, keyboard = KeyboardType.Decimal) }
+            }
+            if (footer != null) Text(footer, color = Palette.Warning, style = MaterialTheme.typography.labelMedium)
         }
     }
 }

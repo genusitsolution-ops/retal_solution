@@ -17,6 +17,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.add
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 
 private fun Int.orNullIfZero(): Int? = takeIf { it > 0 }
@@ -93,4 +96,26 @@ class AgentSettlementRepositoryImpl @Inject constructor(
     override suspend fun cancel(id: Int): SettlementDetail = caller.get(SettlementDetail.serializer()) {
         api.agentSettlementAction(buildJsonObject { put("action", "cancel"); put("id", id) }, null)
     }
+}
+
+class PhotoRepositoryImpl @Inject constructor(
+    private val api: PrmsApiService,
+    private val caller: ApiCaller,
+) : com.genusit.prms.domain.repository.PhotoRepository {
+    override suspend fun upload(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?, file: java.io.File, consent: Boolean): String {
+        val text = "text/plain".toMediaType()
+        val part = okhttp3.MultipartBody.Part.createFormData("photo", "photo.jpg", file.asRequestBody("image/jpeg".toMediaType()))
+        val data = caller.call {
+            api.uploadProfilePhoto(subject.apiValue.toRequestBody(text), id?.toString()?.toRequestBody(text), (if (consent) "1" else "0").toRequestBody(text), part)
+        }
+        return (data as? JsonObject)?.get("photo_version")?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
+            ?: throw com.genusit.prms.domain.error.ApiException(com.genusit.prms.domain.error.ApiException.BAD_RESPONSE, "photo_version", 200)
+    }
+
+    override suspend fun remove(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?) {
+        caller.run { api.removeProfilePhoto(subject.apiValue, id) }
+    }
+
+    override suspend fun download(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?): ByteArray =
+        caller.download { api.profilePhoto(subject.apiValue, id) }.first
 }

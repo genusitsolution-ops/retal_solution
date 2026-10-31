@@ -86,3 +86,21 @@ class SubmitHandoverUseCase @Inject constructor(private val repo: AgentSettlemen
 }
 
 enum class HandoverProblem { AMOUNT, MORE_THAN_AVAILABLE, REFERENCE, DATE }
+
+/* ───────── profile photos ───────── */
+
+class UploadProfilePhotoUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.PhotoRepository) {
+    suspend operator fun invoke(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?, file: java.io.File, consent: Boolean): String {
+        // the owner must confirm the tenant agreed before a tenant photo is sent
+        require(subject == com.genusit.prms.domain.model.PhotoSubject.OWNER || consent) { "consent required" }
+        return repo.upload(subject, id, file, consent)
+    }
+}
+
+class RemoveProfilePhotoUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.PhotoRepository) {
+    suspend operator fun invoke(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?) = repo.remove(subject, id)
+}
+
+class GetProfilePhotoUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.PhotoRepository) {
+    suspend operator fun invoke(subject: com.genusit.prms.domain.model.PhotoSubject, id: Int?): ByteArray = repo.download(subject, id)
+}
