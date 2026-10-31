@@ -73,11 +73,17 @@ jobs:
           import glob, xml.etree.ElementTree as ET
           files = glob.glob('app/build/outputs/androidTest-results/connected/**/*.xml', recursive=True)
           if not files: print("::error title=On-device tests::no results (tests did not run)")
+          passed, failed = [], []
           for f in files:
               for tc in ET.parse(f).getroot().iter('testcase'):
                   fail = tc.find('failure')
-                  lvl, msg = ('error', 'FAILED ' + (fail.get('message') or fail.text or '')[:300]) if fail is not None else ('notice', 'passed')
-                  print(f"::{lvl} title=On-device {tc.get('name')}::{msg}")
+                  if fail is not None:
+                      failed.append(tc.get('name'))
+                      print(f"::error title=On-device {tc.get('name')}::FAILED " + (fail.get('message') or fail.text or '')[:300])
+                  else:
+                      passed.append(tc.get('name'))
+          # one line with every test (GitHub shows only 10 notices per step)
+          if files: print(f"::notice title=On-device summary::{len(passed)} passed, {len(failed)} failed: " + ", ".join(sorted(passed)))
           PY
 
       - name: Screenshots as draft release (team-only)
