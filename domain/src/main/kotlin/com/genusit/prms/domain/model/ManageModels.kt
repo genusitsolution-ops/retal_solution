@@ -468,11 +468,11 @@ data class AppConfig(
     val signup: SignupInfo = SignupInfo(),
     val referral: ReferralInfo = ReferralInfo(),
     /** The free trial a new owner gets right away (from the Super Admin's billing settings); null when off. */
-    val trial: TrialInfo? = null,
+    val trial: TrialOffer? = null,
 )
 
 @Serializable
-data class TrialInfo(
+data class TrialOffer(
     val enabled: Boolean = false,
     val days: Int = 0,
     @SerialName("package_name") val packageName: String = "",

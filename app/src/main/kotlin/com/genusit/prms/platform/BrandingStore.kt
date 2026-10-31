@@ -27,7 +27,7 @@ data class Branding(
     val loginLogo: File?,
     val signupEnabled: Boolean?,
     val referralEnabled: Boolean,
-    val trial: com.genusit.prms.domain.model.TrialInfo? = null,
+    val trial: com.genusit.prms.domain.model.TrialOffer? = null,
 )
 
 /**
