@@ -9,6 +9,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -71,7 +73,9 @@ class SubscriptionUiTest {
         rule.onNodeWithText("Admin verification pending").assertIsDisplayed()
         rule.onNodeWithText("Trial").assertIsDisplayed()
         rule.onNodeWithText("58").assertIsDisplayed()
-        rule.onNodeWithText("₹3,538.82").assertIsDisplayed()
+        // the big price and the "Total payable" line
+        rule.onAllNodesWithText("₹3,538.82").assertCountEquals(2)
+        rule.onAllNodesWithText("₹3,538.82")[0].assertIsDisplayed()
         rule.onNodeWithText("GST 18%").assertIsDisplayed()
         rule.onNodeWithText("Priority support").assertIsDisplayed()
         Thread.sleep(300)
