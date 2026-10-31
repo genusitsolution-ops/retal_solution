@@ -78,7 +78,7 @@ class SubscriptionUiTest {
         rule.onAllNodesWithText("₹3,538.82")[0].assertIsDisplayed()
         rule.onNodeWithText("GST 18%").assertIsDisplayed()
         rule.onNodeWithText("Priority support").assertIsDisplayed()
-        Thread.sleep(300)
+        rule.waitForIdle(); Thread.sleep(1200)
         InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /data/local/tmp/subscription-plans.png").close()
         rule.onNodeWithText("Choose this plan").performClick()
         assertEquals(listOf(3), chosen)
@@ -105,7 +105,7 @@ class SubscriptionUiTest {
         rule.waitUntil(15000) { runCatching { rule.onNodeWithContentDescription("UPI QR code for ₹3,538.82").assertExists(); true }.getOrDefault(false) }
         rule.onNodeWithText("rentalsol@testbank").assertExists()
         rule.onNodeWithText("Open UPI app").assertExists()
-        Thread.sleep(500)
+        rule.waitForIdle(); Thread.sleep(1200)
         InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /data/local/tmp/subscription-pay.png").close()
     }
 
