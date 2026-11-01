@@ -104,7 +104,8 @@ class SubscriptionUiTest {
         rule.onNodeWithText("90 days").assertIsDisplayed()
         rule.waitUntil(15000) { runCatching { rule.onNodeWithContentDescription("UPI QR code for ₹3,538.82").assertExists(); true }.getOrDefault(false) }
         rule.onNodeWithText("rentalsol@testbank").assertExists()
-        rule.onNodeWithText("Open UPI app").assertExists()
+        // 1.11: a personal UPI ID (default) gets Save to Gallery + scan instead of an app payment link
+        rule.onNodeWithText("Save to Gallery").assertExists()
         rule.waitForIdle(); Thread.sleep(1200)
         InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /data/local/tmp/subscription-pay.png").close()
     }

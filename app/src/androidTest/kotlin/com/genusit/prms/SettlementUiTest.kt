@@ -13,6 +13,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -79,8 +81,8 @@ class SettlementUiTest {
                 }
             }
         }
-        rule.onNodeWithText("₹8,000.00").assertIsDisplayed()
-        rule.onNodeWithText("₹3,000.00").assertIsDisplayed()           // pending deposit (request's example)
+        rule.onAllNodesWithText("₹8,000.00").onFirst().assertIsDisplayed()
+        rule.onAllNodesWithText("₹3,000.00").onFirst().assertIsDisplayed()           // pending deposit (request's example)
         rule.onNodeWithText("Previous outstanding rent").assertExists()
         rule.onNodeWithText("Painting — Wall repaint").assertExists()
         rule.onNodeWithTag("settlement_result").assertExists()
