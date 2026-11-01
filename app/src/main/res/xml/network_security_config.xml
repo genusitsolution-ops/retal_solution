@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <!-- HTTPS only in production -->
-    <base-config cleartextTrafficPermitted="false" />
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <!-- 1.11.1: Let's Encrypt root (public certificate, SHA-256 96:BC:EC:06:…:08:C6). rentalsolution.co.in's
+                 chain ends at ISRG Root X1, which Android only ships from 7.1.1; minSdk is 24 (Android 7.0). -->
+            <certificates src="@raw/isrg_root_x1" />
+        </trust-anchors>
+    </base-config>
 </network-security-config>

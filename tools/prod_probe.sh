@@ -16,6 +16,9 @@ for host in $H www.$H; do
 done
 show "certificate chain sent by the server"
 echo | openssl s_client -showcerts -servername $H -connect $H:443 2>/dev/null | grep -E "^ *[0-9]+ s:|^ *i:|^ *a:|v:NotBefore" | head -12
+echo "-- verify with ONLY the ISRG Root X1 bundled in the app (Android 7.0 path):"
+echo | openssl s_client -servername $H -connect $H:443 -CAfile "$(dirname "$0")/isrg_root_x1.pem" -CApath /nonexistent -verify_hostname $H 2>/dev/null | grep -E "Verify return code"
+echo | openssl s_client -servername www.$H -connect www.$H:443 -CAfile "$(dirname "$0")/isrg_root_x1.pem" -CApath /nonexistent -verify_hostname www.$H 2>/dev/null | grep -E "Verify return code"
 show "1.11.1 deployment markers"
 for u in "http://$H/login.php" "http://www.$H/login.php" "https://www.$H/login.php" "http://$H/api/v1/common/app_config.php" "https://$H/.user.ini" "https://$H/api/migration_api.sql" "https://$H/admin/system_check.php" "https://$H/assets/js/mobile.js"; do
   echo "$u => $(curl -k -s -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 20 "$u")"
