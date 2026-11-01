@@ -10,6 +10,15 @@ show "DNS"; for n in $H www.$H; do echo "$n A: $(dig +short A $n | tr '\n' ' ') 
 echo "NS: $(dig +short NS $H | tr '\n' ' ')"
 show "TLS certificate (as served)"
 echo | openssl s_client -servername $H -connect $H:443 2>/dev/null | openssl x509 -noout -subject -issuer -dates 2>/dev/null
+for host in $H www.$H; do
+  echo "-- $host names on certificate:"; echo | openssl s_client -servername $host -connect $host:443 2>/dev/null | openssl x509 -noout -ext subjectAltName 2>/dev/null | tail -n +2
+  v=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "https://$host/login.php" 2>&1); echo "-- strict TLS (no -k) https://$host/login.php => $v (000 = certificate rejected)"
+done
+show "1.11.1 deployment markers"
+for u in "http://$H/login.php" "http://www.$H/login.php" "https://www.$H/login.php" "http://$H/api/v1/common/app_config.php" "https://$H/.user.ini" "https://$H/api/migration_api.sql" "https://$H/admin/system_check.php" "https://$H/assets/js/mobile.js"; do
+  echo "$u => $(curl -k -s -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 20 "$u")"
+done
+curl -k -s --max-time 20 "https://$H/assets/js/mobile.js" | grep -c "assets/js/mobile.js" | sed 's/^/mobile.js 1.11.1 base fix present (count>0): /'
 for scheme in http https; do for host in $H www.$H; do
   base="$scheme://$host/"
   for p in "" "index.php" "login.php" "api/v1/common/app_config.php" "rentalsolutionfinal/" "rentalsolutionfinal/login.php" "rentalsolutionfinal/api/v1/common/app_config.php" \
