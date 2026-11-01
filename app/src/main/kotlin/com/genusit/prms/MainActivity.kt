@@ -13,9 +13,16 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 1.11: opened from a notification → the shell opens that screen after sign-in check
+        if (savedInstanceState == null) com.genusit.prms.platform.PendingRoute.offer(intent)
         enableEdgeToEdge()
         setContent {
             PrmsTheme { AppRoot() }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        com.genusit.prms.platform.PendingRoute.offer(intent)
     }
 }

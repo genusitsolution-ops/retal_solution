@@ -21,3 +21,21 @@ class MarkAllNotificationsReadUseCase @Inject constructor(private val repo: Comm
 class GetReceiptUseCase @Inject constructor(private val repo: CommonRepository) {
     suspend operator fun invoke(receiptNumber: String): Receipt = repo.receipt(receiptNumber)
 }
+
+/* ───────── 1.11: notifications ───────── */
+
+class GetUnreadCountUseCase @Inject constructor(private val repo: CommonRepository) {
+    suspend operator fun invoke(): Int = repo.unreadCount()
+}
+
+class MarkNotificationReadUseCase @Inject constructor(private val repo: CommonRepository) {
+    suspend operator fun invoke(id: Int) = repo.markNotificationRead(id)
+}
+
+class GetNotificationPrefsUseCase @Inject constructor(private val repo: CommonRepository) {
+    suspend operator fun invoke(): com.genusit.prms.domain.model.NotificationPrefs = repo.notificationPrefs()
+}
+
+class SaveNotificationPrefsUseCase @Inject constructor(private val repo: CommonRepository) {
+    suspend operator fun invoke(prefs: Map<String, Boolean>): com.genusit.prms.domain.model.NotificationPrefs = repo.saveNotificationPrefs(prefs)
+}

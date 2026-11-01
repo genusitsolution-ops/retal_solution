@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -81,7 +82,7 @@ fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit, 
         stringResource(R.string.hello_name, name.substringBefore(' ')),
         actions = {
             IconButton(onClick = vm::refresh) { Icon(Icons.Filled.Refresh, stringResource(R.string.refresh)) }
-            IconButton(onClick = openNotifications) { Icon(Icons.Filled.Notifications, stringResource(R.string.notifications)) }
+            com.genusit.prms.ui.common.NotificationBell(onClick = openNotifications)
         },
     ) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { d ->
@@ -177,6 +178,7 @@ fun TenantMoreScreen(open: (String) -> Unit) {
     ScreenScaffold(stringResource(R.string.nav_more)) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             MenuRow(Icons.Filled.QuestionAnswer, Palette.Warning, stringResource(R.string.my_queries), stringResource(R.string.my_queries_sub)) { open("ten/queries") }
+            MenuRow(Icons.Filled.Shield, Palette.Success, stringResource(R.string.deposit_and_settlement), stringResource(R.string.deposit_and_settlement_sub)) { open("ten/deposit") }
             MenuRow(Icons.Filled.Notifications, Palette.Info, stringResource(R.string.notifications)) { open("notifications") }
             MenuRow(Icons.Filled.Settings, Palette.Muted, stringResource(R.string.settings), stringResource(R.string.settings_sub)) { open("settings") }
         }

@@ -24,8 +24,8 @@ android {
         applicationId = "com.genusit.prms"
         minSdk = 24
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.10.0"
+        versionCode = 12
+        versionName = "1.11.0"
         val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://www.genusitsolution.com/rentalsolutionfinal/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
         vectorDrawables { useSupportLibrary = true }
@@ -88,6 +88,9 @@ dependencies {
     // on-device OCR for tenant documents (bundled Latin model: works offline, nothing leaves the phone)
     implementation(libs.mlkit.text.recognition)
     implementation(libs.androidx.exifinterface)
+    // 1.11 push: Firebase Cloud Messaging, initialised at run time from the server's public client values
+    // (no google-services.json / plugin in the build; the server keeps the private key)
+    implementation(libs.firebase.messaging)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)

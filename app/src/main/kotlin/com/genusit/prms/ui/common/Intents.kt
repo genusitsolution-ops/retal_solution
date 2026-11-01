@@ -34,3 +34,17 @@ fun openInWhatsApp(ctx: Context, waMeUrl: String): Boolean {
     }
     return false
 }
+
+private var printingView: android.webkit.WebView? = null
+
+/** Renders [html] and hands it to Android printing (printer or "Save as PDF"). */
+fun printHtml(ctx: Context, jobName: String, html: String) {
+    val web = android.webkit.WebView(ctx).also { printingView = it }   // kept until the print job has the document
+    web.webViewClient = object : android.webkit.WebViewClient() {
+        override fun onPageFinished(view: android.webkit.WebView, url: String?) {
+            val pm = ctx.getSystemService(Context.PRINT_SERVICE) as android.print.PrintManager
+            pm.print(jobName, view.createPrintDocumentAdapter(jobName), android.print.PrintAttributes.Builder().build())
+        }
+    }
+    web.loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
+}

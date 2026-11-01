@@ -175,8 +175,38 @@ class AllocationRepositoryImpl @Inject constructor(
         caller.get(AllocationCreated.serializer()) { api.allocate(caller.body(NewAllocation.serializer(), a)) }
     override suspend fun close(id: Int, notes: String): AllocationClosed =
         caller.get(AllocationClosed.serializer()) { api.closeAllocation(id, buildJsonObject { put("settlement_notes", notes) }) }
-    override suspend fun collectDeposit(id: Int, amount: Double): DepositCollected =
-        caller.get(DepositCollected.serializer()) { api.allocationAction(id, buildJsonObject { put("action", "collect_deposit"); put("amount", amount) }) }
+    override suspend fun collectDeposit(id: Int, amount: Double, method: String, reference: String): DepositCollected =
+        caller.get(DepositCollected.serializer()) {
+            api.allocationAction(id, buildJsonObject {
+                put("action", "collect_deposit"); put("amount", amount); put("method", method)
+                if (reference.isNotBlank()) put("reference", reference.trim())
+            })
+        }
+
+    override suspend fun allocation(id: Int): AllocationDetail = caller.get(AllocationDetail.serializer()) { api.ownerAllocation(id) }
+
+    private fun vacateBody(action: String, i: VacateInput, expected: Double? = null) = buildJsonObject {
+        put("action", action); put("vacate_date", i.vacateDate); put("apply_deposit", i.applyDeposit)
+        put("charges", buildJsonArray {
+            i.charges.forEach { c -> add(buildJsonObject { put("label", c.label.trim()); put("amount", c.amount); put("reason", c.reason.trim()) }) }
+        })
+        put("notes", i.notes.trim())
+        if (action == "vacate_confirm") {
+            put("refund_now", i.refundNow); put("refund_method", i.refundMethod); put("refund_reference", i.refundReference.trim())
+            expected?.let { put("expected_final", it) }
+        }
+    }
+
+    override suspend fun vacatePreview(id: Int, input: VacateInput): SettlementStatement =
+        caller.get(SettlementStatement.serializer()) { api.allocationAction(id, vacateBody("vacate_preview", input)) }
+
+    override suspend fun vacateConfirm(id: Int, input: VacateInput, expectedFinal: Double): VacateResult =
+        caller.get(VacateResult.serializer()) { api.allocationAction(id, vacateBody("vacate_confirm", input, expectedFinal)) }
+
+    override suspend fun refundPaid(id: Int, method: String, reference: String, date: String): SettlementStatement =
+        caller.get(SettlementStatement.serializer()) {
+            api.allocationAction(id, buildJsonObject { put("action", "refund_paid"); put("method", method); put("reference", reference.trim()); put("date", date) })
+        }
 }
 
 class TeamRepositoryImpl @Inject constructor(

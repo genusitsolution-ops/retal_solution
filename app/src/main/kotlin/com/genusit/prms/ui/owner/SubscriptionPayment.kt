@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -370,19 +371,49 @@ fun UpiQrPanel(upi: com.genusit.prms.domain.model.UpiDetails) {
             Text(upi.upiId, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f, fill = false))
             TextButton(onClick = { copy(ctx, upi.upiId) }) { Icon(Icons.Filled.ContentCopy, null); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.pay_copy_upi)) }
         }
-        // 1.10: the same upi:// link (actual invoice amount) handed straight to PhonePe / Google Pay / Paytm
-        upi.apps.forEach { app ->
-            Button(onClick = { openUpiAppPackage(ctx, upi.uri, app.androidPackage, app.name) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.pay_using_app, app.name))
+        // 1.11: save / share the labelled QR (exact amount) — the route that works with a personal UPI ID
+        val saved = stringResource(R.string.qr_saved)
+        val saveFailed = stringResource(R.string.qr_save_failed)
+        val saveQr = {
+            val ok = runCatching { QrImage.saveToGallery(ctx, QrImage.labelled(upi), "upi-qr-" + upi.reference) }.getOrNull() != null
+            Toast.makeText(ctx, if (ok) saved else saveFailed, Toast.LENGTH_LONG).show()
+        }
+        val storagePerm = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) saveQr() else Toast.makeText(ctx, saveFailed, Toast.LENGTH_LONG).show()
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = {
+                if (QrImage.needsStoragePermission() && androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                    storagePerm.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                else saveQr()
+            }, enabled = qr != null, modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("save_qr")) {
+                Icon(Icons.Filled.Download, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.qr_save_gallery))
+            }
+            OutlinedButton(onClick = { runCatching { shareQrImage(ctx, QrImage.labelled(upi), upi.reference) } }, enabled = qr != null, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+                Icon(Icons.Filled.Share, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.qr_share))
             }
         }
-        OutlinedButton(onClick = { openUpiApp(ctx, upi.uri) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-            Icon(Icons.Filled.PhoneAndroid, null); Spacer(Modifier.width(6.dp)); Text(stringResource(if (upi.apps.isEmpty()) R.string.pay_open_upi_app else R.string.pay_other_upi_app))
+        if (upi.isMerchant) {
+            // merchant UPI ID: the same upi:// link (actual invoice amount) handed straight to PhonePe / Google Pay / Paytm
+            upi.apps.forEach { app ->
+                Button(onClick = { openUpiAppPackage(ctx, upi.uri, app.androidPackage, app.name) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.pay_using_app, app.name))
+                }
+            }
+            OutlinedButton(onClick = { openUpiApp(ctx, upi.uri) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Icon(Icons.Filled.PhoneAndroid, null); Spacer(Modifier.width(6.dp)); Text(stringResource(if (upi.apps.isEmpty()) R.string.pay_open_upi_app else R.string.pay_other_upi_app))
+            }
+        } else {
+            // personal UPI ID: PhonePe / Google Pay refuse a payment opened from another app ("declined for security
+            // reasons"); scanning the saved QR inside the app is allowed. These buttons only open the app.
+            Text(stringResource(R.string.pay_personal_steps, Money.format(upi.amount)), style = MaterialTheme.typography.bodyMedium)
+            upi.apps.forEach { app ->
+                OutlinedButton(onClick = { openAppToScan(ctx, app.androidPackage, app.name) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.pay_open_app_to_scan, app.name))
+                }
+            }
+            Text(stringResource(R.string.pay_personal_id_note), style = MaterialTheme.typography.labelMedium, color = Palette.Warning)
         }
-        OutlinedButton(onClick = { qr?.let { shareQrImage(ctx, it, upi.reference) } }, enabled = qr != null, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-            Icon(Icons.Filled.Share, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.pay_share_qr))
-        }
-        if (!upi.isMerchant) Text(stringResource(R.string.pay_personal_id_note), style = MaterialTheme.typography.labelMedium, color = Palette.Warning)
         Text(stringResource(R.string.pay_reference, upi.reference), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -551,6 +582,13 @@ private fun openUpiAppPackage(ctx: Context, uri: String, pkg: String, name: Stri
     } catch (_: android.content.ActivityNotFoundException) {
         Toast.makeText(ctx, ctx.getString(R.string.pay_app_not_installed, name), Toast.LENGTH_LONG).show()
     }
+}
+
+/** Opens a UPI app's home screen (no payment link), where the owner taps Scan → gallery. */
+private fun openAppToScan(ctx: Context, pkg: String, name: String) {
+    val i = ctx.packageManager.getLaunchIntentForPackage(pkg)
+    if (i == null) { Toast.makeText(ctx, ctx.getString(R.string.pay_app_not_installed, name), Toast.LENGTH_LONG).show(); return }
+    runCatching { ctx.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
 /** Shares the QR image (e.g. save to Photos, then "scan from gallery" in the UPI app — works with personal UPI IDs). */

@@ -43,6 +43,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -109,7 +110,7 @@ fun ReceiptScreen(receiptNo: String, onBack: () -> Unit) {
 }
 
 @Composable
-fun NotificationsScreen(onBack: () -> Unit) {
+fun NotificationsScreen(onBack: () -> Unit, open: (String?) -> Unit = {}) {
     val model: NotificationsViewModel = hiltViewModel()
     val vm = model.notifications
     val state by vm.state.collectAsStateWithLifecycle()
@@ -122,7 +123,8 @@ fun NotificationsScreen(onBack: () -> Unit) {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (d.items.isEmpty()) item { EmptyState(stringResource(R.string.no_notifications), Icons.Filled.Notifications) }
                 items(d.items, key = { it.id }) { n ->
-                    AppCard {
+                    // 1.11: tap → marked read and the related screen opens (bill, receipt, settlement, …)
+                    AppCard(onClick = { model.open(n.id); open(n.route) }) {
                         Row {
                             if (!n.isRead) Text("● ", color = Palette.Brand)
                             Column(Modifier.weight(1f)) {
@@ -190,6 +192,8 @@ fun SettingsScreen(role: Role, onBack: (() -> Unit)?) {
                     }
                 }
             }
+            // 1.11: push notification categories
+            NotificationPrefsCard()
             if (role == Role.OWNER) {
                 val me = (model.me.state.collectAsStateWithLifecycle().value as? UiState.Data)?.value
                 if (me != null) ProfilePhotoCard(com.genusit.prms.domain.model.PhotoSubject.OWNER, null, me.photoVersion, me.fullName,
@@ -279,3 +283,66 @@ private fun ChangePasswordCard(model: SettingsViewModel, role: Role) {
         }
     }
 }
+
+/** Bell with the unread count (1.11). */
+@Composable
+fun NotificationBell(onClick: () -> Unit) {
+    val unread = com.genusit.prms.ui.LocalUnread.current
+    androidx.compose.material3.IconButton(onClick = onClick) {
+        androidx.compose.material3.BadgedBox(badge = {
+            if (unread > 0) androidx.compose.material3.Badge { Text(if (unread > 99) "99+" else unread.toString()) }
+        }) { Icon(Icons.Filled.Notifications, stringResource(R.string.notifications)) }
+    }
+}
+
+/**
+ * Android 13+: asks once for permission to show notifications, only when push is set up on the server.
+ * Declining is respected (the in-app list and badge keep working); it can be changed in system settings.
+ */
+@Composable
+fun NotificationPermissionPrompt(pushAvailable: Boolean) {
+    if (android.os.Build.VERSION.SDK_INT < 33 || !pushAvailable) return
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { ctx.getSharedPreferences("push_ui", android.content.Context.MODE_PRIVATE) }
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val granted = ctx.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted && !prefs.getBoolean("asked", false)) {
+            prefs.edit().putBoolean("asked", true).apply()
+            launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+}
+
+/** Settings → Notifications: switch push for non-critical categories (critical ones are always on). */
+@Composable
+fun NotificationPrefsCard() {
+    val model: NotificationPrefsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val state by model.prefs.state.collectAsStateWithLifecycle()
+    val saveState by model.save.state.collectAsStateWithLifecycle()
+    val p = (state as? UiState.Data)?.value ?: return
+    if (p.categories.isEmpty()) return
+    AppCard {
+        Column {
+            Text(stringResource(R.string.notification_settings), style = MaterialTheme.typography.titleMedium)
+            if (!p.pushAvailable) Text(stringResource(R.string.push_not_set_up), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            p.categories.forEach { c ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text(categoryLabel(c.category))
+                        if (c.critical) Text(stringResource(R.string.always_on), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    androidx.compose.material3.Switch(checked = c.enabled, enabled = !c.critical && saveState !is ActionState.Running, onCheckedChange = { model.set(c.category, it) })
+                }
+            }
+            ActionError(saveState)
+        }
+    }
+}
+
+@Composable
+private fun categoryLabel(c: String): String = stringResource(when (c) {
+    "billing" -> R.string.cat_billing; "payments" -> R.string.cat_payments; "tenants" -> R.string.cat_tenants
+    "employees" -> R.string.cat_employees; "properties" -> R.string.cat_properties; "complaints" -> R.string.cat_complaints
+    "subscription" -> R.string.cat_subscription; else -> R.string.cat_other
+})

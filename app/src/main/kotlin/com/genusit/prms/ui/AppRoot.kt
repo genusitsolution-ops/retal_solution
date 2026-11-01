@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -64,6 +65,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.genusit.prms.R
+import androidx.compose.ui.platform.testTag
 import com.genusit.prms.domain.model.Role
 import com.genusit.prms.ui.auth.LoginScreen
 import com.genusit.prms.ui.common.NotificationsScreen
@@ -113,13 +115,16 @@ import com.genusit.prms.ui.theme.Palette
 fun AppRoot() {
     val app: AppViewModel = hiltViewModel()
     val loaded by app.loaded.collectAsStateWithLifecycle()
+    val splashDone by app.splashDone.collectAsStateWithLifecycle()
+    val brand by app.brand.collectAsStateWithLifecycle()
     val sessionState by app.session.collectAsStateWithLifecycle()
     val session = sessionState
     when {
-        !loaded -> Box(Modifier.fillMaxSize().background(Palette.Canvas), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        // 1.11: branded splash with the Super Admin's logo (cached file; built-in icon offline / before first download)
+        !loaded || !splashDone -> BrandedSplash(brand)
         session == null -> LoginScreen()
         // keyed by token: logging out / in as someone else always starts with a fresh back stack
-        else -> key(session.token) { RoleShell(session.role) }
+        else -> key(session.token) { RoleShell(session.role, session.token) }
     }
 }
 
@@ -139,11 +144,37 @@ private object Routes {
     const val SETTINGS = "settings"; const val NOTIFICATIONS = "notifications"
 }
 
+/** Unread notification count shown on the bell icons (1.11). */
+val LocalUnread = androidx.compose.runtime.compositionLocalOf { 0 }
+
 @Composable
-private fun RoleShell(role: Role) {
+private fun RoleShell(role: Role, token: String) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val current = entry?.destination?.route
+    // 1.11: push registration for this sign-in, unread badge, notification taps, Android 13+ permission
+    val shell: com.genusit.prms.ui.common.ShellViewModel = hiltViewModel(key = "shell-$token")
+    val unread by shell.unread.collectAsStateWithLifecycle()
+    val pushAvailable by shell.push.available.collectAsStateWithLifecycle()
+    com.genusit.prms.ui.common.NotificationPermissionPrompt(pushAvailable)
+    val pendingRoute by com.genusit.prms.platform.PendingRoute.route.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(pendingRoute) {
+        if (pendingRoute != null) {
+            val r = com.genusit.prms.platform.PendingRoute.consume()
+            val target = com.genusit.prms.domain.util.NotificationRoutes.target(role.api, r) ?: Routes.NOTIFICATIONS
+            runCatching { nav.navigate(target) }
+            shell.refreshUnread()
+        }
+    }
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    androidx.compose.runtime.LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { shell.refreshUnread() }
+    }
+    androidx.compose.runtime.CompositionLocalProvider(LocalUnread provides unread) { RoleShellContent(role, nav, current) }
+}
+
+@Composable
+private fun RoleShellContent(role: Role, nav: NavHostController, current: String?) {
 
     val tabs: List<Tab>
     /** Centre floating action (agent: collect rent, tenant: raise a complaint). The owner has a plain 5-item bar. */
@@ -217,7 +248,11 @@ private fun RoleShell(role: Role) {
 
             /* shared */
             composable(Routes.SETTINGS) { SettingsScreen(role, onBack = if (role == Role.EMPLOYEE) null else back) }
-            composable(Routes.NOTIFICATIONS) { NotificationsScreen(onBack = back) }
+            composable(Routes.NOTIFICATIONS) {
+                NotificationsScreen(onBack = back, open = { route ->
+                    com.genusit.prms.domain.util.NotificationRoutes.target(role.api, route)?.let { t -> runCatching { nav.navigate(t) } }
+                })
+            }
             composable("receipt/{no}", listOf(navArgument("no") { type = NavType.StringType })) {
                 ReceiptScreen(it.arguments?.getString("no").orEmpty(), onBack = back)
             }
@@ -249,7 +284,8 @@ private fun RoleShell(role: Role) {
                 OwnerTenantDetailScreen(tid, onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") },
                     edit = { nav.navigate("owner/tenant-form/$tid") }, onDeleted = back,
                     openHistory = { nav.navigate("owner/tenant/$tid/history") },
-                    openDocument = { type -> nav.navigate("owner/tenant/$tid/document/${type.apiValue}") })
+                    openDocument = { type -> nav.navigate("owner/tenant/$tid/document/${type.apiValue}") },
+                    openAllocation = { aid -> nav.navigate("owner/allocation/$aid") })
             }
             composable("owner/tenant/{id}/history", listOf(navArgument("id") { type = NavType.IntType })) {
                 TenantHistoryScreen(onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") }, openReceipt = openReceipt)
@@ -290,9 +326,20 @@ private fun RoleShell(role: Role) {
             }
             composable("owner/charges") { ChargesScreen(onBack = back) }
             composable("owner/allocations") {
-                AllocationsScreen(onBack = back, newAllocation = { nav.navigate("owner/allocation/new") }, generateInvoice = { id -> nav.navigate("owner/generate/$id") })
+                AllocationsScreen(onBack = back, newAllocation = { nav.navigate("owner/allocation/new") }, generateInvoice = { id -> nav.navigate("owner/generate/$id") },
+                    openDetail = { id -> nav.navigate("owner/allocation/$id") }, vacate = { id -> nav.navigate("owner/vacate/$id") })
             }
             composable("owner/allocation/new") { NewAllocationScreen(onBack = back, onDone = back) }
+            // 1.11: allocation details (deposit history, settlement statement) and vacate with settlement
+            composable("owner/allocation/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
+                com.genusit.prms.ui.owner.AllocationDetailScreen(onBack = back, vacate = { id -> nav.navigate("owner/vacate/$id") })
+            }
+            composable("owner/vacate/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
+                com.genusit.prms.ui.owner.VacateScreen(onBack = back, onDone = { id ->
+                    nav.popBackStack()
+                    nav.navigate("owner/allocation/$id") { launchSingleTop = true }
+                })
+            }
             composable("owner/generate") {
                 com.genusit.prms.ui.owner.GenerateBillPickerScreen(onBack = back, pick = { id -> nav.navigate("owner/generate/$id") },
                     newAllocation = { nav.navigate("owner/allocation/new") })
@@ -390,6 +437,7 @@ private fun RoleShell(role: Role) {
             }
             composable(Routes.TEN_PAYMENTS) { TenantPaymentsScreen(openReceipt = openReceipt) }
             composable(Routes.TEN_MORE) { TenantMoreScreen(open = { route -> nav.navigate(route) }) }
+            composable("ten/deposit") { com.genusit.prms.ui.tenant.TenantDepositScreen(onBack = back) }
             composable("ten/queries") { TenantQueriesScreen(onBack = back, newQuery = { nav.navigate(Routes.TEN_NEW_QUERY) }, openQuery = { id -> nav.navigate("ten/query/$id") }) }
             composable("ten/query/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 QueryDetailScreen(it.arguments?.getInt("id") ?: 0, Role.TENANT, onBack = back)
@@ -425,6 +473,23 @@ private fun BottomBar(tabs: List<Tab>, current: String?, nav: NavHostController,
                     indicatorColor = Palette.BrandSoft, unselectedIconColor = Palette.Muted, unselectedTextColor = Palette.Muted,
                 ),
             )
+        }
+    }
+}
+
+/** App splash (1.11): the published logo and name on the brand gradient. */
+@Composable
+private fun BrandedSplash(brand: com.genusit.prms.platform.Branding) {
+    Box(Modifier.fillMaxSize().background(Palette.HeaderGradient), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            com.genusit.prms.ui.auth.BrandLogo(brand.loginLogo ?: brand.logo, 112.dp, Modifier.testTag("splash_logo"))
+            Spacer(Modifier.height(18.dp))
+            Text(brand.name ?: stringResource(R.string.app_name), color = Color.White, fontWeight = FontWeight.Bold,
+                style = androidx.compose.material3.MaterialTheme.typography.headlineSmall)
+            if (brand.showTagline) Text(brand.tagline ?: stringResource(R.string.login_tagline), color = Color.White.copy(alpha = .85f),
+                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(28.dp))
+            CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
         }
     }
 }

@@ -24,7 +24,7 @@ interface SessionRepository {
 interface AuthRepository {
     suspend fun login(username: String, password: String, lang: String): LoginResult
     /** Revokes [token] on the server (the current session token when null). */
-    suspend fun logout(token: String? = null)
+    suspend fun logout(token: String? = null, pushToken: String? = null)
     suspend fun me(): Me
     suspend fun saveLanguage(lang: String)
     /** Profile update for the signed-in role. A password change needs [currentPassword]. */
@@ -36,6 +36,13 @@ interface CommonRepository {
     suspend fun notifications(): NotificationList
     suspend fun markAllNotificationsRead()
     suspend fun receipt(receiptNumber: String): Receipt
+    /* 1.11 */
+    suspend fun unreadCount(): Int
+    suspend fun markNotificationRead(id: Int)
+    suspend fun notificationPrefs(): NotificationPrefs
+    suspend fun saveNotificationPrefs(prefs: Map<String, Boolean>): NotificationPrefs
+    suspend fun registerPushToken(token: String, appVersion: String)
+    suspend fun unregisterPushToken(token: String)
 }
 
 /** Owner: rooms. */
@@ -106,7 +113,12 @@ interface AllocationRepository {
     suspend fun allocate(a: NewAllocation): AllocationCreated
     /** The server computes the settlement (deposit collected − pending rent). */
     suspend fun close(id: Int, notes: String): AllocationClosed
-    suspend fun collectDeposit(id: Int, amount: Double): DepositCollected
+    suspend fun collectDeposit(id: Int, amount: Double, method: String = "cash", reference: String = ""): DepositCollected
+    /* 1.11 vacate with settlement */
+    suspend fun allocation(id: Int): AllocationDetail
+    suspend fun vacatePreview(id: Int, input: VacateInput): SettlementStatement
+    suspend fun vacateConfirm(id: Int, input: VacateInput, expectedFinal: Double): VacateResult
+    suspend fun refundPaid(id: Int, method: String, reference: String, date: String): SettlementStatement
 }
 
 /** Owner: collection agents. */
@@ -182,6 +194,8 @@ interface TenantPortalRepository {
     suspend fun invoice(id: Int): InvoiceDetail
     suspend fun payments(): TenantPayments
     suspend fun profile(): Profile
+    /** 1.11: own deposit per room + settlement statements. */
+    suspend fun deposits(): List<AllocationDeposit>
 }
 
 /** Public endpoints used before sign-in (login screen). */
@@ -191,3 +205,10 @@ interface PublicRepository {
     /** Downloads a branding image (same server only). */
     suspend fun image(url: String): ByteArray
 }
+
+/** 1.11: the phone's current push token (Firebase), when push is set up. */
+interface PushTokenProvider {
+    fun currentToken(): String?
+}
+
+object NoPushToken : PushTokenProvider { override fun currentToken(): String? = null }

@@ -181,7 +181,7 @@ class CloseAllocationUseCase @Inject constructor(private val repo: AllocationRep
 }
 
 class CollectDepositUseCase @Inject constructor(private val repo: AllocationRepository) {
-    suspend operator fun invoke(id: Int, amount: Double): DepositCollected = repo.collectDeposit(id, amount)
+    suspend operator fun invoke(id: Int, amount: Double, method: String = "cash", reference: String = ""): DepositCollected = repo.collectDeposit(id, amount, method, reference)
 }
 
 /* ───────── collection agents ───────── */
@@ -254,4 +254,24 @@ class GetPaymentScreenshotUseCase @Inject constructor(private val repo: Subscrip
 
 class GetStaticPaymentQrUseCase @Inject constructor(private val repo: SubscriptionRepository) {
     suspend operator fun invoke() = repo.staticQr()
+}
+
+/* ───────── 1.11: allocation details, vacate with settlement ───────── */
+
+class GetAllocationDetailUseCase @Inject constructor(private val repo: AllocationRepository) {
+    suspend operator fun invoke(id: Int): com.genusit.prms.domain.model.AllocationDetail = repo.allocation(id)
+}
+
+/** Read-only statement for the owner's choices (nothing is changed on the server). */
+class PreviewVacateUseCase @Inject constructor(private val repo: AllocationRepository) {
+    suspend operator fun invoke(id: Int, input: com.genusit.prms.domain.model.VacateInput) = repo.vacatePreview(id, input)
+}
+
+/** Vacates only when the server's final amount still equals [expectedFinal] (what the owner confirmed). */
+class ConfirmVacateUseCase @Inject constructor(private val repo: AllocationRepository) {
+    suspend operator fun invoke(id: Int, input: com.genusit.prms.domain.model.VacateInput, expectedFinal: Double) = repo.vacateConfirm(id, input, expectedFinal)
+}
+
+class RecordRefundPaidUseCase @Inject constructor(private val repo: AllocationRepository) {
+    suspend operator fun invoke(id: Int, method: String, reference: String, date: String) = repo.refundPaid(id, method, reference, date)
 }

@@ -102,6 +102,8 @@ data class Allocation(
     val city: String? = null,
     @SerialName("base_rent") val baseRent: Double = 0.0,
     @SerialName("property_name") val propertyName: String? = null,
+    /** 1.11: result of the vacate settlement (closed allocations). */
+    val settlement: SettlementBrief? = null,
 ) {
     val isActive: Boolean get() = status == "active"
 
@@ -469,6 +471,8 @@ data class AppConfig(
     val referral: ReferralInfo = ReferralInfo(),
     /** The free trial a new owner gets right away (from the Super Admin's billing settings); null when off. */
     val trial: TrialOffer? = null,
+    /** 1.11: public Firebase client values for push; null = push off on the server. */
+    val push: PushClientConfig? = null,
 )
 
 @Serializable

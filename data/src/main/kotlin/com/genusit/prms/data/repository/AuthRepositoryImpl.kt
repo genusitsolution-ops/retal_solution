@@ -22,8 +22,10 @@ class AuthRepositoryImpl @Inject constructor(
         return caller.get(LoginResult.serializer()) { api.login(body) }
     }
 
-    override suspend fun logout(token: String?) {
-        caller.run { api.logout(JsonObject(emptyMap()), token?.let { "Bearer $it" }) }
+    override suspend fun logout(token: String?, pushToken: String?) {
+        // 1.11: the server also stops push to this phone for this user
+        val body = if (pushToken.isNullOrBlank()) JsonObject(emptyMap()) else JsonObject(mapOf("push_token" to kotlinx.serialization.json.JsonPrimitive(pushToken)))
+        caller.run { api.logout(body, token?.let { "Bearer $it" }) }
     }
 
     override suspend fun me(): Me = caller.get(Me.serializer()) { api.me() }

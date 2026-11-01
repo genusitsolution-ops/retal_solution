@@ -57,7 +57,7 @@ class ApiCaller(val json: Json, private val changes: DataChangeBus = NoDataChang
 
     /** Which data a successful write changed, from the API path; null for writes that change nothing shown elsewhere. */
     fun topicsFor(path: String): Set<DataTopic>? = when {
-        path.contains("/auth/") || path.contains("notifications") -> null
+        path.contains("/auth/") || path.contains("notifications") || path.contains("common/push.php") -> null
         path.contains("invoices.php") || path.contains("payments.php") || path.contains("collections.php") ->
             setOf(DataTopic.BILLING, DataTopic.COLLECTIONS, DataTopic.HANDOVERS)
         path.contains("settlements.php") -> setOf(DataTopic.HANDOVERS, DataTopic.COLLECTIONS)

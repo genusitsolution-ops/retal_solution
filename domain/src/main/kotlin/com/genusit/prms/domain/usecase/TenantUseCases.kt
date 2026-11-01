@@ -22,3 +22,8 @@ class GetTenantInvoiceUseCase @Inject constructor(private val repo: TenantPortal
 class GetTenantPaymentsUseCase @Inject constructor(private val repo: TenantPortalRepository) {
     suspend operator fun invoke(): TenantPayments = repo.payments()
 }
+
+/** 1.11: own security deposit per room and settlement statements. */
+class GetTenantDepositsUseCase @Inject constructor(private val repo: TenantPortalRepository) {
+    suspend operator fun invoke(): List<com.genusit.prms.domain.model.AllocationDeposit> = repo.deposits()
+}

@@ -11,6 +11,7 @@ import com.genusit.prms.domain.model.Profile
 import com.genusit.prms.domain.model.TenantDashboard
 import com.genusit.prms.domain.model.TenantPayments
 import com.genusit.prms.domain.model.TenantRow
+import com.genusit.prms.domain.model.AllocationDeposit
 import com.genusit.prms.domain.repository.AgentRepository
 import com.genusit.prms.domain.repository.TenantPortalRepository
 import kotlinx.serialization.builtins.ListSerializer
@@ -52,4 +53,6 @@ class TenantPortalRepositoryImpl @Inject constructor(
     override suspend fun invoice(id: Int): InvoiceDetail = caller.get(InvoiceDetail.serializer()) { api.tenantInvoices(id) }
     override suspend fun payments(): TenantPayments = caller.get(TenantPayments.serializer()) { api.tenantPayments() }
     override suspend fun profile(): Profile = caller.get(Profile.serializer()) { api.tenantProfile() }
+    override suspend fun deposits(): List<AllocationDeposit> =
+        caller.get(kotlinx.serialization.builtins.ListSerializer(AllocationDeposit.serializer())) { api.tenantDeposit() }
 }

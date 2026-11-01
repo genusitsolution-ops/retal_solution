@@ -76,6 +76,10 @@ data class Notification(
     val link: String? = null,
     @SerialName("is_read") val isRead: Boolean = false,
     @SerialName("created_at") val createdAt: String? = null,
+    /** 1.11: screen to open on tap, e.g. "invoice/12", "receipt/OC-…", "settlement/5". */
+    val route: String? = null,
+    val category: String? = null,
+    val event: String? = null,
 )
 
 @Serializable
@@ -383,6 +387,8 @@ data class TenantDetail(
     val username: String? = null,
     @SerialName("has_pan_doc") val hasPanDoc: Boolean = false,
     @SerialName("photo_version") val photoVersion: String? = null,
+    /** 1.11: security deposit of every allocation (current first). */
+    val deposits: List<AllocationDeposit> = emptyList(),
 )
 
 @Serializable

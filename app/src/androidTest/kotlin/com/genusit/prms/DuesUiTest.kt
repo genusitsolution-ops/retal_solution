@@ -106,15 +106,29 @@ class DuesUiTest {
     }
 
     @Test fun upiAppButtonsUseTheInvoiceAmount() {
-        val uri = "upi://pay?pa=9000000000%40ybl&pn=Rental%20Solution%20Test&am=3538.82&cu=INR&tn=Subscription%20SUB-1"
-        val upi = UpiDetails(upiId = "9000000000@ybl", payee = "Rental Solution Test", amount = 3538.82, reference = "SUB-1", uri = uri, isMerchant = false,
+        // merchant UPI ID: direct payment buttons with the invoice amount
+        val uri = "upi://pay?pa=rentals%40okaxis&pn=Rental%20Solution%20Test&mc=6513&tr=SUB-1&am=3538.82&cu=INR&tn=Subscription%20SUB-1"
+        val upi = UpiDetails(upiId = "rentals@okaxis", payee = "Rental Solution Test", amount = 3538.82, reference = "SUB-1", uri = uri, isMerchant = true,
             apps = listOf(UpiApp("phonepe", "PhonePe", "com.phonepe.app"), UpiApp("gpay", "Google Pay", "com.google.android.apps.nbu.paisa.user"), UpiApp("paytm", "Paytm", "net.one97.paytm")))
         rule.setContent { PrmsTheme { Surface(Modifier.fillMaxSize()) { Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) { UpiQrPanel(upi) } } } }
         rule.onNodeWithText("Pay using PhonePe").assertExists()
         rule.onNodeWithText("Pay using Google Pay").assertExists()
         rule.onNodeWithText("Pay using Paytm").assertExists()
         rule.onNodeWithText("Other UPI app").assertExists()
-        rule.onNodeWithText("Save / share QR image").assertExists()
+        rule.onNodeWithText("Save to Gallery").assertExists()
         shot("upi-app-buttons")
+    }
+
+    @Test fun personalUpiIdOffersScanRouteNotPaymentIntent() {
+        // personal UPI ID (PhonePe declines app-opened payments to it): no "Pay using …"; save QR + open app to scan
+        val uri = "upi://pay?pa=9000000000%40ybl&pn=Rental%20Solution%20Test&am=3538.82&cu=INR&tn=Subscription%20SUB-1"
+        val upi = UpiDetails(upiId = "9000000000@ybl", payee = "Rental Solution Test", amount = 3538.82, reference = "SUB-1", uri = uri, isMerchant = false,
+            apps = listOf(UpiApp("phonepe", "PhonePe", "com.phonepe.app"), UpiApp("gpay", "Google Pay", "com.google.android.apps.nbu.paisa.user")))
+        rule.setContent { PrmsTheme { Surface(Modifier.fillMaxSize()) { Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) { UpiQrPanel(upi) } } } }
+        rule.onNodeWithText("Pay using PhonePe").assertDoesNotExist()
+        rule.onNodeWithText("Open PhonePe to scan").assertExists()
+        rule.onNodeWithText("Save to Gallery").assertExists()
+        rule.onNodeWithText("Share QR").assertExists()
+        shot("upi-personal-id")
     }
 }

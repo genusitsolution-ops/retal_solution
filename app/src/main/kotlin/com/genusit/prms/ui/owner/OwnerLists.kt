@@ -115,6 +115,7 @@ fun OwnerTenantsScreen(openTenant: (Int) -> Unit, addTenant: (() -> Unit)? = nul
 fun OwnerTenantDetailScreen(
     id: Int, onBack: () -> Unit, openInvoice: (Int) -> Unit, edit: () -> Unit = {}, onDeleted: () -> Unit = onBack,
     openHistory: () -> Unit = {}, openDocument: (com.genusit.prms.domain.model.TenantDocType) -> Unit = {},
+    openAllocation: (Int) -> Unit = {},
 ) {
     val model: OwnerTenantDetailViewModel = hiltViewModel()
     val vm = model.tenant
@@ -159,6 +160,8 @@ fun OwnerTenantDetailScreen(
                         }
                     }
                 }
+                // 1.11: security deposit (agreed / collected / pending / adjusted / refunded) per room
+                if (t.deposits.isNotEmpty()) item { TenantDepositCard(t.deposits, openAllocation) }
                 item {
                     com.genusit.prms.ui.common.ProfilePhotoCard(com.genusit.prms.domain.model.PhotoSubject.TENANT, t.id, t.photoVersion, t.fullName,
                         consentRequired = true, onChanged = { vm.refresh() })

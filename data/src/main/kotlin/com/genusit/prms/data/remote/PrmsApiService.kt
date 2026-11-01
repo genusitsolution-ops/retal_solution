@@ -51,6 +51,17 @@ interface PrmsApiService {
     @POST("common/notifications.php")
     suspend fun updateNotifications(@Body body: JsonObject): Response<ResponseBody>
 
+    /** 1.11: `?count=1` → only the unread count */
+    @GET("common/notifications.php")
+    suspend fun notificationCount(@Query("count") count: Int = 1): Response<ResponseBody>
+
+    @GET("common/push.php")
+    suspend fun pushPrefs(): Response<ResponseBody>
+
+    /** {action: register | unregister | prefs, …} */
+    @POST("common/push.php")
+    suspend fun pushAction(@Body body: JsonObject): Response<ResponseBody>
+
     @GET("common/receipt.php")
     suspend fun receipt(@Query("receipt") receiptNumber: String): Response<ResponseBody>
 
@@ -185,9 +196,13 @@ interface PrmsApiService {
     @PUT("owner/allocations.php")
     suspend fun closeAllocation(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
 
-    /** `{"action":"collect_deposit","amount":…}` */
+    /** `{"action":"collect_deposit","amount":…}` · 1.11: vacate_preview / vacate_confirm / refund_paid */
     @POST("owner/allocations.php")
     suspend fun allocationAction(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    /** 1.11: allocation + deposit history + stored settlement */
+    @GET("owner/allocations.php")
+    suspend fun ownerAllocation(@Query("id") id: Int): Response<ResponseBody>
 
     /* ───────── owner: collection agents ───────── */
 
@@ -333,6 +348,10 @@ interface PrmsApiService {
 
     @GET("tenant/dashboard.php")
     suspend fun tenantDashboard(): Response<ResponseBody>
+
+    /** 1.11: own deposit per room + settlement statements */
+    @GET("tenant/deposit.php")
+    suspend fun tenantDeposit(): Response<ResponseBody>
 
     @GET("tenant/invoices.php")
     suspend fun tenantInvoices(@Query("id") id: Int?): Response<ResponseBody>

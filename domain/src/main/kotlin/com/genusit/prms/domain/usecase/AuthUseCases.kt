@@ -34,9 +34,11 @@ class LoginUseCase @Inject constructor(
 class LogoutUseCase @Inject constructor(
     private val auth: AuthRepository,
     private val session: SessionRepository,
+    private val push: com.genusit.prms.domain.repository.PushTokenProvider,
 ) {
     suspend operator fun invoke() {
-        try { auth.logout() } catch (e: CancellationException) { throw e } catch (_: Exception) { }
+        // 1.11: this phone stops receiving the user's push notifications
+        try { auth.logout(pushToken = push.currentToken()) } catch (e: CancellationException) { throw e } catch (_: Exception) { }
         session.clear()
     }
 }

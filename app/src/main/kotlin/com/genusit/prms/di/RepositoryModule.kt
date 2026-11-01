@@ -38,6 +38,7 @@ import javax.inject.Singleton
 abstract class RepositoryModule {
     @Binds @Singleton abstract fun session(impl: SessionStore): SessionRepository
     @Binds @Singleton abstract fun dataChanges(impl: com.genusit.prms.domain.repository.SharedFlowDataChangeBus): com.genusit.prms.domain.repository.DataChangeBus
+    @Binds @Singleton abstract fun pushToken(impl: com.genusit.prms.platform.PushManager): com.genusit.prms.domain.repository.PushTokenProvider
     @Binds @Singleton abstract fun auth(impl: AuthRepositoryImpl): AuthRepository
     @Binds @Singleton abstract fun common(impl: CommonRepositoryImpl): CommonRepository
     @Binds @Singleton abstract fun public(impl: com.genusit.prms.data.repository.PublicRepositoryImpl): com.genusit.prms.domain.repository.PublicRepository

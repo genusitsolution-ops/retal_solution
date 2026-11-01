@@ -76,7 +76,7 @@ fun OwnerHomeScreen(
         title = stringResource(R.string.hello_name, name.substringBefore(' ')),
         actions = {
             IconButton(onClick = vm::refresh) { Icon(Icons.Filled.Refresh, stringResource(R.string.refresh)) }
-            IconButton(onClick = openNotifications) { Icon(Icons.Filled.Notifications, stringResource(R.string.notifications)) }
+            com.genusit.prms.ui.common.NotificationBell(onClick = openNotifications)
         },
     ) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { d ->

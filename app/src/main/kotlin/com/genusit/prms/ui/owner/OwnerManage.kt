@@ -440,18 +440,15 @@ private fun AddChargeDialog(act: ActionState<*>, onDismiss: () -> Unit, onSave: 
 /* ═════════════════════════ allocations ═════════════════════════ */
 
 @Composable
-fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInvoice: (Int) -> Unit) {
+fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInvoice: (Int) -> Unit, openDetail: (Int) -> Unit = {}, vacate: (Int) -> Unit = {}) {
     val model: AllocationsViewModel = hiltViewModel()
     var filter by rememberSaveable { mutableStateOf("active") }
     val vm = model.allocations
     LaunchedEffect(filter) { vm.load(filter) }
     val state by vm.state.collectAsStateWithLifecycle()
     val deposit = model.deposit
-    val close = model.closeAction
     val dState by deposit.state.collectAsStateWithLifecycle()
-    val cState by close.state.collectAsStateWithLifecycle()
     var depositFor by rememberSaveable { mutableStateOf(0) }
-    var closeFor by rememberSaveable { mutableStateOf(0) }
     var query by rememberSaveable { mutableStateOf("") }
     // reload when coming back (e.g. after a new allocation or a generated bill)
     LaunchedEffect(Unit) { if (state !is UiState.Loading) vm.refresh() }
@@ -476,17 +473,14 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
                         Text(stringResource(R.string.alloc_search_count, list.size, all.size), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     item {
-                        ActionError(dState); ActionError(cState)
-                        (cState as? ActionState.Done<AllocationClosed>)?.result?.let { r ->
-                            SuccessText(stringResource(R.string.settlement_result, Money.format(r.settlementAmount), Money.format(r.pendingRent)))
-                        }
+                        ActionError(dState)
                     }
                     if (list.isEmpty()) item {
                         if (all.isNotEmpty() && query.isNotBlank()) EmptyState(stringResource(R.string.alloc_no_match, query.trim()), Icons.Filled.MeetingRoom)
                         else EmptyState(stringResource(R.string.no_allocations), Icons.Filled.MeetingRoom)
                     }
                     items(list, key = { it.id }) { a ->
-                        AppCard {
+                        AppCard(onClick = { openDetail(a.id) }) {
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
@@ -502,9 +496,15 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
                                 LabelValue(stringResource(R.string.deposit_agreed), Money.format(a.depositAgreed))
                                 LabelValue(stringResource(R.string.deposit_collected), Money.format(a.depositCollected), Palette.Success)
                                 if (a.depositBalance > 0) LabelValue(stringResource(R.string.deposit_pending), Money.format(a.depositBalance), Palette.Danger, bold = true)
-                                if (!a.isActive) a.settlementAmount?.let { LabelValue(stringResource(R.string.settlement), Money.format(it), bold = true) }
+                                if (!a.isActive) {
+                                    val s = a.settlement
+                                    if (s?.resultLabel != null) LabelValue(stringResource(R.string.settlement), s.resultLabel!!, bold = true)
+                                    else a.settlementAmount?.let { LabelValue(stringResource(R.string.settlement), Money.format(it), bold = true) }
+                                    if (s?.refundStatus == "pending") Text(stringResource(R.string.refund_pending), color = Palette.Warning, style = MaterialTheme.typography.labelMedium)
+                                }
+                                // 1.11: Vacate opens the settlement preview (nothing changes until the owner confirms)
                                 if (a.isActive) AllocationActions(a.depositBalance > 0, onBill = { generateInvoice(a.id) },
-                                    onDeposit = { deposit.reset(); depositFor = a.id }, onVacate = { close.reset(); closeFor = a.id })
+                                    onDeposit = { deposit.reset(); depositFor = a.id }, onVacate = { vacate(a.id) })
                             }
                         }
                     }
@@ -516,17 +516,6 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
     list.firstOrNull { it.id == depositFor }?.let { a ->
         AmountDialog(stringResource(R.string.collect_deposit) + " · " + (a.tenantName ?: ""), a.depositBalance,
             onConfirm = { amt -> depositFor = 0; model.collectDepositFor(a.id, amt) }, onDismiss = { depositFor = 0 })
-    }
-    list.firstOrNull { it.id == closeFor }?.let { a ->
-        TextDialog(
-            title = stringResource(R.string.vacate) + " · " + (a.tenantName ?: ""),
-            label = stringResource(R.string.settlement_notes),
-            confirmLabel = stringResource(R.string.vacate),
-            required = false,
-            message = stringResource(R.string.vacate_confirm),
-            onConfirm = { notes -> closeFor = 0; model.close(a.id, notes) },
-            onDismiss = { closeFor = 0 },
-        )
     }
 }
 

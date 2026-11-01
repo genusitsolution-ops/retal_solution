@@ -71,7 +71,7 @@ class DomainTest {
             failLogin?.let { throw it }
             return LoginResult(token = "tok", userType = userType, user = LoginUser(id = 1, fullName = "Abhi Kumar"))
         }
-        override suspend fun logout(token: String?) { loggedOutTokens += token; throw ApiException("X", "server down", 500) }
+        override suspend fun logout(token: String?, pushToken: String?) { loggedOutTokens += token; throw ApiException("X", "server down", 500) }
         override suspend fun me(): Me = Me()
         override suspend fun saveLanguage(lang: String) {}
         override suspend fun updateProfile(role: Role, phone: String?, email: String?, currentPassword: String?, newPassword: String?) {}
@@ -104,7 +104,7 @@ class DomainTest {
 
     @Test fun logoutClearsSessionEvenWhenServerFails() = runTest {
         val session = FakeSession().apply { save(Session("tok", Role.OWNER, "A")) }
-        LogoutUseCase(FakeAuth("owner"), session)()
+        LogoutUseCase(FakeAuth("owner"), session, com.genusit.prms.domain.repository.NoPushToken)()
         assertNull(session.state.value)
     }
 
