@@ -14,6 +14,8 @@ for host in $H www.$H; do
   echo "-- $host names on certificate:"; echo | openssl s_client -servername $host -connect $host:443 2>/dev/null | openssl x509 -noout -ext subjectAltName 2>/dev/null | tail -n +2
   v=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "https://$host/login.php" 2>&1); echo "-- strict TLS (no -k) https://$host/login.php => $v (000 = certificate rejected)"
 done
+show "certificate chain sent by the server"
+echo | openssl s_client -showcerts -servername $H -connect $H:443 2>/dev/null | grep -E "^ *[0-9]+ s:|^ *i:|^ *a:|v:NotBefore" | head -12
 show "1.11.1 deployment markers"
 for u in "http://$H/login.php" "http://www.$H/login.php" "https://www.$H/login.php" "http://$H/api/v1/common/app_config.php" "https://$H/.user.ini" "https://$H/api/migration_api.sql" "https://$H/admin/system_check.php" "https://$H/assets/js/mobile.js"; do
   echo "$u => $(curl -k -s -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 20 "$u")"
