@@ -72,9 +72,11 @@ import com.genusit.prms.ui.theme.Palette
 fun InvoiceBody(inv: InvoiceDetail, showTenant: Boolean, openReceipt: (String) -> Unit, footer: @Composable () -> Unit = {}) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item {
+            // 1.10: with older unpaid months the card shows what the tenant has to pay now (previous + this month)
+            val carry = inv.previousBalance > 0.005
             WalletCard(
-                label = stringResource(if (inv.isOpen) R.string.balance_due else R.string.invoice_total),
-                amount = if (inv.isOpen) inv.balanceAmount else inv.totalAmount,
+                label = stringResource(if (carry) R.string.total_payable else if (inv.isOpen) R.string.balance_due else R.string.invoice_total),
+                amount = if (carry) inv.payableNow else if (inv.isOpen) inv.balanceAmount else inv.totalAmount,
                 footer = (inv.periodLabel ?: "") + " · " + inv.invoiceNumber,
             )
         }
@@ -110,7 +112,22 @@ fun InvoiceBody(inv: InvoiceDetail, showTenant: Boolean, openReceipt: (String) -
                     LabelValue(stringResource(R.string.total), Money.format(inv.totalAmount), bold = true)
                     LabelValue(stringResource(R.string.paid), Money.format(inv.paidAmount), Palette.Success)
                     LabelValue(stringResource(R.string.balance), Money.format(inv.balanceAmount), if (inv.balanceAmount > 0) Palette.Danger else Palette.Success, bold = true)
-                    if (inv.otherOutstanding > 0) {
+                    if (inv.previousDues.isNotEmpty()) {
+                        // carry-forward (1.10): older unpaid months, live from the server; each bill keeps its own charges
+                        HorizontalDivider(Modifier.padding(vertical = 6.dp))
+                        inv.previousDues.forEach { d ->
+                            LabelValue(stringResource(R.string.previous_balance_of, d.periodLabel), Money.format(d.balance), Palette.Warning)
+                        }
+                        LabelValue(stringResource(R.string.total_payable), Money.format(inv.payableNow), if (inv.payableNow > 0) Palette.Danger else Palette.Success, bold = true)
+                        Spacer(Modifier.height(4.dp))
+                        Text(stringResource(R.string.fifo_note), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (inv.totalPayable != null) {
+                        if (inv.laterBalance > 0) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(stringResource(R.string.later_unpaid, Money.format(inv.laterBalance)), color = Palette.Warning, style = MaterialTheme.typography.labelMedium)
+                        }
+                    } else if (inv.otherOutstanding > 0) {
                         Spacer(Modifier.height(6.dp))
                         Text(stringResource(R.string.other_outstanding, Money.format(inv.otherOutstanding)), color = Palette.Warning, style = MaterialTheme.typography.labelMedium)
                     }
@@ -241,18 +258,40 @@ fun RecordPaymentScreen(invoiceId: Int, onBack: () -> Unit, onDone: (String) -> 
     ScreenScaffold(stringResource(R.string.record_payment), onBack = onBack) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { inv ->
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                WalletCard(stringResource(R.string.balance_due), inv.balanceAmount, (inv.tenantName ?: "") + " · " + (inv.periodLabel ?: inv.invoiceNumber))
+                // 1.10: older unpaid months → collect against the total payable, applied oldest month first
+                val carry = inv.isOpen && inv.previousBalance > 0.005
+                var oldestFirst by rememberSaveable { mutableStateOf(true) }
+                val useOldest = carry && oldestFirst
+                WalletCard(
+                    stringResource(if (useOldest) R.string.total_payable else R.string.balance_due),
+                    if (useOldest) inv.payableNow else inv.balanceAmount,
+                    (inv.tenantName ?: "") + " · " + (inv.periodLabel ?: inv.invoiceNumber),
+                )
+                if (carry) AppCard {
+                    Column {
+                        inv.previousDues.forEach { d -> LabelValue(stringResource(R.string.previous_balance_of, d.periodLabel), Money.format(d.balance), Palette.Warning) }
+                        LabelValue(stringResource(R.string.this_month), Money.format(inv.balanceAmount))
+                        HorizontalDivider(Modifier.padding(vertical = 6.dp))
+                        LabelValue(stringResource(R.string.total_payable), Money.format(inv.payableNow), bold = true)
+                        Spacer(Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = oldestFirst, onClick = { oldestFirst = true }, label = { Text(stringResource(R.string.pay_oldest_first)) })
+                            FilterChip(selected = !oldestFirst, onClick = { oldestFirst = false }, label = { Text(stringResource(R.string.pay_this_bill_only)) })
+                        }
+                        Text(stringResource(if (oldestFirst) R.string.fifo_note else R.string.this_bill_only_note), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 if (!inv.isOpen) {
                     Text(stringResource(R.string.invoice_already_paid), color = Palette.Success)
                 } else {
                     val failed = act as? ActionState.Failed
                     PaymentForm(
-                        maxAmount = inv.balanceAmount,
+                        maxAmount = if (useOldest) inv.payableNow else inv.balanceAmount,
                         running = act is ActionState.Running,
                         errorMessage = failed?.let { errorText(it.error) },
                         modes = paymentModes(meta),
                     ) { amount, mode, date, ref, remarks ->
-                        model.pay(inv.id, amount, mode, date, ref, remarks)
+                        model.pay(inv.id, amount, mode, date, ref, remarks, oldestFirst = useOldest)
                     }
                 }
             }

@@ -72,6 +72,20 @@ class DocumentScanner @Inject constructor(
             out
         }
 
+    /**
+     * Payment screenshot (1.10): upright compressed copy for uploading plus the text lines read on this phone
+     * (ML Kit, no network). The text is used only to pre-fill the payment form and is never logged or stored.
+     */
+    suspend fun compressAndRead(source: Uri, maxSide: Int = MAX_SIDE, quality: Int = JPEG_QUALITY): Pair<File, List<String>> =
+        withContext(Dispatchers.Default) {
+            val bitmap = decodeUpright(source, maxSide) ?: throw IllegalArgumentException("unreadable image")
+            val out = File(dir, "upload-${UUID.randomUUID()}.jpg")
+            out.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it) }
+            val lines = runCatching { ocrLines(bitmap, 0) }.getOrDefault(emptyList())
+            bitmap.recycle()
+            out to lines
+        }
+
     /** Writes a downloaded document into the private cache so a PDF viewer can open it (content Uri, read-only grant). */
     suspend fun cacheForViewing(bytes: ByteArray, extension: String): Pair<File, Uri> = withContext(Dispatchers.IO) {
         val f = File(dir, "view-${UUID.randomUUID()}.$extension")

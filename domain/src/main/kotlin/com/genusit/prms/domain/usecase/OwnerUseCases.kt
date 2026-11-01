@@ -122,11 +122,17 @@ class GetOwnerInvoiceUseCase @Inject constructor(private val repo: BillingReposi
     suspend operator fun invoke(id: Int): InvoiceDetail = repo.invoice(id)
 }
 
+/** 1.10: tenants with money due, all open bills of a tenant together. */
+class GetDuesByTenantUseCase @Inject constructor(private val repo: BillingRepository) {
+    suspend operator fun invoke(): List<com.genusit.prms.domain.model.TenantDues> = repo.duesByTenant()
+}
+
 /** Owner records rent received against one invoice. The idempotency key makes retries safe. */
 class RecordPaymentUseCase @Inject constructor(private val repo: BillingRepository) {
     suspend operator fun invoke(
         invoiceId: Int, amount: Double, mode: String, date: String, reference: String, remarks: String, idempotencyKey: String,
-    ): PaymentResult = repo.recordPayment(invoiceId, amount, mode, date, reference, remarks, idempotencyKey)
+        oldestFirst: Boolean = false,
+    ): PaymentResult = repo.recordPayment(invoiceId, amount, mode, date, reference, remarks, idempotencyKey, oldestFirst)
 }
 
 class GetOwnerPaymentsUseCase @Inject constructor(private val repo: BillingRepository) {

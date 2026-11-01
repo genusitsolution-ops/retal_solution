@@ -99,6 +99,18 @@ data class UpiDetails(
     val reference: String = "",
     val note: String = "",
     val uri: String = "",
+    /** 1.10: false = personal UPI ID (some apps refuse a pre-filled amount to it; scanning the QR is the fallback). */
+    @SerialName("is_merchant") val isMerchant: Boolean = false,
+    /** 1.10: buttons for specific UPI apps (same upi:// link handed to that app's package). */
+    val apps: List<UpiApp> = emptyList(),
+)
+
+@Serializable
+data class UpiApp(
+    val key: String = "",
+    val name: String = "",
+    @SerialName("android_package") val androidPackage: String = "",
+    val link: String = "",
 )
 
 @Serializable
@@ -153,6 +165,8 @@ data class RenewalPaymentInput(
     val paidOn: String,
     val amount: Double,
     val note: String?,
+    /** 1.10: what the app read from the screenshot (null when nothing was read); never proof of payment. */
+    val ocr: com.genusit.prms.domain.util.ScreenshotReading? = null,
 )
 
 /** POST owner/payment_gateway.php */

@@ -236,6 +236,7 @@ private fun RoleShell(role: Role) {
                     openProperties = { nav.navigateTab(Routes.OWNER_PROPERTIES) },
                     openTenants = { nav.navigateTab(Routes.OWNER_TENANTS) },
                     openDueInvoices = { nav.navigate("owner/bills/due") },
+                    openDuesByTenant = { nav.navigate("owner/bills/tenants") },
                     openOpenQueries = { nav.navigate("owner/queries?status=open") },
                     openPayments = { nav.navigate("owner/payments?period=month") },
                     openReports = { nav.navigate("owner/reports") },

@@ -166,9 +166,52 @@ data class InvoiceDetail(
     val items: List<InvoiceItem> = emptyList(),
     val payments: List<InvoicePayment> = emptyList(),
     @SerialName("other_outstanding") val otherOutstanding: Double = 0.0,
+    /** 1.10 carry-forward: older unpaid bills of this tenant (oldest first), live from the server. */
+    @SerialName("previous_dues") val previousDues: List<DueMonth> = emptyList(),
+    @SerialName("previous_balance") val previousBalance: Double = 0.0,
+    @SerialName("current_balance") val currentBalance: Double = 0.0,
+    /** previous balance + this bill's balance; null when talking to a server older than 1.10. */
+    @SerialName("total_payable") val totalPayable: Double? = null,
+    @SerialName("later_balance") val laterBalance: Double = 0.0,
+    /** Read-only link to this bill to share with the tenant (owner only). */
+    @SerialName("bill_url") val billUrl: String? = null,
 ) {
     val isOpen: Boolean get() = status == "pending" || status == "partial" || status == "overdue"
+    /** What the tenant has to pay now, including older months (falls back to this bill's balance). */
+    val payableNow: Double get() = totalPayable ?: (if (isOpen) balanceAmount else 0.0)
 }
+
+/** One unpaid month of a tenant (1.10). */
+@Serializable
+data class DueMonth(
+    @SerialName("invoice_id") val invoiceId: Int = 0,
+    @SerialName("invoice_number") val invoiceNumber: String = "",
+    @SerialName("period_label") val periodLabel: String = "",
+    @SerialName("billing_month") val billingMonth: Int = 0,
+    @SerialName("billing_year") val billingYear: Int = 0,
+    val balance: Double = 0.0,
+    val status: String = "pending",
+)
+
+/** One tenant with money due: all open bills together (1.10, same rows on web and app). */
+@Serializable
+data class TenantDues(
+    @SerialName("tenant_id") val tenantId: Int = 0,
+    @SerialName("tenant_name") val tenantName: String = "",
+    @SerialName("tenant_phone") val tenantPhone: String? = null,
+    @SerialName("property_id") val propertyId: Int = 0,
+    @SerialName("property_code") val propertyCode: String? = null,
+    val city: String? = null,
+    @SerialName("total_due") val totalDue: Double = 0.0,
+    @SerialName("open_count") val openCount: Int = 0,
+    val status: String = "pending",
+    @SerialName("status_label") val statusLabel: String? = null,
+    @SerialName("oldest_due_date") val oldestDueDate: String? = null,
+    @SerialName("latest_invoice_id") val latestInvoiceId: Int = 0,
+    @SerialName("latest_invoice_number") val latestInvoiceNumber: String = "",
+    @SerialName("months_label") val monthsLabel: String = "",
+    val months: List<DueMonth> = emptyList(),
+)
 
 @Serializable
 data class PaymentResult(
@@ -228,6 +271,8 @@ data class OwnerSummary(
     @SerialName("month_to") val monthTo: String? = null,
     @SerialName("emp_collected_month") val employeeCollectedMonth: Double = 0.0,
     @SerialName("open_queries") val openQueries: Int = 0,
+    /** 1.10: tenants with money due (one per tenant); null from older servers. */
+    @SerialName("dues_tenants") val duesTenants: Int? = null,
 )
 
 @Serializable
@@ -241,6 +286,7 @@ data class ChartPoint(
 data class OwnerDashboard(
     val summary: OwnerSummary = OwnerSummary(),
     @SerialName("recent_invoices") val recentInvoices: List<InvoiceSummary> = emptyList(),
+    @SerialName("dues_by_tenant") val duesByTenant: List<TenantDues> = emptyList(),
     @SerialName("chart_6months") val chart: List<ChartPoint> = emptyList(),
     val subscription: SubscriptionBrief? = null,
 )
@@ -482,6 +528,10 @@ data class EmployeeDashboard(
     val summary: EmployeeSummary = EmployeeSummary(),
     @SerialName("assigned_properties") val assignedProperties: List<AssignedProperty> = emptyList(),
     @SerialName("pending_invoices") val pendingInvoices: List<InvoiceSummary> = emptyList(),
+    /** 1.10: one row per tenant with dues in the assigned rooms. */
+    @SerialName("pending_tenants") val pendingTenants: List<TenantDues>? = null,
+    /** 1.10: cash collected / handed over / waiting / still with the employee. */
+    val handover: HandoverBalance? = null,
     @SerialName("recent_collections") val recentCollections: List<CollectionRow> = emptyList(),
 )
 

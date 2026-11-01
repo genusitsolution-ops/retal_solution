@@ -13,6 +13,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
+import retrofit2.http.PartMap
 import retrofit2.http.Query
 
 /**
@@ -140,6 +141,9 @@ interface PrmsApiService {
 
     @GET("owner/invoices.php")
     suspend fun ownerInvoice(@Query("id") id: Int): Response<ResponseBody>
+
+    @GET("owner/invoices.php")
+    suspend fun ownerDues(@Query("view") view: String = "dues"): Response<ResponseBody>
 
     @GET("owner/invoices.php")
     suspend fun invoiceContext(
@@ -277,6 +281,8 @@ interface PrmsApiService {
         @Part("amount") amount: RequestBody,
         @Part("note") note: RequestBody,
         @Part screenshot: MultipartBody.Part,
+        /** 1.10: values the app read from the screenshot (only the ones found); shown to the Super Admin. */
+        @PartMap ocr: Map<String, @JvmSuppressWildcards RequestBody> = emptyMap(),
     ): Response<ResponseBody>
 
     @GET("owner/payment_claims.php")

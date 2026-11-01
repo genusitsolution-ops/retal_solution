@@ -108,13 +108,15 @@ class BillingRepositoryImpl @Inject constructor(
         caller.get(ListSerializer(InvoiceSummary.serializer())) { api.ownerInvoices(status.orNullIfBlank()) }
 
     override suspend fun invoice(id: Int): InvoiceDetail = caller.get(InvoiceDetail.serializer()) { api.ownerInvoice(id) }
+    override suspend fun duesByTenant(): List<TenantDues> = caller.get(ListSerializer(TenantDues.serializer())) { api.ownerDues() }
 
     override suspend fun recordPayment(
-        invoiceId: Int, amount: Double, mode: String, date: String, reference: String, remarks: String, idempotencyKey: String,
+        invoiceId: Int, amount: Double, mode: String, date: String, reference: String, remarks: String, idempotencyKey: String, oldestFirst: Boolean,
     ): PaymentResult {
         val body = buildJsonObject {
             put("invoice_id", invoiceId); put("amount", amount); put("payment_method", mode)
             put("payment_date", date); put("reference_number", reference); put("remarks", remarks)
+            if (oldestFirst) put("oldest_first", true)
         }
         return caller.get(PaymentResult.serializer()) { api.ownerInvoiceAction(body, idempotencyKey) }
     }
@@ -215,6 +217,15 @@ class SubscriptionRepositoryImpl @Inject constructor(
             api.submitPaymentClaim(
                 input.invoiceId.toString().toRequestBody(text), input.utr.toRequestBody(text), input.paidOn.toRequestBody(text),
                 String.format(java.util.Locale.US, "%.2f", input.amount).toRequestBody(text), (input.note ?: "").toRequestBody(text), part,
+                buildMap {
+                    input.ocr?.let { o ->
+                        o.utr?.let { put("ocr_utr", it.toRequestBody(text)) }
+                        o.amount?.let { put("ocr_amount", String.format(java.util.Locale.US, "%.2f", it).toRequestBody(text)) }
+                        o.paidOn?.let { put("ocr_paid_on", it.toRequestBody(text)) }
+                        o.status?.let { put("ocr_status", it.toRequestBody(text)) }
+                        put("ocr_app", (o.app ?: "other").toRequestBody(text))
+                    }
+                },
             )
         }.claim
     }

@@ -92,6 +92,8 @@ sealed interface ScreenEvent {
 class SessionExpiryHandler @Inject constructor(
     private val expireSession: ExpireSessionUseCase,
     @ApplicationScope private val scope: CoroutineScope,
+    /** Server-side data changes (payments, bills, handovers …), for screens that reload when data changes. */
+    val dataChanges: com.genusit.prms.domain.repository.DataChangeBus,
 ) {
     fun onError(t: Throwable) {
         if (t is ApiException && t.isAuthError) scope.launch { expireSession() }
@@ -106,12 +108,17 @@ class Loadable<T>(
     private val expiry: SessionExpiryHandler,
     autoLoad: Boolean,
     private val loader: suspend () -> T,
+    /** Reload from the server whenever a write anywhere in the app succeeded (1.10). */
+    reloadOnChanges: Boolean = false,
 ) {
     private val _state = MutableStateFlow<UiState<T>>(UiState.Loading)
     val state: StateFlow<UiState<T>> = _state.asStateFlow()
     private var job: Job? = null
 
-    init { if (autoLoad) refresh() }
+    init {
+        if (autoLoad) refresh()
+        if (reloadOnChanges) scope.launch { expiry.dataChanges.changes.collect { if (_state.value !is UiState.Loading) refresh() } }
+    }
 
     /** Reloads; existing data stays visible (marked refreshing) until the new data arrives. */
     fun refresh() {
@@ -139,12 +146,15 @@ class ParamLoadable<P, T>(
     private val scope: CoroutineScope,
     private val expiry: SessionExpiryHandler,
     private val loader: suspend (P) -> T,
+    reloadOnChanges: Boolean = false,
 ) {
     private val _state = MutableStateFlow<UiState<T>>(UiState.Loading)
     val state: StateFlow<UiState<T>> = _state.asStateFlow()
     private var job: Job? = null
     private var param: P? = null
     private var hasParam = false
+
+    init { if (reloadOnChanges) scope.launch { expiry.dataChanges.changes.collect { if (_state.value !is UiState.Loading) refresh() } } }
 
     fun load(p: P) {
         if (hasParam && p == param) return
@@ -232,11 +242,12 @@ abstract class BaseViewModel(protected val expiry: SessionExpiryHandler) : ViewM
     @OptIn(ExperimentalCoroutinesApi::class)
     fun consumeEvent() { _events.resetReplayCache() }
 
-    protected fun <T> loadable(autoLoad: Boolean = true, loader: suspend () -> T): Loadable<T> =
-        Loadable(viewModelScope, expiry, autoLoad, loader)
+    /** [live] = reload whenever a payment, bill, handover or other write succeeded anywhere in the app. */
+    protected fun <T> loadable(autoLoad: Boolean = true, live: Boolean = false, loader: suspend () -> T): Loadable<T> =
+        Loadable(viewModelScope, expiry, autoLoad, loader, live)
 
-    protected fun <P, T> paramLoadable(loader: suspend (P) -> T): ParamLoadable<P, T> =
-        ParamLoadable(viewModelScope, expiry, loader)
+    protected fun <P, T> paramLoadable(live: Boolean = false, loader: suspend (P) -> T): ParamLoadable<P, T> =
+        ParamLoadable(viewModelScope, expiry, loader, live)
 
     protected fun <R> action(): ActionRunner<R> = ActionRunner(viewModelScope, expiry)
 }

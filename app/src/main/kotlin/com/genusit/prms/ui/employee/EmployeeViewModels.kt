@@ -22,7 +22,7 @@ class AgentHomeViewModel @Inject constructor(
     session: SessionRepository,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val dashboard = loadable { getDashboard() }
+    val dashboard = loadable(live = true) { getDashboard() }
     val userName: StateFlow<String> = session.userNameIn(this)
 }
 
@@ -31,7 +31,7 @@ class AgentTenantsViewModel @Inject constructor(
     getTenants: GetAgentTenantsUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val tenants = loadable { getTenants() }
+    val tenants = loadable(live = true) { getTenants() }
 }
 
 @HiltViewModel
@@ -39,7 +39,7 @@ class AgentCollectionsViewModel @Inject constructor(
     getCollections: GetAgentCollectionsUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val collections = loadable { getCollections() }
+    val collections = loadable(live = true) { getCollections() }
 }
 
 /** Collect rent for an assigned tenant (pre-selected tenant/invoice come from the route). */
@@ -54,9 +54,9 @@ class AgentCollectViewModel @Inject constructor(
 ) : BaseViewModel(expiry) {
     val preTenant: Int = handle.get<Int>("tenant") ?: 0
     val preInvoice: Int = handle.get<Int>("invoice") ?: 0
-    val tenants = loadable { getTenants() }
+    val tenants = loadable(live = true) { getTenants() }
     /** Assigned rooms (to find the property id when an older server sends only the code). */
-    val dashboard = loadable { getDashboard() }
+    val dashboard = loadable(live = true) { getDashboard() }
     val meta = loadable { getMeta() }
     val collectAction = action<PaymentResult>()
 

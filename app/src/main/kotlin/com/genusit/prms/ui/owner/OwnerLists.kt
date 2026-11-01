@@ -54,6 +54,11 @@ import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
 import com.genusit.prms.ui.common.StateContent
 import com.genusit.prms.ui.common.StatusChip
+import com.genusit.prms.ui.common.TenantDuesRow
+import com.genusit.prms.ui.common.UiState
+import com.genusit.prms.ui.common.errorText
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.CircularProgressIndicator
 import com.genusit.prms.ui.common.dial
 import com.genusit.prms.ui.theme.Palette
 
@@ -173,13 +178,16 @@ fun OwnerTenantDetailScreen(
     }
 }
 
-private val INVOICE_FILTERS = listOf("" to R.string.all, "due" to R.string.all_due, "pending" to R.string.st_pending, "partial" to R.string.st_partial, "overdue" to R.string.st_overdue, "paid" to R.string.st_paid)
+/** "tenants" (1.10) = one row per tenant with all unpaid months together. */
+private val INVOICE_FILTERS = listOf("" to R.string.all, "tenants" to R.string.dues_by_tenant, "due" to R.string.all_due, "pending" to R.string.st_pending, "partial" to R.string.st_partial, "overdue" to R.string.st_overdue, "paid" to R.string.st_paid)
 
 /** Invoice list; with [onlyOpen] it is the "pick an invoice to collect" screen behind the FAB. */
 @Composable
 fun OwnerInvoicesScreen(openInvoice: (Int) -> Unit, onlyOpen: Boolean = false, onBack: (() -> Unit)? = null, initialFilter: String = "", onCollect: (() -> Unit)? = null) {
-    val vm = hiltViewModel<OwnerInvoicesViewModel>().invoices
+    val model = hiltViewModel<OwnerInvoicesViewModel>()
+    val vm = model.invoices
     val state by vm.state.collectAsStateWithLifecycle()
+    val duesState by model.dues.state.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf(initialFilter) }
     var query by rememberSaveable { mutableStateOf("") }
     ScreenScaffold(stringResource(if (onlyOpen) R.string.collect_select_invoice else R.string.invoices), onBack = onBack, actions = {
@@ -202,8 +210,22 @@ fun OwnerInvoicesScreen(openInvoice: (Int) -> Unit, onlyOpen: Boolean = false, o
                         }
                     }
                 }
-                if (shown.isEmpty()) item { EmptyState(stringResource(if (onlyOpen) R.string.no_pending_invoices else R.string.no_invoices)) }
-                items(shown, key = { it.id }) { inv -> InvoiceRow(inv, showTenant = true) { openInvoice(inv.id) } }
+                if (!onlyOpen && filter == "tenants") {
+                    // consolidated dues: one entry per tenant (server: owner/invoices.php?view=dues)
+                    when (val ds = duesState) {
+                        is UiState.Data -> {
+                            val rows = ds.value.filter { d -> query.isBlank() || d.tenantName.contains(query, true) || (d.propertyCode ?: "").contains(query, true) }
+                            if (rows.isEmpty()) item { EmptyState(stringResource(R.string.no_dues)) }
+                            else item { Text(stringResource(R.string.total_due_of, Money.format(rows.sumOf { it.totalDue })), fontWeight = FontWeight.SemiBold) }
+                            items(rows, key = { "t" + it.tenantId }) { d -> TenantDuesRow(d, onClick = { openInvoice(d.latestInvoiceId) }) }
+                        }
+                        is UiState.Error -> item { EmptyState(errorText(ds.error)) }
+                        else -> item { Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+                    }
+                } else {
+                    if (shown.isEmpty()) item { EmptyState(stringResource(if (onlyOpen) R.string.no_pending_invoices else R.string.no_invoices)) }
+                    items(shown, key = { it.id }) { inv -> InvoiceRow(inv, showTenant = true) { openInvoice(inv.id) } }
+                }
             }
         }
     }

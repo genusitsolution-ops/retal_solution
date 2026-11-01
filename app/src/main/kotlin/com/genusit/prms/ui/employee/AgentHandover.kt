@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,16 +69,31 @@ import com.genusit.prms.ui.theme.Palette
 
 /** Compact card on the agent's home screen: money still to hand over. */
 @Composable
-fun HandoverHomeCard(onClick: () -> Unit) {
+fun HandoverHomeCard(onClick: () -> Unit, balance: com.genusit.prms.domain.model.HandoverBalance? = null) {
     AppCard(onClick = onClick) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            com.genusit.prms.ui.common.IconBadge(Icons.Filled.AccountBalanceWallet, Palette.Accent)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.ho_hand_over_cash), fontWeight = FontWeight.SemiBold)
-                Text(stringResource(R.string.ho_hand_over_sub), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                com.genusit.prms.ui.common.IconBadge(Icons.Filled.AccountBalanceWallet, Palette.Accent)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(if (balance != null) R.string.cash_with_you else R.string.ho_hand_over_cash), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.ho_hand_over_sub), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                com.genusit.prms.ui.common.OpenHint()
             }
-            com.genusit.prms.ui.common.OpenHint()
+            if (balance != null) {
+                // 1.10: same figures as the owner's Collections & Handovers screen (server: Settlements::balances)
+                Spacer(Modifier.height(8.dp))
+                com.genusit.prms.ui.common.LabelValue(stringResource(R.string.ho_total_collected), Money.format(balance.collected))
+                com.genusit.prms.ui.common.LabelValue(stringResource(R.string.ho_confirmed_by_owner), Money.format(balance.confirmed), Palette.Success)
+                com.genusit.prms.ui.common.LabelValue(stringResource(R.string.ho_awaiting_confirmation), Money.format(balance.awaitingConfirmation), Palette.Warning)
+                com.genusit.prms.ui.common.LabelValue(stringResource(R.string.ho_still_with_you), Money.format(balance.outstanding), bold = true)
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = onClick, enabled = balance.available > 0.005, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (balance.available > 0.005) stringResource(R.string.ho_hand_over_cash) + " · " + Money.format(balance.available)
+                         else stringResource(R.string.ho_nothing_to_hand_over))
+                }
+            }
         }
     }
 }

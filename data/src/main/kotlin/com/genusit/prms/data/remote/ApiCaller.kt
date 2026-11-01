@@ -1,6 +1,9 @@
 package com.genusit.prms.data.remote
 
 import com.genusit.prms.domain.error.ApiException
+import com.genusit.prms.domain.repository.DataChangeBus
+import com.genusit.prms.domain.repository.DataTopic
+import com.genusit.prms.domain.repository.NoDataChanges
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -22,7 +25,7 @@ import java.io.InterruptedIOException
  *  - body that is not the JSON envelope (HTML, empty) → BAD_RESPONSE
  *  - `{"status":"error"}` or non-2xx                  → the server's code + localized message
  */
-class ApiCaller(val json: Json) {
+class ApiCaller(val json: Json, private val changes: DataChangeBus = NoDataChanges) {
 
     suspend fun call(request: suspend () -> Response<ResponseBody>): JsonElement {
         val response = try {
@@ -45,7 +48,25 @@ class ApiCaller(val json: Json) {
         } catch (e: IOException) {
             throw ApiException(ApiException.NETWORK, "${e.javaClass.simpleName}: ${e.message ?: "network"}", 0)
         }
-        return parseEnvelope(status, text)
+        val data = parseEnvelope(status, text)
+        // a write the server accepted: tell every open screen to reload (1.10)
+        val req = response.raw().request
+        if (req.method != "GET") topicsFor(req.url.encodedPath)?.let { changes.publish(*it.toTypedArray()) }
+        return data
+    }
+
+    /** Which data a successful write changed, from the API path; null for writes that change nothing shown elsewhere. */
+    fun topicsFor(path: String): Set<DataTopic>? = when {
+        path.contains("/auth/") || path.contains("notifications") -> null
+        path.contains("invoices.php") || path.contains("payments.php") || path.contains("collections.php") ->
+            setOf(DataTopic.BILLING, DataTopic.COLLECTIONS, DataTopic.HANDOVERS)
+        path.contains("settlements.php") -> setOf(DataTopic.HANDOVERS, DataTopic.COLLECTIONS)
+        path.contains("allocations.php") -> setOf(DataTopic.ALLOCATIONS, DataTopic.BILLING, DataTopic.TENANTS)
+        path.contains("tenants.php") || path.contains("tenant_document") -> setOf(DataTopic.TENANTS)
+        path.contains("employees.php") -> setOf(DataTopic.EMPLOYEES)
+        path.contains("subscription.php") || path.contains("payment_claims.php") || path.contains("payment_gateway.php") -> setOf(DataTopic.SUBSCRIPTION)
+        path.contains("profile_photo.php") -> setOf(DataTopic.TENANTS, DataTopic.EMPLOYEES)
+        else -> DataTopic.entries.toSet()
     }
 
     /** Envelope rules shared by every endpoint (unchanged from app 1.1). */

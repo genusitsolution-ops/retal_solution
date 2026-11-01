@@ -52,7 +52,7 @@ class OwnerHomeViewModel @Inject constructor(
     session: SessionRepository,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val dashboard = loadable { getDashboard() }
+    val dashboard = loadable(live = true) { getDashboard() }
     val userName: StateFlow<String> = session.userNameIn(this)
 }
 
@@ -63,7 +63,7 @@ class OwnerTenantsViewModel @Inject constructor(
     getTenants: GetOwnerTenantsUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val tenants = loadable { getTenants() }
+    val tenants = loadable(live = true) { getTenants() }
 }
 
 @HiltViewModel
@@ -76,7 +76,7 @@ class OwnerTenantDetailViewModel @Inject constructor(
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
-    val tenant = loadable { getTenant(id) }
+    val tenant = loadable(live = true) { getTenant(id) }
     val deleteAction = action<Unit>()
     /** Upload / replace an ID document (same storage as the web "Edit Tenant" form). */
     val uploadAction = action<TenantDocType>()
@@ -107,7 +107,7 @@ class TenantHistoryViewModel @Inject constructor(
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
-    val history = loadable { getHistory(id) }
+    val history = loadable(live = true) { getHistory(id) }
 }
 
 /** What the document viewer shows: an image in the app, or a PDF handed to a PDF viewer. */
@@ -322,9 +322,12 @@ sealed interface DocUpload {
 @HiltViewModel
 class OwnerInvoicesViewModel @Inject constructor(
     getInvoices: GetOwnerInvoicesUseCase,
+    getDues: GetDuesByTenantUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val invoices = loadable { getInvoices() }
+    val invoices = loadable(live = true) { getInvoices() }
+    /** 1.10: one row per tenant with money due. */
+    val dues = loadable(live = true) { getDues() }
 }
 
 @HiltViewModel
@@ -335,7 +338,7 @@ class InvoiceDetailViewModel @Inject constructor(
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
-    val invoice = loadable { getInvoice(id) }
+    val invoice = loadable(live = true) { getInvoice(id) }
     val cancelAction = action<Unit>()
 
     fun cancel(reason: String) = cancelAction.run(onSuccess = { cancelAction.reset(); invoice.refresh() }) { cancelInvoice(id, reason) }
@@ -355,9 +358,9 @@ class RecordPaymentViewModel @Inject constructor(
     val meta = loadable { getMeta() }
     val payAction = action<com.genusit.prms.domain.model.PaymentResult>()
 
-    fun pay(invoiceId: Int, amount: Double, mode: String, date: String, reference: String, remarks: String) =
+    fun pay(invoiceId: Int, amount: Double, mode: String, date: String, reference: String, remarks: String, oldestFirst: Boolean = false) =
         payAction.run(onSuccess = { sendEvent(ScreenEvent.ReceiptReady(it.receiptNumber)) }) { key ->
-            recordPayment(invoiceId, amount, mode, date, reference, remarks, key)
+            recordPayment(invoiceId, amount, mode, date, reference, remarks, key, oldestFirst)
         }
 }
 
@@ -370,7 +373,7 @@ class OwnerPaymentsViewModel @Inject constructor(
     /** "month" = exactly the dashboard's "collected this month" (1st … last day of this month). */
     private val _period = MutableStateFlow(PaymentPeriod.from(handle.get<String>("period")))
     val period: StateFlow<PaymentPeriod> = _period.asStateFlow()
-    val payments = paramLoadable<PaymentPeriod, com.genusit.prms.domain.model.OwnerPayments> { p ->
+    val payments = paramLoadable<PaymentPeriod, com.genusit.prms.domain.model.OwnerPayments>(live = true) { p ->
         val (from, to) = p.range()
         getPayments(from, to)
     }.also { it.load(_period.value) }
@@ -395,7 +398,7 @@ class PropertiesViewModel @Inject constructor(
     getProperties: GetPropertiesUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val properties = loadable { getProperties() }
+    val properties = loadable(live = true) { getProperties() }
 }
 
 @HiltViewModel
@@ -417,7 +420,7 @@ class EditPropertyViewModel @Inject constructor(
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
-    val property = loadable { getProperty(id) }
+    val property = loadable(live = true) { getProperty(id) }
     val saveAction = action<Unit>()
     val deleteAction = action<Unit>()
 
@@ -456,7 +459,7 @@ class AllocationsViewModel @Inject constructor(
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     /** Keyed by the status filter ("active" | "closed"). */
-    val allocations = paramLoadable<String, List<com.genusit.prms.domain.model.Allocation>> { status -> getAllocations(status) }
+    val allocations = paramLoadable<String, List<com.genusit.prms.domain.model.Allocation>>(live = true) { status -> getAllocations(status) }
     val deposit = action<Unit>()
     val closeAction = action<com.genusit.prms.domain.model.AllocationClosed>()
 
@@ -534,7 +537,7 @@ class EmployeesViewModel @Inject constructor(
     getEmployees: GetEmployeesUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val employees = loadable { getEmployees() }
+    val employees = loadable(live = true) { getEmployees() }
 }
 
 /** Add (id = 0) or edit a collection agent. */
@@ -608,7 +611,7 @@ class EmployeeDetailViewModel @Inject constructor(
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
-    val employee = loadable { getEmployee(id) }
+    val employee = loadable(live = true) { getEmployee(id) }
     val properties = loadable { getProperties() }
     val assignAction = action<Unit>()
     val status = action<Unit>()
@@ -664,9 +667,9 @@ class ReportsViewModel @Inject constructor(
     getPending: GetPendingReportUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val collections = paramLoadable<DateRange, CollectionsReport> { r -> getCollections(r.from, r.to) }
+    val collections = paramLoadable<DateRange, CollectionsReport>(live = true) { r -> getCollections(r.from, r.to) }
     val revenue = paramLoadable<DateRange, List<RevenueRow>> { r -> getRevenue(r.from, r.to) }
-    val pending = paramLoadable<Unit, PendingReport> { getPending() }
+    val pending = paramLoadable<Unit, PendingReport>(live = true) { getPending() }
 }
 
 @HiltViewModel
@@ -684,7 +687,7 @@ class SubscriptionViewModel @Inject constructor(
     private val selectPackageUseCase: com.genusit.prms.domain.usecase.SelectPackageUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val subscription = loadable { getSubscription() }
+    val subscription = loadable(live = true) { getSubscription() }
     val renewal = action<Unit>()
     /** Choosing a package: the server prices it and returns the invoice to pay (opens the payment screen). */
     val choose = action<Int>()

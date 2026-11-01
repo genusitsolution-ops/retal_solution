@@ -45,8 +45,8 @@ class CollectionDashboardViewModel @Inject constructor(
     private val _query = MutableStateFlow(SettlementQuery())
     val query: StateFlow<SettlementQuery> = _query.asStateFlow()
 
-    val dashboard = paramLoadable<CollectionFilter, CollectionDashboard> { getDashboard(it) }
-    val settlements = paramLoadable<SettlementQuery, SettlementPage> { getSettlements(it.status, it.employeeId, it.page) }
+    val dashboard = paramLoadable<CollectionFilter, CollectionDashboard>(live = true) { getDashboard(it) }
+    val settlements = paramLoadable<SettlementQuery, SettlementPage>(live = true) { getSettlements(it.status, it.employeeId, it.page) }
 
     init { dashboard.load(_filter.value); settlements.load(_query.value) }
 
@@ -70,7 +70,7 @@ class EmployeeCollectionViewModel @Inject constructor(
     val employeeId = handle.intArg()
     private val _query = MutableStateFlow(EmployeeQuery())
     val query: StateFlow<EmployeeQuery> = _query.asStateFlow()
-    val detail = paramLoadable<EmployeeQuery, EmployeeCollectionDetail> { q -> getEmployee(employeeId, q.from, q.to, q.propertyId, q.page) }
+    val detail = paramLoadable<EmployeeQuery, EmployeeCollectionDetail>(live = true) { q -> getEmployee(employeeId, q.from, q.to, q.propertyId, q.page) }
     val record = action<SettlementDetail>()
 
     init { detail.load(_query.value) }
@@ -99,7 +99,7 @@ class SettlementDetailViewModel @Inject constructor(
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
     val owner: Boolean = handle.get<String>("role") != "agent"
-    val detail = loadable { if (owner) ownerGet(id) else agentGet(id) }
+    val detail = loadable(live = true) { if (owner) ownerGet(id) else agentGet(id) }
     val review = action<SettlementDetail>()
 
     fun canConfirm(received: Double?, submitted: Double) = confirmUseCase.isValid(received, submitted)
@@ -116,10 +116,10 @@ class AgentHandoverViewModel @Inject constructor(
     private val getSettlements: GetAgentSettlementsUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val balance = loadable { getBalance() }
+    val balance = loadable(live = true) { getBalance() }
     private val _status = MutableStateFlow("")
     val status: StateFlow<String> = _status.asStateFlow()
-    val history = paramLoadable<String, SettlementPage> { getSettlements(it, 1) }
+    val history = paramLoadable<String, SettlementPage>(live = true) { getSettlements(it, 1) }
 
     init { history.load("") }
 
@@ -133,7 +133,7 @@ class SubmitHandoverViewModel @Inject constructor(
     private val submitUseCase: SubmitHandoverUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val balance = loadable<AgentHandover> { getBalance() }
+    val balance = loadable<AgentHandover>(live = true) { getBalance() }
     val submit = action<SettlementDetail>()
 
     fun problems(input: HandoverInput, available: Double) = SubmitHandoverUseCase.problems(input, available)

@@ -74,6 +74,39 @@ fun InvoiceRow(inv: InvoiceSummary, showTenant: Boolean, onClick: () -> Unit) {
     }
 }
 
+/**
+ * One tenant with money due (1.10): all unpaid months together, so a tenant appears once.
+ * [onClick] opens the newest unpaid bill (it shows the previous balance and the total payable);
+ * [onCollect] (optional) starts collecting from this tenant, oldest month first.
+ */
+@Composable
+fun TenantDuesRow(d: com.genusit.prms.domain.model.TenantDues, onClick: () -> Unit, onCollect: (() -> Unit)? = null) {
+    AppCard(onClick = onClick) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(Icons.AutoMirrored.Filled.ReceiptLong, statusColors(d.status).first)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(d.tenantName.ifBlank { "—" }, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    val sub = listOfNotNull(d.propertyCode, stringResource(R.string.unpaid_bills_n, d.openCount)).joinToString(" · ")
+                    Text(sub, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (d.monthsLabel.isNotBlank()) Text(d.monthsLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(Money.format(d.totalDue), fontWeight = FontWeight.Bold, color = Palette.Danger)
+                    Spacer(Modifier.height(4.dp))
+                    StatusChip(d.status, d.statusLabel)
+                }
+            }
+            if (onCollect != null) {
+                androidx.compose.material3.TextButton(onClick = onCollect, modifier = Modifier.align(Alignment.End)) {
+                    Icon(Icons.Filled.Payments, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.collect_payment))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun PaymentRow(title: String, subtitle: String, amount: Double, onClick: (() -> Unit)?) {
     AppCard(onClick = onClick) {

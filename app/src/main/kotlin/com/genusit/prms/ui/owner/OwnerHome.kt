@@ -35,6 +35,7 @@ import com.genusit.prms.ui.common.monthYearText
 import com.genusit.prms.ui.common.InvoiceRow
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
+import com.genusit.prms.ui.common.TenantDuesRow
 import com.genusit.prms.ui.common.StatTile
 import com.genusit.prms.ui.common.StateContent
 import com.genusit.prms.ui.common.SubscriptionBanner
@@ -50,6 +51,7 @@ fun OwnerHomeScreen(
     openProperties: () -> Unit = {},
     openTenants: () -> Unit = {},
     openDueInvoices: () -> Unit = openInvoices,
+    openDuesByTenant: () -> Unit = openDueInvoices,
     openOpenQueries: () -> Unit = {},
     openPayments: () -> Unit = {},
     openReports: () -> Unit = {},
@@ -101,11 +103,18 @@ fun OwnerHomeScreen(
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatTile(Icons.AutoMirrored.Filled.ReceiptLong, stringResource(R.string.pending_invoices_n, s.pendingInvoices), Money.compact(s.pendingAmount), Palette.Danger, Modifier.weight(1f), onClick = openDueInvoices)
+                        // 1.10: counted per tenant (all unpaid months of a tenant together) when the server sends it
+                        val duesLabel = s.duesTenants?.let { stringResource(R.string.tenants_with_dues_n, it) } ?: stringResource(R.string.pending_invoices_n, s.pendingInvoices)
+                        StatTile(Icons.AutoMirrored.Filled.ReceiptLong, duesLabel, Money.compact(s.pendingAmount), Palette.Danger, Modifier.weight(1f),
+                            onClick = if (s.duesTenants != null) openDuesByTenant else openDueInvoices)
                         StatTile(Icons.Filled.QuestionAnswer, stringResource(R.string.open_queries), s.openQueries.toString(), Palette.Warning, Modifier.weight(1f), onClick = openOpenQueries)
                     }
                 }
                 item { BilledCollectedChart(d.chart, onClick = openReports) }
+                if (d.duesByTenant.isNotEmpty()) {
+                    item { SectionHeader(stringResource(R.string.dues_by_tenant), stringResource(R.string.view_all), openDuesByTenant) }
+                    items(d.duesByTenant, key = { "due" + it.tenantId }) { t -> TenantDuesRow(t, onClick = { openInvoice(t.latestInvoiceId) }) }
+                }
                 item { SectionHeader(stringResource(R.string.recent_invoices), stringResource(R.string.view_all), openInvoices) }
                 if (d.recentInvoices.isEmpty()) item { EmptyState(stringResource(R.string.no_invoices)) }
                 items(d.recentInvoices, key = { it.id }) { inv -> InvoiceRow(inv, showTenant = true) { openInvoice(inv.id) } }

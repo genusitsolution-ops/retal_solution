@@ -124,6 +124,29 @@ class RenewalApiTest {
         catch (e: ApiException) { assertEquals("DUPLICATE_UTR", e.code) }
     }
 
+    @Test fun ocrValuesSentAndUpiAppsDecoded() = runTest {
+        enqueue(201, """{"status":"success","message":"Payment details submitted.","data":{"claim":{"id":10,"request_no":"RR-202611-000010","invoice_id":7,"amount":"999.00","utr":"430112345678","paid_on":"2026-10-31","status":"pending","method":"upi","has_screenshot":true}}}""")
+        val f = java.io.File.createTempFile("shot", ".jpg").apply { writeBytes(byteArrayOf(-1, -40, -1, -32, 1, 2, 3)) }
+        val read = com.genusit.prms.domain.util.ScreenshotReading("430112345678", 999.0, "2026-10-31", "success", "phonepe")
+        repo.submitPayment(RenewalPaymentInput(7, "430112345678", "2026-10-31", 999.0, null, read), f)
+        val body = server.takeRequest().body.readUtf8()
+        for ((k, v) in listOf("ocr_utr" to "430112345678", "ocr_amount" to "999.00", "ocr_paid_on" to "2026-10-31", "ocr_status" to "success", "ocr_app" to "phonepe"))
+            assertTrue(Regex("name=\"$k\"[\\s\\S]*?\\r\\n\\r\\n$v\\r\\n").containsMatchIn(body), k)
+        // nothing read → no ocr_* parts at all
+        enqueue(201, """{"status":"success","message":"ok","data":{"claim":{"id":11,"status":"pending"}}}""")
+        repo.submitPayment(RenewalPaymentInput(7, "430112345678", "2026-10-31", 999.0, null), f)
+        assertTrue("ocr_" !in server.takeRequest().body.readUtf8())
+        f.delete()
+
+        val withApps = RenewalFixtures.PAYMENT_CLAIMS.replace("\"uri\": \"upi://pay?pa=rentalsol%40testbank",
+            "\"is_merchant\": false, \"apps\": [{\"key\": \"phonepe\", \"name\": \"PhonePe\", \"android_package\": \"com.phonepe.app\", \"link\": \"phonepe://pay?pa=x\"}, {\"key\": \"gpay\", \"name\": \"Google Pay\", \"android_package\": \"com.google.android.apps.nbu.paisa.user\", \"link\": \"tez://upi/pay?pa=x\"}], \"uri\": \"upi://pay?pa=rentalsol%40testbank")
+        enqueue(200, withApps)
+        val upi = repo.paymentOptions(7).payment!!.upi!!
+        assertEquals(listOf("com.phonepe.app", "com.google.android.apps.nbu.paisa.user"), upi.apps.map { it.androidPackage })
+        assertEquals(false, upi.isMerchant)
+        assertEquals(999.0, UpiQr.amount(upi.uri))
+    }
+
     @Test fun gatewayStartAndServerCheckedStatus() = runTest {
         enqueue(201, """{"status":"success","message":"ok","data":{"id":4,"checkout_url":"https://rzp.io/i/abc","amount":3538.82}}""")
         val g = repo.startGateway(7)

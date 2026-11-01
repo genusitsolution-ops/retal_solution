@@ -52,6 +52,7 @@ import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.EmptyState
 import com.genusit.prms.ui.common.IconBadge
 import com.genusit.prms.ui.common.InvoiceRow
+import com.genusit.prms.ui.common.TenantDuesRow
 import com.genusit.prms.ui.common.PaymentRow
 import com.genusit.prms.ui.common.ScreenScaffold
 import com.genusit.prms.ui.common.SectionHeader
@@ -103,11 +104,18 @@ fun EmployeeHomeScreen(
                         StatTile(Icons.Filled.Groups, stringResource(R.string.active_tenants), d.summary.activeTenants.toString(), Palette.Info, Modifier.weight(1f), onClick = openTenants)
                     }
                 }
-                item { HandoverHomeCard(openHandover) }
+                item { HandoverHomeCard(openHandover, d.handover) }
                 item { SectionHeader(stringResource(R.string.pending_dues)) }
-                if (d.pendingInvoices.isEmpty()) item { EmptyState(stringResource(R.string.no_pending_invoices)) }
-                items(d.pendingInvoices, key = { it.id }) { inv ->
-                    InvoiceRow(inv, showTenant = true) { collect(inv.tenantId, inv.id) }
+                val tenants = d.pendingTenants
+                if (tenants != null) {
+                    // 1.10: one entry per tenant (all unpaid months together); collecting applies oldest month first
+                    if (tenants.isEmpty()) item { EmptyState(stringResource(R.string.no_pending_invoices)) }
+                    items(tenants, key = { "t" + it.tenantId }) { t -> TenantDuesRow(t, onClick = { collect(t.tenantId, 0) }, onCollect = { collect(t.tenantId, 0) }) }
+                } else {
+                    if (d.pendingInvoices.isEmpty()) item { EmptyState(stringResource(R.string.no_pending_invoices)) }
+                    items(d.pendingInvoices, key = { it.id }) { inv ->
+                        InvoiceRow(inv, showTenant = true) { collect(inv.tenantId, inv.id) }
+                    }
                 }
                 if (d.recentCollections.isNotEmpty()) item { SectionHeader(stringResource(R.string.recent_collections)) }
                 items(d.recentCollections, key = { "c" + it.id }) { c ->

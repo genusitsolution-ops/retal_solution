@@ -1,5 +1,8 @@
 package com.genusit.prms.ui.owner
 
+import androidx.compose.material.icons.filled.Share
+import com.genusit.prms.domain.util.ScreenshotReading
+import com.genusit.prms.domain.util.PaymentScreenshotParser
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -149,6 +152,9 @@ class SubscriptionPaymentViewModel @Inject constructor(
     val shot: StateFlow<File?> = _shot.asStateFlow()
     private val _shotBusy = MutableStateFlow(false)
     val shotBusy: StateFlow<Boolean> = _shotBusy.asStateFlow()
+    /** 1.10: values read on this phone from the screenshot (pre-fill only; the Super Admin still checks). */
+    private val _reading = MutableStateFlow<ScreenshotReading?>(null)
+    val reading: StateFlow<ScreenshotReading?> = _reading.asStateFlow()
 
     fun newCaptureTarget(): Pair<File, Uri> = scanner.newCaptureTarget()
 
@@ -157,9 +163,10 @@ class SubscriptionPaymentViewModel @Inject constructor(
         _shotBusy.value = true
         viewModelScope.launch {
             try {
-                val f = scanner.compress(source, SHOT_MAX_SIDE, SHOT_QUALITY)
+                val (f, lines) = scanner.compressAndRead(source, SHOT_MAX_SIDE, SHOT_QUALITY)
                 _shot.value?.let { scanner.discard(it) }
                 _shot.value = f
+                _reading.value = PaymentScreenshotParser.parse(lines).takeUnless { it.isEmpty }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -170,12 +177,13 @@ class SubscriptionPaymentViewModel @Inject constructor(
         }
     }
 
-    fun clearScreenshot() { _shot.value?.let { scanner.discard(it) }; _shot.value = null }
+    fun clearScreenshot() { _shot.value?.let { scanner.discard(it) }; _shot.value = null; _reading.value = null }
 
     fun send(utr: String, paidOn: String, amount: Double, note: String) {
         val f = _shot.value ?: return
+        val ocr = _reading.value
         submit.run(onSuccess = { clearScreenshot(); sendEvent(ScreenEvent.Saved) }) {
-            submitPayment(RenewalPaymentInput(invoiceId, utr, paidOn, amount, note.ifBlank { null }), f)
+            submitPayment(RenewalPaymentInput(invoiceId, utr, paidOn, amount, note.ifBlank { null }, ocr), f)
         }
     }
 
@@ -362,9 +370,19 @@ fun UpiQrPanel(upi: com.genusit.prms.domain.model.UpiDetails) {
             Text(upi.upiId, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f, fill = false))
             TextButton(onClick = { copy(ctx, upi.upiId) }) { Icon(Icons.Filled.ContentCopy, null); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.pay_copy_upi)) }
         }
-        OutlinedButton(onClick = { openUpiApp(ctx, upi.uri) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-            Icon(Icons.Filled.PhoneAndroid, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.pay_open_upi_app))
+        // 1.10: the same upi:// link (actual invoice amount) handed straight to PhonePe / Google Pay / Paytm
+        upi.apps.forEach { app ->
+            Button(onClick = { openUpiAppPackage(ctx, upi.uri, app.androidPackage, app.name) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.pay_using_app, app.name))
+            }
         }
+        OutlinedButton(onClick = { openUpiApp(ctx, upi.uri) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+            Icon(Icons.Filled.PhoneAndroid, null); Spacer(Modifier.width(6.dp)); Text(stringResource(if (upi.apps.isEmpty()) R.string.pay_open_upi_app else R.string.pay_other_upi_app))
+        }
+        OutlinedButton(onClick = { qr?.let { shareQrImage(ctx, it, upi.reference) } }, enabled = qr != null, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+            Icon(Icons.Filled.Share, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.pay_share_qr))
+        }
+        if (!upi.isMerchant) Text(stringResource(R.string.pay_personal_id_note), style = MaterialTheme.typography.labelMedium, color = Palette.Warning)
         Text(stringResource(R.string.pay_reference, upi.reference), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -379,6 +397,15 @@ private fun ManualPaymentForm(model: SubscriptionPaymentViewModel, p: PaymentOpt
     var paidOn by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
     var note by rememberSaveable { mutableStateOf("") }
     var tried by rememberSaveable { mutableStateOf(false) }
+    val reading by model.reading.collectAsStateWithLifecycle()
+    // 1.10: fill the fields from the screenshot once per new reading; the owner can still change every value
+    LaunchedEffect(reading) {
+        reading?.let { r ->
+            r.utr?.let { utr = it }
+            r.amount?.let { amount = String.format(java.util.Locale.US, "%.2f", it) }
+            r.paidOn?.let { paidOn = it }
+        }
+    }
     val amt = amount.toDoubleOrNull()
     val problems = RenewalRules.problems(utr, paidOn, amt, shot != null, p.screenshotRequired)
     fun bad(x: RenewalRules.Problem) = tried && x in problems
@@ -410,7 +437,11 @@ private fun ManualPaymentForm(model: SubscriptionPaymentViewModel, p: PaymentOpt
                     TextButton(onClick = model::clearScreenshot) { Text(stringResource(R.string.photo_remove), color = Palette.Danger) }
                 }
             }
-            if (shotBusy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Palette.Brand)
+            if (shotBusy) Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Palette.Brand)
+                Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.pay_reading_shot), style = MaterialTheme.typography.labelMedium)
+            }
+            reading?.let { r -> ScreenshotReadingNote(r, p.invoice.totalAmount, utr, amt) }
             PhotoPickerButtons(consentRequired = false, enabled = !shotBusy && act !is ActionState.Running, newCaptureTarget = model::newCaptureTarget,
                 onPicked = { uri, file, _ -> model.pickScreenshot(uri, file) })
             if (bad(RenewalRules.Problem.SCREENSHOT)) Text(stringResource(R.string.pay_err_screenshot), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
@@ -422,6 +453,24 @@ private fun ManualPaymentForm(model: SubscriptionPaymentViewModel, p: PaymentOpt
             }
             Text(stringResource(R.string.pay_submit_note), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+/** What was read from the screenshot, with warnings; never shown as proof of payment. */
+@Composable
+private fun ScreenshotReadingNote(r: ScreenshotReading, invoiceTotal: Double, utr: String, amount: Double?) {
+    val bg = if (r.status == "failed") Palette.Danger.copy(alpha = 0.10f) else Palette.Info.copy(alpha = 0.10f)
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(bg).padding(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(stringResource(R.string.pay_read_from_shot), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
+        when (r.status) {
+            "failed" -> Text(stringResource(R.string.pay_shot_failed), color = Palette.Danger, style = MaterialTheme.typography.labelMedium)
+            "pending" -> Text(stringResource(R.string.pay_shot_pending), color = Palette.Warning, style = MaterialTheme.typography.labelMedium)
+        }
+        if (r.amount != null && kotlin.math.abs(r.amount!! - invoiceTotal) > 0.005)
+            Text(stringResource(R.string.pay_shot_amount_differs, Money.format(r.amount!!), Money.format(invoiceTotal)), color = Palette.Warning, style = MaterialTheme.typography.labelMedium)
+        if (r.utr == null) Text(stringResource(R.string.pay_shot_no_utr), style = MaterialTheme.typography.labelMedium)
+        else if (RenewalRules.normalizeUtr(utr) != r.utr) Text(stringResource(R.string.pay_shot_utr_changed), style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(R.string.pay_shot_check), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -493,6 +542,27 @@ fun qrBitmap(uri: String, size: Int = 600): Bitmap {
 private fun copy(ctx: Context, text: String) {
     (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)?.setPrimaryClip(ClipData.newPlainText("UPI ID", text))
     Toast.makeText(ctx, ctx.getString(R.string.pay_copied), Toast.LENGTH_SHORT).show()
+}
+
+/** Opens one specific UPI app with the same link; if it is not installed, says so (no other app is chosen silently). */
+private fun openUpiAppPackage(ctx: Context, uri: String, pkg: String, name: String) {
+    try {
+        ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)).setPackage(pkg))
+    } catch (_: android.content.ActivityNotFoundException) {
+        Toast.makeText(ctx, ctx.getString(R.string.pay_app_not_installed, name), Toast.LENGTH_LONG).show()
+    }
+}
+
+/** Shares the QR image (e.g. save to Photos, then "scan from gallery" in the UPI app — works with personal UPI IDs). */
+private fun shareQrImage(ctx: Context, qr: Bitmap, reference: String) {
+    runCatching {
+        val dir = java.io.File(ctx.cacheDir, "documents").apply { mkdirs() }
+        val f = java.io.File(dir, "upi-qr-" + reference.filter { it.isLetterOrDigit() || it == '-' }.take(40) + ".png")
+        f.outputStream().use { qr.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.files", f)
+        val send = Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        ctx.startActivity(Intent.createChooser(send, ctx.getString(R.string.pay_share_qr)))
+    }.onFailure { Toast.makeText(ctx, ctx.getString(R.string.pay_no_upi_app), Toast.LENGTH_LONG).show() }
 }
 
 /** Opens Google Pay / PhonePe / Paytm / BHIM … with the amount filled in. Opening the app is not proof of payment. */

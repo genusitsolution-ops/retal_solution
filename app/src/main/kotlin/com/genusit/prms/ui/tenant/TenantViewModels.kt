@@ -25,7 +25,7 @@ class TenantHomeViewModel @Inject constructor(
     session: SessionRepository,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val dashboard = loadable { getDashboard() }
+    val dashboard = loadable(live = true) { getDashboard() }
     val userName: StateFlow<String> = session.userNameIn(this)
 }
 
@@ -34,7 +34,7 @@ class TenantInvoicesViewModel @Inject constructor(
     getInvoices: GetTenantInvoicesUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val invoices = loadable { getInvoices() }
+    val invoices = loadable(live = true) { getInvoices() }
 }
 
 @HiltViewModel
@@ -44,7 +44,7 @@ class TenantInvoiceDetailViewModel @Inject constructor(
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
-    val invoice = loadable { getInvoice(id) }
+    val invoice = loadable(live = true) { getInvoice(id) }
 }
 
 @HiltViewModel
@@ -52,7 +52,7 @@ class TenantPaymentsViewModel @Inject constructor(
     getPayments: GetTenantPaymentsUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val payments = loadable { getPayments() }
+    val payments = loadable(live = true) { getPayments() }
 }
 
 @HiltViewModel

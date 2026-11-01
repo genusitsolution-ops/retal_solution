@@ -75,8 +75,11 @@ interface TenantAdminRepository {
 interface BillingRepository {
     suspend fun invoices(status: String? = null): List<InvoiceSummary>
     suspend fun invoice(id: Int): InvoiceDetail
+    /** 1.10: one row per tenant with money due (all open bills together). */
+    suspend fun duesByTenant(): List<TenantDues>
     /** Never pays more than the balance (server enforces). */
-    suspend fun recordPayment(invoiceId: Int, amount: Double, mode: String, date: String, reference: String, remarks: String, idempotencyKey: String): PaymentResult
+    /** [oldestFirst] (1.10): the server applies the amount to the tenant's oldest unpaid month first. */
+    suspend fun recordPayment(invoiceId: Int, amount: Double, mode: String, date: String, reference: String, remarks: String, idempotencyKey: String, oldestFirst: Boolean = false): PaymentResult
     suspend fun payments(from: String? = null, to: String? = null): OwnerPayments
     suspend fun invoiceContext(allocationId: Int, month: Int, year: Int): InvoiceContext
     /** Totals are computed on the server from the owner's charges. */

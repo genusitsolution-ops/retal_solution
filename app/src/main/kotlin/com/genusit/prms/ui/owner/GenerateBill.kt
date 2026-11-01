@@ -31,7 +31,10 @@ import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
+import android.widget.Toast
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -59,7 +62,12 @@ import com.genusit.prms.R
 import com.genusit.prms.domain.model.Allocation
 import com.genusit.prms.domain.model.InvoiceDetail
 import com.genusit.prms.domain.usecase.GetAllocationsUseCase
+import com.genusit.prms.domain.util.BillMessage
+import com.genusit.prms.domain.util.BillMessageLabels
 import com.genusit.prms.domain.util.Money
+import com.genusit.prms.domain.util.ReceiptMessage
+import com.genusit.prms.ui.common.openInWhatsApp
+import com.genusit.prms.ui.common.shareText
 import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.BaseViewModel
 import com.genusit.prms.ui.common.EmptyState
@@ -202,7 +210,11 @@ fun BillPreviewDialog(
 
 /* ═════════════════════════ share / print a bill ═════════════════════════ */
 
-/** Share and Print (or save as PDF through Android's print dialog) for a saved bill. */
+/**
+ * "Share via WhatsApp" (1.10: opens the chat with the tenant's registered number and the bill message with
+ * previous months, total payable and the bill link; the owner taps Send) and Print / PDF for a saved bill.
+ * Without WhatsApp or without a valid tenant mobile number, the system share sheet opens instead.
+ */
 @Composable
 fun BillShareActions(inv: InvoiceDetail) {
     val ctx = LocalContext.current
@@ -211,19 +223,41 @@ fun BillShareActions(inv: InvoiceDetail) {
         bill = stringResource(R.string.invoice), tenant = stringResource(R.string.tenant), room = stringResource(R.string.property),
         period = stringResource(R.string.period), due = stringResource(R.string.due_date), total = stringResource(R.string.total),
         paid = stringResource(R.string.paid), balance = stringResource(R.string.balance), status = stringResource(R.string.status),
+        previousBalance = stringResource(R.string.previous_balance), totalPayable = stringResource(R.string.total_payable),
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        OutlinedButton(onClick = { shareBill(ctx, inv, labels, months) }, modifier = Modifier.weight(1f)) {
-            Icon(Icons.Filled.Share, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.share))
+    val msgLabels = BillMessageLabels(
+        title = stringResource(R.string.rent_bill), tenant = stringResource(R.string.tenant), property = stringResource(R.string.property),
+        invoiceNo = stringResource(R.string.invoice_no), dueDate = stringResource(R.string.due_date), thisMonth = stringResource(R.string.this_month),
+        paid = stringResource(R.string.paid), previousBalance = stringResource(R.string.previous_balance),
+        totalPayable = stringResource(R.string.total_payable), viewBill = stringResource(R.string.view_bill), baseRent = stringResource(R.string.base_rent),
+    )
+    val noWhatsApp = stringResource(R.string.whatsapp_missing)
+    val noNumber = stringResource(R.string.tenant_no_mobile)
+    val chooser = stringResource(R.string.share_whatsapp)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = {
+                val text = BillMessage.text(inv, msgLabels, dateOf(inv.dueDate, months))
+                val url = ReceiptMessage.whatsAppUrl(inv.tenantPhone, text)
+                when {
+                    url == null -> { Toast.makeText(ctx, noNumber, Toast.LENGTH_LONG).show(); shareText(ctx, text, chooser) }
+                    !openInWhatsApp(ctx, url) -> { Toast.makeText(ctx, noWhatsApp, Toast.LENGTH_LONG).show(); shareText(ctx, text, chooser) }
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF075E54), contentColor = Color.White),
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+        ) {
+            Icon(Icons.Filled.Share, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.share_whatsapp))
         }
-        OutlinedButton(onClick = { printBill(ctx, inv, labels, months) }, modifier = Modifier.weight(1f)) {
+        OutlinedButton(onClick = { printBill(ctx, inv, labels, months) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Filled.Print, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.print_pdf))
         }
     }
 }
 
 data class BillLabels(val bill: String, val tenant: String, val room: String, val period: String, val due: String,
-                      val total: String, val paid: String, val balance: String, val status: String)
+                      val total: String, val paid: String, val balance: String, val status: String,
+                      val previousBalance: String = "", val totalPayable: String = "")
 
 private fun dateOf(v: String?, months: List<String>) = com.genusit.prms.domain.util.Dates.display(v, months)
 
@@ -243,10 +277,6 @@ fun billText(inv: InvoiceDetail, l: BillLabels, months: List<String>): String = 
     inv.ownerName?.let { append("— $it") }
 }
 
-private fun shareBill(ctx: Context, inv: InvoiceDetail, l: BillLabels, months: List<String>) {
-    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, billText(inv, l, months))
-    ctx.startActivity(Intent.createChooser(send, null))
-}
 
 private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
@@ -265,7 +295,9 @@ private fun printBill(ctx: Context, inv: InvoiceDetail, l: BillLabels, months: L
         ${esc(l.period)}: ${esc(inv.periodLabel ?: "")}<br>${esc(l.due)}: ${esc(dateOf(inv.dueDate, months))}</p>
         <table>$rows<tr class=t><td>${esc(l.total)}</td><td class=r>${esc(Money.format(inv.totalAmount))}</td></tr>
         <tr><td>${esc(l.paid)}</td><td class=r>${esc(Money.format(inv.paidAmount))}</td></tr>
-        <tr><td><b>${esc(l.balance)}</b></td><td class=r><b>${esc(Money.format(inv.balanceAmount))}</b></td></tr></table>
+        <tr><td><b>${esc(l.balance)}</b></td><td class=r><b>${esc(Money.format(inv.balanceAmount))}</b></td></tr>
+        ${inv.previousDues.joinToString("") { "<tr><td>${esc(l.previousBalance)} (${esc(it.periodLabel)})</td><td class=r>${esc(Money.format(it.balance))}</td></tr>" }}
+        ${if (inv.previousDues.isNotEmpty()) "<tr class=t><td>${esc(l.totalPayable)}</td><td class=r>${esc(Money.format(inv.payableNow))}</td></tr>" else ""}</table>
         <p class=m>${esc(l.status)}: ${esc(inv.statusLabel ?: inv.status)}</p></body></html>"""
     val web = WebView(ctx).also { printing = it }   // kept until the print job has the document
     web.webViewClient = object : WebViewClient() {

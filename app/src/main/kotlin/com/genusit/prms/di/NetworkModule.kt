@@ -59,5 +59,5 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun apiCaller(json: Json): ApiCaller = ApiCaller(json)
+    fun apiCaller(json: Json, changes: com.genusit.prms.domain.repository.DataChangeBus): ApiCaller = ApiCaller(json, changes)
 }
