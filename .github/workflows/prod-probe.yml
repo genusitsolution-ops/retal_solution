@@ -1,0 +1,13 @@
+# Read-only checks of the production server (no sign-in with real accounts, nothing is changed).
+name: Production probe
+on:
+  push:
+    paths: ['.github/workflows/prod-probe.yml', 'tools/prod_probe.sh']
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe https://rentalsolution.co.in
+        run: bash tools/prod_probe.sh
