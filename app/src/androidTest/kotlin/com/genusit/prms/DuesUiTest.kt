@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
@@ -67,7 +68,11 @@ class DuesUiTest {
         rule.onAllNodesWithText("Total payable").onFirst().assertIsDisplayed()
         rule.onNodeWithText("Payments are applied to the oldest month first.").assertExists()
         shot("bill-carry-forward")
-        rule.onNodeWithText("Share via WhatsApp").assertExists()
+        // the buttons are further down the (lazy) list: scroll to them
+        rule.onNode(hasScrollAction()).performScrollToNode(hasText("Share via WhatsApp"))
+        rule.onNodeWithText("Share via WhatsApp").assertIsDisplayed()
+        rule.onNodeWithText("Print / PDF").assertIsDisplayed()
+        shot("bill-whatsapp-button")
     }
 
     @Test fun duesRowAndEmployeeCash() {

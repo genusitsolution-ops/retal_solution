@@ -59,6 +59,7 @@ jobs:
             adb pull /data/local/tmp/bill-carry-forward.png shots/00-bill-carry-forward.png || true
             adb pull /data/local/tmp/employee-cash-dues.png shots/00-employee-cash-dues.png || true
             adb pull /data/local/tmp/upi-app-buttons.png shots/00-upi-app-buttons.png || true
+            adb pull /data/local/tmp/bill-whatsapp-button.png shots/00-bill-whatsapp-button.png || true
             bash .github/scripts/smoke.sh
 
       - name: Report
