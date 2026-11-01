@@ -1,3 +1,7 @@
+> **1.11.1 (November 2026): production moved to `https://rentalsolution.co.in/` (site at the domain root).**
+> The app now uses `https://rentalsolution.co.in/api/v1/`. The notes below are the history of the old
+> `genusitsolution.com/rentalsolutionfinal` server and no longer apply.
+
 # Update 2026-10-25 (later) — HTTP 301 root cause confirmed, architecture upgrade, verified build
 
 ## HTTP 301: confirmed on the live server

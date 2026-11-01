@@ -19,8 +19,8 @@ jobs:
 
       - name: Live server check (login endpoint, made-up account)
         run: |
-          for host in genusitsolution.com www.genusitsolution.com; do
-            url="https://$host/rentalsolutionfinal/api/v1/auth/login.php"
+          for host in rentalsolution.co.in www.rentalsolution.co.in; do
+            url="https://$host/api/v1/auth/login.php"
             out=$(curl -s -o /tmp/body -w '%{http_code} %{redirect_url}' -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' \
                   -d '{"username":"ci_smoke_no_such_user","password":"x","lang":"en"}' "$url")
             body=$(head -c 220 /tmp/body | tr -d '\n\r')

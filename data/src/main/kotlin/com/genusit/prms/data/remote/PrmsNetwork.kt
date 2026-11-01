@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 
 /** Everything the network layer needs to know about the server and the build. */
 data class NetworkConfig(
-    /** e.g. "https://example.com/rentalsolutionfinal/api/v1/" – must end with "/" */
+    /** e.g. "https://rentalsolution.co.in/api/v1/" – must end with "/" */
     val baseUrl: String,
     val userAgent: String,
     /** Debug builds log method, URL, status and timing only – never headers or bodies. */

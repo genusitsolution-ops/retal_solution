@@ -1,6 +1,6 @@
 // Runs the app's real data layer (Retrofit + repositories) against a PRMS server.
 // TEST DATA ONLY: it creates tenants/rooms/charges/agents and records ₹1 payments.
-//   ./gradlew :data:jar  (or compile with kotlinc) && java ... LiveApiCheckKt https://host/rentalsolutionfinal/api/v1/ owner_user emp_user tenant_user password
+//   ./gradlew :data:jar  (or compile with kotlinc) && java ... LiveApiCheckKt https://rentalsolution.co.in/api/v1/ owner_user emp_user tenant_user password
 import com.genusit.prms.data.remote.ApiCaller
 import com.genusit.prms.data.remote.NetworkConfig
 import com.genusit.prms.data.remote.PrmsNetwork

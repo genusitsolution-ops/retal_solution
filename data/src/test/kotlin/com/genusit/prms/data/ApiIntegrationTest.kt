@@ -164,9 +164,12 @@ class ApiIntegrationTest {
         // other hosts are never contacted
         try { repo.image("https://evil.example.com/x.png"); fail() } catch (e: ApiException) { assertEquals(ApiException.BAD_RESPONSE, e.code) }
         assertEquals(null, repo.sameServer("ftp://x/y"))
-        val https = com.genusit.prms.data.repository.PublicRepositoryImpl(api, caller, NetworkConfig("https://www.genusitsolution.com/rentalsolutionfinal/api/v1/", "t", false))
-        assertEquals("https://www.genusitsolution.com/rentalsolutionfinal/uploads/branding/b.png", https.sameServer("https://genusitsolution.com/rentalsolutionfinal/uploads/branding/b.png"))
-        assertEquals(null, https.sameServer("http://www.genusitsolution.com/rentalsolutionfinal/uploads/branding/b.png"))
+        // production (1.11.1): site at the domain root, bare host canonical
+        val https = com.genusit.prms.data.repository.PublicRepositoryImpl(api, caller, NetworkConfig("https://rentalsolution.co.in/api/v1/", "t", false))
+        assertEquals("https://rentalsolution.co.in/uploads/branding/b.png", https.sameServer("https://www.rentalsolution.co.in/uploads/branding/b.png"))
+        assertEquals("https://rentalsolution.co.in/uploads/branding/b.png", https.sameServer("https://rentalsolution.co.in/uploads/branding/b.png"))
+        assertEquals(null, https.sameServer("http://rentalsolution.co.in/uploads/branding/b.png"))
+        assertEquals(null, https.sameServer("https://genusitsolution.com/rentalsolutionfinal/uploads/branding/b.png"))
     }
 
     @Test fun loginSendsJsonAndHeaders() = runTest {
@@ -307,12 +310,14 @@ class ApiIntegrationTest {
     }
 
     @Test fun httpsIsNeverDowngraded() {
-        val i = com.genusit.prms.data.remote.SafeRedirectInterceptor("https://genusitsolution.com/rentalsolutionfinal/api/v1/")
-        val from = okhttp3.HttpUrl.Builder().scheme("https").host("genusitsolution.com").addPathSegments("rentalsolutionfinal/api/v1/auth/login.php").build()
-        assertEquals("https://www.genusitsolution.com/rentalsolutionfinal/api/v1/auth/login.php",
-            i.safeTarget(from, "https://www.genusitsolution.com/rentalsolutionfinal/api/v1/auth/login.php").toString(), "www twin allowed")
-        assertNull(i.safeTarget(from, "http://genusitsolution.com/rentalsolutionfinal/api/v1/auth/login.php"), "http refused")
-        assertNull(i.safeTarget(from, "https://genusitsolution.com:8443/rentalsolutionfinal/api/v1/auth/login.php"), "port change refused")
-        assertNull(i.safeTarget(from, "https://genusitsolution.com/other/api/v1/auth/login.php"), "outside API folder refused")
+        val i = com.genusit.prms.data.remote.SafeRedirectInterceptor("https://rentalsolution.co.in/api/v1/")
+        val from = okhttp3.HttpUrl.Builder().scheme("https").host("rentalsolution.co.in").addPathSegments("api/v1/auth/login.php").build()
+        assertEquals("https://www.rentalsolution.co.in/api/v1/auth/login.php",
+            i.safeTarget(from, "https://www.rentalsolution.co.in/api/v1/auth/login.php").toString(), "www twin allowed")
+        assertNull(i.safeTarget(from, "http://rentalsolution.co.in/api/v1/auth/login.php"), "http refused")
+        assertNull(i.safeTarget(from, "https://rentalsolution.co.in:8443/api/v1/auth/login.php"), "port change refused")
+        assertNull(i.safeTarget(from, "https://rentalsolution.co.in/other/api/v1/auth/login.php"), "outside API folder refused")
+        assertNull(i.safeTarget(from, "https://rentalsolution.co.in/login.php"), "website page refused")
+        assertNull(i.safeTarget(from, "https://www.genusitsolution.com/rentalsolutionfinal/api/v1/auth/login.php"), "old domain refused")
     }
 }

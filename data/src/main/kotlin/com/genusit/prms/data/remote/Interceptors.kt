@@ -34,7 +34,7 @@ class HeaderInterceptor(
  * Follows a server redirect only when it is safe (OkHttp's own redirect following is switched off):
  *  - only to the configured host or its www / non-www twin,
  *  - never from https down to http, and never to another port,
- *  - only to a path inside the configured API folder (e.g. /rentalsolutionfinal/api/v1/…),
+ *  - only to a path inside the configured API folder (e.g. /api/v1/…),
  *  - at most [maxHops] times, and never for 303 ("see other" means "switch to GET").
  * The request is re-sent with the same method, headers and body (incl. Idempotency-Key): a 3xx means
  * the PHP script never ran, so a payment cannot be recorded twice. This covers the usual cPanel
