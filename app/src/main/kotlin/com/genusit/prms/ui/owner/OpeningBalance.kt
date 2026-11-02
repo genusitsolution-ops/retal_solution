@@ -362,8 +362,11 @@ fun TenantMoneyCard(
             LabelValue(stringResource(R.string.ob_current_month), Money.format(summary.currentMonthCharges))
             LabelValue(stringResource(R.string.ob_total_paid), Money.format(summary.totalPaid), Palette.Success)
             LabelValue(stringResource(R.string.ob_remaining), Money.format(summary.remainingOutstanding), if (summary.remainingOutstanding > 0) Palette.Danger else Palette.Success, bold = true)
+            // one row per figure: a single long value would squeeze its label out of the row
             summary.deposit?.let { d ->
-                LabelValue(stringResource(R.string.ob_deposit_summary), stringResource(R.string.ob_deposit_line, Money.format(d.agreed), Money.format(d.collected), Money.format(d.pending)))
+                LabelValue(stringResource(R.string.ob_deposit_agreed), Money.format(d.agreed))
+                LabelValue(stringResource(R.string.ob_deposit_collected), Money.format(d.collected), Palette.Success)
+                LabelValue(stringResource(R.string.ob_deposit_pending), Money.format(d.pending), if (d.pending > 0) Palette.Danger else Color.Unspecified)
             }
             openings.forEach { o ->
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
@@ -372,7 +375,7 @@ fun TenantMoneyCard(
                 o.lines.forEach { l ->
                     LabelValue((l.categoryLabel ?: l.category) + (l.periodLabel?.takeIf { it.isNotBlank() }?.let { " · $it" } ?: "") + (l.description.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: ""), Money.format(l.amount))
                 }
-                LabelValue(stringResource(R.string.ob_paid_left, Money.format(o.paid), Money.format(o.remaining)), "")
+                Text(stringResource(R.string.ob_paid_left, Money.format(o.paid), Money.format(o.remaining)), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 4.dp))
                 OutlinedButton(onClick = { openOpening(o.id) }) {
                     Icon(Icons.Filled.Edit, null); Spacer(Modifier.width(6.dp)); Text(stringResource(if (o.editable) R.string.ob_view_edit else R.string.ob_view))
                 }
