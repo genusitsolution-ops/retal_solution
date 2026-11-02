@@ -72,7 +72,7 @@ class OpeningBalanceUiTest {
             draft.depositAgreed = "8000"; draft.depositCollected = "5000"
         }
         rule.waitForIdle()
-        rule.onAllNodesWithText("₹8,500.00").onFirst().assertIsDisplayed()       // total previous outstanding
+        rule.onAllNodesWithText("₹8,500.00").onFirst().performScrollTo().assertIsDisplayed()       // total previous outstanding
         rule.onAllNodesWithText("₹3,000.00").onFirst().performScrollTo().assertIsDisplayed() // deposit pending
         shot("00-existing-tenant-form")
         val input = draft.toInput(withDeposit = true)
