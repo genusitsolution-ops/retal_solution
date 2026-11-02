@@ -102,10 +102,10 @@ class OpeningBalanceUiTest {
             }
         }
         rule.onAllNodesWithText("Existing tenant (migrated)").onFirst().assertIsDisplayed()
+        shot("tenant-money-summary")
         rule.onAllNodesWithText("₹8,500.00").onFirst().assertIsDisplayed()
         rule.onAllNodesWithText("₹8,000.00").onFirst().assertIsDisplayed()
         rule.onAllNodesWithText("₹3,000.00").onFirst().performScrollTo().assertIsDisplayed()   // deposit pending on its own row
         rule.onAllNodesWithText("Opening Balance – Migrated · R1").onFirst().performScrollTo().assertIsDisplayed()
-        shot("tenant-money-summary")
     }
 }
