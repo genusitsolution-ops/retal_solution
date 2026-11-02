@@ -74,7 +74,7 @@ class OpeningBalanceUiTest {
         rule.waitForIdle()
         rule.onAllNodesWithText("₹8,500.00").onFirst().performScrollTo().assertIsDisplayed()       // total previous outstanding
         rule.onAllNodesWithText("₹3,000.00").onFirst().performScrollTo().assertIsDisplayed() // deposit pending
-        shot("00-existing-tenant-form")
+        shot("existing-tenant-form")
         val input = draft.toInput(withDeposit = true)
         assertEquals(8500.0, OpeningRules.totals(input.lines).total, 0.001)
         assertEquals(5000.0, input.depositCollected!!, 0.001)
@@ -105,6 +105,6 @@ class OpeningBalanceUiTest {
         rule.onAllNodesWithText("₹8,500.00").onFirst().assertIsDisplayed()
         rule.onAllNodesWithText("₹8,000.00").onFirst().assertIsDisplayed()
         rule.onAllNodesWithText("Opening Balance – Migrated · R1").onFirst().performScrollTo().assertIsDisplayed()
-        shot("00-tenant-money-summary")
+        shot("tenant-money-summary")
     }
 }

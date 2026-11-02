@@ -60,6 +60,8 @@ jobs:
             adb pull /data/local/tmp/employee-cash-dues.png shots/00-employee-cash-dues.png || true
             adb pull /data/local/tmp/upi-app-buttons.png shots/00-upi-app-buttons.png || true
             adb pull /data/local/tmp/bill-whatsapp-button.png shots/00-bill-whatsapp-button.png || true
+            adb pull /data/local/tmp/existing-tenant-form.png shots/00-existing-tenant-form.png || true
+            adb pull /data/local/tmp/tenant-money-summary.png shots/00-tenant-money-summary.png || true
             adb pull /data/local/tmp/upi-personal-id.png shots/00-upi-personal-id.png || true
             adb pull /data/local/tmp/settlement-statement.png shots/00-settlement-statement.png || true
             bash .github/scripts/smoke.sh
