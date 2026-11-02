@@ -50,6 +50,9 @@ data class TenantInput(
     /** Tokens of document photos already uploaded as drafts (owner/tenant_document.php, draft=1). */
     @SerialName("aadhaar_draft") val aadhaarDraft: String? = null,
     @SerialName("pan_draft") val panDraft: String? = null,
+    /** 1.12: "existing" + [migration] adds the tenant with the room they live in and the opening balance (one step). */
+    @SerialName("tenant_type") val tenantType: String? = null,
+    val migration: MigrationInput? = null,
 )
 
 /** Result of saving a tenant: the id, and whether every draft document was attached. */

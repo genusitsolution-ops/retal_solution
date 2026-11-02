@@ -185,6 +185,20 @@ class AllocationRepositoryImpl @Inject constructor(
 
     override suspend fun allocation(id: Int): AllocationDetail = caller.get(AllocationDetail.serializer()) { api.ownerAllocation(id) }
 
+    override suspend fun openingBalance(id: Int): OpeningBalanceInfo = caller.get(OpeningBalanceInfo.serializer()) { api.openingBalance(id) }
+    override suspend fun createOpening(allocationId: Int, input: OpeningInput): OpeningBalanceInfo =
+        caller.get(OpeningBalanceInfo.serializer()) {
+            api.openingBalanceAction(buildJsonObject {
+                put("action", "create"); put("allocation_id", allocationId); put("opening", caller.body(OpeningInput.serializer(), input))
+            })
+        }
+    override suspend fun updateOpening(id: Int, input: OpeningInput, reason: String): OpeningBalanceInfo =
+        caller.get(OpeningBalanceInfo.serializer()) {
+            api.openingBalanceAction(buildJsonObject {
+                put("action", "update"); put("id", id); put("reason", reason.trim()); put("opening", caller.body(OpeningInput.serializer(), input))
+            })
+        }
+
     private fun vacateBody(action: String, i: VacateInput, expected: Double? = null) = buildJsonObject {
         put("action", action); put("vacate_date", i.vacateDate); put("apply_deposit", i.applyDeposit)
         put("charges", buildJsonArray {

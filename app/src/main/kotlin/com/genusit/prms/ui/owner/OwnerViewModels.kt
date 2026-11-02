@@ -29,6 +29,9 @@ import com.genusit.prms.domain.util.Dates
 import com.genusit.prms.ui.common.BaseViewModel
 import com.genusit.prms.ui.common.ScreenEvent
 import com.genusit.prms.ui.common.SessionExpiryHandler
+import com.genusit.prms.ui.common.UiState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -165,9 +168,36 @@ class TenantFormViewModel @Inject constructor(
     private val deleteDraft: DeleteDraftDocumentUseCase,
     private val scanner: DocumentScanner,
     private val uploadPhoto: com.genusit.prms.domain.usecase.UploadProfilePhotoUseCase,
+    getProperties: GetPropertiesUseCase,
+    getCharges: GetChargesUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val id = handle.intArg()
+
+    /* 1.12 existing tenant: room they live in, joining date, monthly charges and the opening balance */
+    var tenantType by androidx.compose.runtime.mutableStateOf("new")
+    var propertyId by androidx.compose.runtime.mutableStateOf(0)
+    var joiningDate by androidx.compose.runtime.mutableStateOf("")
+    val chargeChoices = androidx.compose.runtime.mutableStateMapOf<Int, Boolean>()
+    val opening = OpeningDraft()
+    val rooms = loadable(autoLoad = false) { getProperties() }
+    val charges = loadable(autoLoad = false) { getCharges() }
+
+    fun chooseType(type: String) {
+        tenantType = type
+        if (type == "existing") {
+            if (rooms.state.value !is UiState.Data) rooms.refresh()
+            if (charges.state.value !is UiState.Data) charges.refresh()
+        }
+    }
+
+    /** Migration part of the request, or null for a new tenant. Only the room's charges the owner kept ticked are attached. */
+    fun migration(): com.genusit.prms.domain.model.MigrationInput? {
+        if (id != 0 || tenantType != "existing") return null
+        val ch = (charges.state.value as? UiState.Data)?.value.orEmpty().map { it.id }.filter { chargeChoices[it] != false }
+        val o = opening.toInput(withDeposit = true)
+        return com.genusit.prms.domain.model.MigrationInput(propertyId, joiningDate.trim(), ch, o.depositAgreed ?: 0.0, o.depositCollected ?: 0.0, o)
+    }
 
     /** New tenant's profile photo: compressed on the phone now, uploaded once the tenant is saved. */
     data class PendingPhoto(val file: File, val consent: Boolean)

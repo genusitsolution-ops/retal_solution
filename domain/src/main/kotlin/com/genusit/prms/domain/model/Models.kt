@@ -167,6 +167,8 @@ data class InvoiceDetail(
     @SerialName("owner_name") val ownerName: String? = null,
     @SerialName("owner_phone") val ownerPhone: String? = null,
     val notes: String? = null,
+    /** 1.12: "opening" = Opening Balance – Migrated (changed only from the tenant's opening balance, never cancelled here). */
+    @SerialName("entry_type") val entryType: String = "bill",
     val items: List<InvoiceItem> = emptyList(),
     val payments: List<InvoicePayment> = emptyList(),
     @SerialName("other_outstanding") val otherOutstanding: Double = 0.0,
@@ -359,6 +361,8 @@ data class TenantRow(
     @SerialName("allocated_property") val allocatedProperty: String? = null,
     @SerialName("pending_amount") val pendingAmount: Double = 0.0,
     @SerialName("has_aadhaar") val hasAadhaar: Boolean = false,
+    /** 1.12: "existing" = migrated with an opening balance. */
+    @SerialName("tenant_type") val tenantType: String? = null,
     // employee/tenants.php
     @SerialName("property_id") val propertyId: Int = 0,
     @SerialName("property_code") val propertyCode: String? = null,
@@ -389,6 +393,10 @@ data class TenantDetail(
     @SerialName("photo_version") val photoVersion: String? = null,
     /** 1.11: security deposit of every allocation (current first). */
     val deposits: List<AllocationDeposit> = emptyList(),
+    /** 1.12: new / existing (migrated) tenant, money summary and opening balances. */
+    @SerialName("tenant_type") val tenantType: String = "new",
+    val summary: TenantMoneySummary? = null,
+    @SerialName("opening_balances") val openingBalances: List<OpeningBalanceInfo> = emptyList(),
 )
 
 @Serializable

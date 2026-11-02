@@ -285,7 +285,14 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     edit = { nav.navigate("owner/tenant-form/$tid") }, onDeleted = back,
                     openHistory = { nav.navigate("owner/tenant/$tid/history") },
                     openDocument = { type -> nav.navigate("owner/tenant/$tid/document/${type.apiValue}") },
-                    openAllocation = { aid -> nav.navigate("owner/allocation/$aid") })
+                    openAllocation = { aid -> nav.navigate("owner/allocation/$aid") },
+                    openOpening = { oid -> nav.navigate("owner/opening/$oid?allocationId=0") },
+                    recordOpening = { aid -> nav.navigate("owner/opening/0?allocationId=$aid") })
+            }
+            // 1.12: opening balance of an existing (migrated) tenant — record (id 0 + allocationId) or view / edit
+            composable("owner/opening/{id}?allocationId={allocationId}", listOf(navArgument("id") { type = NavType.IntType },
+                navArgument("allocationId") { type = NavType.IntType; defaultValue = 0 })) {
+                com.genusit.prms.ui.owner.OpeningBalanceScreen(onBack = back, onSaved = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") })
             }
             composable("owner/tenant/{id}/history", listOf(navArgument("id") { type = NavType.IntType })) {
                 TenantHistoryScreen(onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") }, openReceipt = openReceipt)

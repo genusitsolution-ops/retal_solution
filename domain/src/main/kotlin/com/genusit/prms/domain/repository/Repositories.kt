@@ -119,6 +119,12 @@ interface AllocationRepository {
     suspend fun vacatePreview(id: Int, input: VacateInput): SettlementStatement
     suspend fun vacateConfirm(id: Int, input: VacateInput, expectedFinal: Double): VacateResult
     suspend fun refundPaid(id: Int, method: String, reference: String, date: String): SettlementStatement
+    /* 1.12 opening balance of a tenancy ("Opening Balance – Migrated") */
+    suspend fun openingBalance(id: Int): OpeningBalanceInfo
+    /** Previous balance of a tenancy that is already in Rental Solution. */
+    suspend fun createOpening(allocationId: Int, input: OpeningInput): OpeningBalanceInfo
+    /** Edit with a reason; the server keeps every change. */
+    suspend fun updateOpening(id: Int, input: OpeningInput, reason: String): OpeningBalanceInfo
 }
 
 /** Owner: collection agents. */

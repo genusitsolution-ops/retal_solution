@@ -116,6 +116,7 @@ fun OwnerTenantDetailScreen(
     id: Int, onBack: () -> Unit, openInvoice: (Int) -> Unit, edit: () -> Unit = {}, onDeleted: () -> Unit = onBack,
     openHistory: () -> Unit = {}, openDocument: (com.genusit.prms.domain.model.TenantDocType) -> Unit = {},
     openAllocation: (Int) -> Unit = {},
+    openOpening: (Int) -> Unit = {}, recordOpening: (Int) -> Unit = {},
 ) {
     val model: OwnerTenantDetailViewModel = hiltViewModel()
     val vm = model.tenant
@@ -159,6 +160,10 @@ fun OwnerTenantDetailScreen(
                             }
                         }
                     }
+                }
+                // 1.12: tenant type, money summary and the opening balance (migrated) of existing tenants
+                t.summary?.let { s ->
+                    item { TenantMoneyCard(s, t.openingBalances, t.deposits.firstOrNull { it.isActive }?.allocationId, openOpening, recordOpening) }
                 }
                 // 1.11: security deposit (agreed / collected / pending / adjusted / refunded) per room
                 if (t.deposits.isNotEmpty()) item { TenantDepositCard(t.deposits, openAllocation) }

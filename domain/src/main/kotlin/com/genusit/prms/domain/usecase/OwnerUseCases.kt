@@ -184,6 +184,18 @@ class CollectDepositUseCase @Inject constructor(private val repo: AllocationRepo
     suspend operator fun invoke(id: Int, amount: Double, method: String = "cash", reference: String = ""): DepositCollected = repo.collectDeposit(id, amount, method, reference)
 }
 
+/* ───────── 1.12 opening balance (existing tenants) ───────── */
+
+class GetOpeningBalanceUseCase @Inject constructor(private val repo: AllocationRepository) {
+    suspend operator fun invoke(id: Int): OpeningBalanceInfo = repo.openingBalance(id)
+}
+
+/** Records ([id] = 0, for [allocationId]) or edits ([id] > 0, with [reason]) an opening balance. */
+class SaveOpeningBalanceUseCase @Inject constructor(private val repo: AllocationRepository) {
+    suspend operator fun invoke(id: Int, allocationId: Int, input: OpeningInput, reason: String): OpeningBalanceInfo =
+        if (id > 0) repo.updateOpening(id, input, reason) else repo.createOpening(allocationId, input)
+}
+
 /* ───────── collection agents ───────── */
 
 class GetEmployeesUseCase @Inject constructor(private val repo: TeamRepository) {

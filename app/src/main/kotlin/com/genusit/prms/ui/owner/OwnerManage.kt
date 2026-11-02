@@ -146,7 +146,14 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val emailOk = email.isEmpty() || android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
     val needPassword = hasAccount && !hadAccount
     val accountOk = !hasAccount || (username.isNotBlank() && (!needPassword || password.length >= 6) && (password.isEmpty() || password.length >= 6))
-    val valid = name.isNotBlank() && Validators.phone(phone) && emailOk && aadhaarOk && panOk && accountOk
+    // 1.12: existing tenant — room, joining date and opening balance are required and checked like on the server
+    val existingType = id == 0 && model.tenantType == "existing"
+    val roomsState by model.rooms.state.collectAsStateWithLifecycle()
+    val chargesState by model.charges.state.collectAsStateWithLifecycle()
+    val obProblems = if (existingType) model.opening.problems(model.joiningDate, withDeposit = true) else emptySet()
+    val joinOk = Dates.parse(model.joiningDate)?.let { !it.isAfter(java.time.LocalDate.now()) } == true
+    val migrationOk = !existingType || (model.propertyId > 0 && joinOk && obProblems.isEmpty())
+    val valid = name.isNotBlank() && Validators.phone(phone) && emailOk && aadhaarOk && panOk && accountOk && migrationOk
 
     ScreenScaffold(stringResource(if (id == 0) R.string.add_tenant else R.string.edit_tenant), onBack = onBack) { pad ->
         if (!loaded) {
@@ -156,6 +163,15 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             return@ScreenScaffold
         }
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (id == 0) {
+                // 1.12: New tenant (unchanged) or Existing tenant (already living in the room, with previous balance)
+                Text(stringResource(R.string.ob_tenant_type), style = MaterialTheme.typography.titleMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = model.tenantType == "new", onClick = { model.chooseType("new") }, label = { Text(stringResource(R.string.ob_type_new)) })
+                    FilterChip(selected = model.tenantType == "existing", onClick = { model.chooseType("existing") }, label = { Text(stringResource(R.string.ob_type_existing)) })
+                }
+                Text(stringResource(if (existingType) R.string.ob_type_existing_sub else R.string.ob_type_new_sub), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             // profile photo — kept apart from the Aadhaar / PAN documents below
             if (id != 0) {
                 val version = (existing as? UiState.Data)?.value?.photoVersion
@@ -226,6 +242,22 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                 FormField(password, { password = it.take(100) }, stringResource(if (hadAccount) R.string.new_password_optional else R.string.password),
                     tried && ((needPassword && password.length < 6) || (password.isNotEmpty() && password.length < 6)), password = true)
             }
+            if (existingType) {
+                val rooms = (roomsState as? UiState.Data)?.value
+                val charges = (chargesState as? UiState.Data)?.value
+                if (rooms == null || charges == null) {
+                    val failed = listOf(roomsState, chargesState).filterIsInstance<UiState.Error>().firstOrNull()
+                    if (failed != null) ErrorBox(failed.error, onRetry = { model.chooseType("existing") }, modifier = Modifier.height(260.dp)) else LoadingBox(Modifier.height(120.dp))
+                } else {
+                    ExistingTenantSection(
+                        rooms = rooms.filter { it.status == "available" }, charges = charges,
+                        propertyId = model.propertyId, onProperty = { model.propertyId = it },
+                        joiningDate = model.joiningDate, onJoiningDate = { model.joiningDate = it },
+                        chosen = model.chargeChoices, onCharge = { cid, on -> model.chargeChoices[cid] = on },
+                        draft = model.opening, tried = tried, problems = obProblems,
+                    )
+                }
+            }
             ActionError(act)
             if (uploadBusy) Text(stringResource(R.string.doc_wait_upload), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             SubmitButton(stringResource(R.string.save), if (uploadBusy) ActionState.Running else act) {
@@ -236,6 +268,8 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                         aadharNumber = aadhaar.ifBlank { null }, panNumber = pan.ifBlank { null },
                         hasAccount = hasAccount, username = if (hasAccount) username else null,
                         password = password.ifEmpty { null },
+                        tenantType = if (existingType) "existing" else null,
+                        migration = model.migration(),
                     )
                     model.save(input)
                 }

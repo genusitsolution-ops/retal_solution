@@ -168,6 +168,13 @@ interface PrmsApiService {
     @POST("owner/invoices.php")
     suspend fun ownerInvoiceAction(@Body body: JsonObject, @Header("Idempotency-Key") idempotencyKey: String?): Response<ResponseBody>
 
+    /** 1.12 opening balance: GET ?id=N, POST {action:"create"|"update", …} */
+    @GET("owner/opening_balance.php")
+    suspend fun openingBalance(@Query("id") id: Int): Response<ResponseBody>
+
+    @POST("owner/opening_balance.php")
+    suspend fun openingBalanceAction(@Body body: JsonObject): Response<ResponseBody>
+
     @GET("owner/payments.php")
     suspend fun ownerPayments(@Query("from") from: String?, @Query("to") to: String?): Response<ResponseBody>
 

@@ -163,7 +163,10 @@ fun InvoiceDetailScreen(id: Int, onBack: () -> Unit, recordPayment: (Int) -> Uni
                     Icon(Icons.Filled.Payments, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.record_payment))
                 }
                 // only a bill without any payment can be cancelled (the server checks again)
-                if ((inv.status == "pending" || inv.status == "overdue") && inv.paidAmount <= 0.0) {
+                if (inv.entryType == "opening") {
+                    Spacer(Modifier.height(8.dp))
+                    Text(stringResource(R.string.ob_entry_note), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else if ((inv.status == "pending" || inv.status == "overdue") && inv.paidAmount <= 0.0) {
                     Spacer(Modifier.height(8.dp))
                     CancelInvoiceButton(cancelState, onCancel = model::cancel)
                 }

@@ -62,7 +62,10 @@ class ApiCaller(val json: Json, private val changes: DataChangeBus = NoDataChang
             setOf(DataTopic.BILLING, DataTopic.COLLECTIONS, DataTopic.HANDOVERS)
         path.contains("settlements.php") -> setOf(DataTopic.HANDOVERS, DataTopic.COLLECTIONS)
         path.contains("allocations.php") -> setOf(DataTopic.ALLOCATIONS, DataTopic.BILLING, DataTopic.TENANTS)
-        path.contains("tenants.php") || path.contains("tenant_document") -> setOf(DataTopic.TENANTS)
+        // 1.12: adding an existing tenant also allocates the room and records the opening balance
+        path.contains("tenants.php") && !path.contains("tenant_document") -> setOf(DataTopic.TENANTS, DataTopic.ALLOCATIONS, DataTopic.BILLING)
+        path.contains("tenant_document") -> setOf(DataTopic.TENANTS)
+        path.contains("opening_balance.php") -> setOf(DataTopic.TENANTS, DataTopic.ALLOCATIONS, DataTopic.BILLING)
         path.contains("employees.php") -> setOf(DataTopic.EMPLOYEES)
         path.contains("subscription.php") || path.contains("payment_claims.php") || path.contains("payment_gateway.php") -> setOf(DataTopic.SUBSCRIPTION)
         path.contains("profile_photo.php") -> setOf(DataTopic.TENANTS, DataTopic.EMPLOYEES)
