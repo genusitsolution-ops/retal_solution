@@ -725,7 +725,7 @@
     <string name="ob_type_new">नया किरायेदार</string>
     <string name="ob_type_existing">मौजूदा किरायेदार</string>
     <string name="ob_type_new_sub">अभी आ रहे हैं। कमरा बाद में आवंटन से दें।</string>
-    <string name="ob_type_existing_sub">पहले से आपके कमरे में रह रहे हैं। कमरा, जमा राशि और पिछला बकाया अभी जोड़ें।</string>
+    <string name="ob_type_existing_sub">पहले से आपके कमरे में रह रहे हैं। कमरा, रहने की तारीख और पिछला बकाया अभी जोड़ें।</string>
     <string name="ob_room_title">कमरा जिसमें किरायेदार अभी रहता है</string>
     <string name="ob_no_vacant_room">Rental Solution में कोई खाली कमरा नहीं। जिस कमरे में यहाँ पहले से किरायेदार है वह नहीं चुना जा सकता।</string>
     <string name="ob_joining_date">वास्तविक आने की तारीख (YYYY-MM-DD)</string>

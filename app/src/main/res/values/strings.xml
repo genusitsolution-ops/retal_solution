@@ -725,7 +725,7 @@
     <string name="ob_type_new">New tenant</string>
     <string name="ob_type_existing">Existing tenant</string>
     <string name="ob_type_new_sub">Moving in now. Allocate the room later from Allocations.</string>
-    <string name="ob_type_existing_sub">Already living in your room. Add the room, deposit and previous outstanding balance now.</string>
+    <string name="ob_type_existing_sub">Already living in your room. Add the room, the date they moved in and the previous outstanding balance now.</string>
     <string name="ob_room_title">Room the tenant lives in now</string>
     <string name="ob_no_vacant_room">No vacant room in Rental Solution. A room that already has a tenant here cannot be used.</string>
     <string name="ob_joining_date">Actual joining date (YYYY-MM-DD)</string>

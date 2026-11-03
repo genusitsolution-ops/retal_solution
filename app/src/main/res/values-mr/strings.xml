@@ -725,7 +725,7 @@
     <string name="ob_type_new">नवीन भाडेकरू</string>
     <string name="ob_type_existing">सध्याचा भाडेकरू</string>
     <string name="ob_type_new_sub">आता राहायला येत आहेत. खोली नंतर वाटपातून द्या.</string>
-    <string name="ob_type_existing_sub">आधीपासून तुमच्या खोलीत राहतात. खोली, ठेव आणि मागील थकबाकी आता जोडा.</string>
+    <string name="ob_type_existing_sub">आधीपासून तुमच्या खोलीत राहतात. खोली, राहण्याची तारीख आणि मागील थकबाकी आता जोडा.</string>
     <string name="ob_room_title">भाडेकरू सध्या राहतो ती खोली</string>
     <string name="ob_no_vacant_room">Rental Solution मध्ये रिकामी खोली नाही. ज्या खोलीत इथे आधीच भाडेकरू आहे ती निवडता येत नाही.</string>
     <string name="ob_joining_date">प्रत्यक्ष राहायला आल्याची तारीख (YYYY-MM-DD)</string>
