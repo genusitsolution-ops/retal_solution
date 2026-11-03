@@ -59,7 +59,7 @@ class OpeningBalanceApiTest {
     @Test fun existingTenantIsSentWithRoomDepositAndOpeningInOneRequest() = runTest {
         enqueue(201, """{"status":"success","message":"Existing tenant added with the opening balance.","data":{"id":7,"documents":{},"tenant_type":"existing","allocation_id":3,"opening_id":2,"opening_invoice_id":9}}""")
         val created = tenants.add(TenantInput(fullName = "Rahul", phone = "9876500001", tenantType = "existing",
-            migration = MigrationInput(1, "2025-06-01", listOf(4), 8000.0, 5000.0, opening)), "k1")
+            migration = MigrationInput(propertyId = 1, joiningDate = "2025-06-01", chargeIds = listOf(4), depositAgreed = 8000.0, depositCollected = 5000.0, opening = opening)), "k1")
         assertEquals(7, created.id)
         val req = server.takeRequest()
         assertEquals("/api/v1/owner/tenants.php", req.path)
@@ -139,5 +139,48 @@ class OpeningBalanceApiTest {
         assertEquals(t, caller.topicsFor("/api/v1/owner/tenants.php"))
         assertEquals(t, caller.topicsFor("/api/v1/owner/opening_balance.php"))
         assertEquals(setOf(DataTopic.TENANTS), caller.topicsFor("/api/v1/owner/tenant_document.php"))
+    }
+
+    /* ───────── 1.12.1: simple existing tenant (3 details) and the support person ───────── */
+
+    @Test fun simpleExistingTenantSendsOnlyAmountSinceAndRoom() = runTest {
+        enqueue(201, """{"status":"success","message":"Existing tenant added with the opening balance.","data":{"id":9,"documents":{},"tenant_type":"existing","allocation_id":4,"opening_id":3,"opening_invoice_id":11}}""")
+        tenants.add(TenantInput(fullName = "Ravi", phone = "9876500040", tenantType = "existing",
+            migration = MigrationInput(propertyId = 2, joiningDate = "2026-06-01", previousOutstanding = 5000.0)), null)
+        val m = Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject["migration"]!!.jsonObject
+        assertEquals(setOf("property_id", "joining_date", "charge_ids", "previous_outstanding"), m.keys)
+        assertEquals(5000.0, m["previous_outstanding"]!!.jsonPrimitive.double); assertEquals("2026-06-01", m["joining_date"]!!.jsonPrimitive.content)
+    }
+
+    @Test fun zeroPreviousBalanceIsSent() = runTest {
+        enqueue(201, """{"status":"success","message":"ok","data":{"id":10,"documents":{}}}""")
+        tenants.add(TenantInput(fullName = "Zero", phone = "9876500041", tenantType = "existing", migration = MigrationInput(propertyId = 3, joiningDate = "2026-01-01", previousOutstanding = 0.0)), null)
+        val m = Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject["migration"]!!.jsonObject
+        assertEquals(0.0, m["previous_outstanding"]!!.jsonPrimitive.double)
+    }
+
+    @Test fun simpleRecordAndEditBodies() = runTest {
+        enqueue(201, OpeningFixtures.OPENING)
+        alloc.saveSimpleOpening(0, 4, 2500.0, "")
+        var b = Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject
+        assertEquals("create", b["action"]!!.jsonPrimitive.content); assertEquals(4, b["allocation_id"]!!.jsonPrimitive.int)
+        assertEquals(2500.0, b["opening"]!!.jsonObject["previous_outstanding"]!!.jsonPrimitive.double)
+        enqueue(200, OpeningFixtures.OPENING)
+        alloc.saveSimpleOpening(1, 0, 6000.0, " Correction ")
+        b = Json.parseToJsonElement(server.takeRequest().body.readUtf8()).jsonObject
+        assertEquals("update", b["action"]!!.jsonPrimitive.content); assertEquals("Correction", b["reason"]!!.jsonPrimitive.content)
+        assertFalse(b.containsKey("allocation_id"))
+    }
+
+    @Test fun supportDetailsComeFromTheServer() = runTest {
+        enqueue(200, OpeningFixtures.SUPPORT_ON)
+        val s = alloc.support()
+        assertEquals("/api/v1/owner/support.php", server.takeRequest().path)
+        assertTrue(s.usable); assertEquals("Priya Support", s.name); assertTrue(s.available)
+        assertTrue(s.telUrl!!.startsWith("tel:+91")); assertTrue(s.whatsappUrl!!.startsWith("https://wa.me/91"))
+        assertTrue(s.whatsappUrl!!.contains("Rental%20Solution"))
+        enqueue(200, OpeningFixtures.SUPPORT_OFF)
+        val off = alloc.support()
+        assertFalse(off.usable); assertNull(off.telUrl); assertNotNull(off.message)
     }
 }

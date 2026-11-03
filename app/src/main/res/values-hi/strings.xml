@@ -795,4 +795,30 @@
     <string name="ob_view">देखें</string>
     <string name="ob_record">पिछला बकाया दर्ज करें</string>
     <string name="ob_entry_note">ओपनिंग बैलेंस – माइग्रेटेड: Rental Solution से पहले का बकाया। इसे केवल किरायेदार के ओपनिंग बैलेंस से (कारण सहित) बदला जा सकता है।</string>
+    <!-- 1.12.1 existing tenant (simple), support person, quick actions -->
+    <string name="ex_title">मौजूदा किरायेदार का विवरण</string>
+    <string name="ex_sub">केवल तीन विवरण: पहले का बकाया, किरायेदार कब से रह रहा है, और कमरा।</string>
+    <string name="ex_previous">पिछला बकाया (₹)</string>
+    <string name="ex_previous_hint">पिछले महीनों का कुल बाकी। कुछ बाकी न हो तो 0 डालें।</string>
+    <string name="ex_since">किरायेदार कब से (YYYY-MM-DD)</string>
+    <string name="ex_since_short">किरायेदार कब से</string>
+    <string name="ex_since_hint">जिस तारीख से किरायेदार इस कमरे में रह रहा है</string>
+    <string name="ex_room">कमरा आवंटन</string>
+    <string name="ex_screen_title">पिछला बकाया</string>
+    <string name="ex_record_hint">उस किरायेदार के लिए जो Rental Solution शुरू करने से पहले से इस कमरे में रहता था: जो बाकी था वह डालें। यह अगले बिल में पिछले बकाया के रूप में जुड़ता है।</string>
+    <string name="sup_title">सहायता से संपर्क करें</string>
+    <string name="sup_menu_sub">हमारे सहायता व्यक्ति को कॉल या WhatsApp करें</string>
+    <string name="sup_need_help">Rental Solution में मदद चाहिए?</string>
+    <string name="sup_need_help_sub">हमारे सहायता व्यक्ति को कॉल या WhatsApp करें</string>
+    <string name="sup_not_set">सहायता विवरण अभी सेट नहीं हैं। कृपया बाद में प्रयास करें।</string>
+    <string name="sup_unavailable_note">सहायता अभी उपलब्ध नहीं है। आप फिर भी WhatsApp संदेश छोड़ सकते हैं।</string>
+    <string name="sup_mobile">मोबाइल</string>
+    <string name="sup_whatsapp">WhatsApp</string>
+    <string name="sup_call">सहायता को कॉल करें</string>
+    <string name="sup_whatsapp_btn">WhatsApp सहायता</string>
+    <string name="sup_confirm_note">कॉल करने पर फ़ोन ऐप खुलता है; WhatsApp एक संदेश के साथ खुलता है जिसे भेजने से पहले बदल सकते हैं।</string>
+    <string name="sup_open_failed">इस फ़ोन पर ऐप नहीं खुल सका।</string>
+    <string name="qa_add_tenant">किरायेदार जोड़ें</string>
+    <string name="qa_collect">किराया लें</string>
+    <string name="qa_add_room">कमरा जोड़ें</string>
 </resources>

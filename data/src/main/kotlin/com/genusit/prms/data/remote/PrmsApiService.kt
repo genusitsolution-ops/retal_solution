@@ -175,6 +175,10 @@ interface PrmsApiService {
     @POST("owner/opening_balance.php")
     suspend fun openingBalanceAction(@Body body: JsonObject): Response<ResponseBody>
 
+    /** 1.12.1 support person published by the Super Admin. */
+    @GET("owner/support.php")
+    suspend fun ownerSupport(): Response<ResponseBody>
+
     @GET("owner/payments.php")
     suspend fun ownerPayments(@Query("from") from: String?, @Query("to") to: String?): Response<ResponseBody>
 

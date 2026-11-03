@@ -150,9 +150,8 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val existingType = id == 0 && model.tenantType == "existing"
     val roomsState by model.rooms.state.collectAsStateWithLifecycle()
     val chargesState by model.charges.state.collectAsStateWithLifecycle()
-    val obProblems = if (existingType) model.opening.problems(model.joiningDate, withDeposit = true) else emptySet()
     val joinOk = Dates.parse(model.joiningDate)?.let { !it.isAfter(java.time.LocalDate.now()) } == true
-    val migrationOk = !existingType || (model.propertyId > 0 && joinOk && obProblems.isEmpty())
+    val migrationOk = !existingType || (model.propertyId > 0 && joinOk && previousAmount(model.previousOutstanding) != null)
     val valid = name.isNotBlank() && Validators.phone(phone) && emailOk && aadhaarOk && panOk && accountOk && migrationOk
 
     ScreenScaffold(stringResource(if (id == 0) R.string.add_tenant else R.string.edit_tenant), onBack = onBack) { pad ->
@@ -252,9 +251,9 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                     ExistingTenantSection(
                         rooms = rooms.filter { it.status == "available" }, charges = charges,
                         propertyId = model.propertyId, onProperty = { model.propertyId = it },
-                        joiningDate = model.joiningDate, onJoiningDate = { model.joiningDate = it },
+                        tenantSince = model.joiningDate, onTenantSince = { model.joiningDate = it },
                         chosen = model.chargeChoices, onCharge = { cid, on -> model.chargeChoices[cid] = on },
-                        draft = model.opening, tried = tried, problems = obProblems,
+                        previous = model.previousOutstanding, onPrevious = { model.previousOutstanding = it }, tried = tried,
                     )
                 }
             }

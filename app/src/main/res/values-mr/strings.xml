@@ -795,4 +795,30 @@
     <string name="ob_view">पहा</string>
     <string name="ob_record">मागील थकबाकी नोंदवा</string>
     <string name="ob_entry_note">ओपनिंग बॅलन्स – स्थलांतरित: Rental Solution पूर्वीची थकबाकी. ती फक्त भाडेकरूच्या ओपनिंग बॅलन्समधून (कारणासह) बदलता येते.</string>
+    <!-- 1.12.1 existing tenant (simple), support person, quick actions -->
+    <string name="ex_title">सध्याच्या भाडेकरूचा तपशील</string>
+    <string name="ex_sub">फक्त तीन तपशील: आधीची थकबाकी, भाडेकरू कधीपासून राहतो, आणि खोली.</string>
+    <string name="ex_previous">मागील थकबाकी (₹)</string>
+    <string name="ex_previous_hint">मागील महिन्यांची एकूण बाकी. काहीच बाकी नसल्यास 0 टाका.</string>
+    <string name="ex_since">भाडेकरू कधीपासून (YYYY-MM-DD)</string>
+    <string name="ex_since_short">भाडेकरू कधीपासून</string>
+    <string name="ex_since_hint">ज्या तारखेपासून भाडेकरू या खोलीत राहतो</string>
+    <string name="ex_room">खोली वाटप</string>
+    <string name="ex_screen_title">मागील थकबाकी</string>
+    <string name="ex_record_hint">Rental Solution वापरण्यापूर्वीपासून या खोलीत राहणाऱ्या भाडेकरूसाठी: जी बाकी होती ती टाका. ती पुढच्या बिलात मागील थकबाकी म्हणून जोडली जाते.</string>
+    <string name="sup_title">सहाय्याशी संपर्क</string>
+    <string name="sup_menu_sub">आमच्या सहाय्य व्यक्तीला कॉल किंवा WhatsApp करा</string>
+    <string name="sup_need_help">Rental Solution मध्ये मदत हवी आहे?</string>
+    <string name="sup_need_help_sub">आमच्या सहाय्य व्यक्तीला कॉल किंवा WhatsApp करा</string>
+    <string name="sup_not_set">सहाय्य तपशील अजून सेट केलेले नाहीत. कृपया नंतर प्रयत्न करा.</string>
+    <string name="sup_unavailable_note">सहाय्य सध्या उपलब्ध नाही. तरीही तुम्ही WhatsApp संदेश पाठवू शकता.</string>
+    <string name="sup_mobile">मोबाइल</string>
+    <string name="sup_whatsapp">WhatsApp</string>
+    <string name="sup_call">सहाय्याला कॉल करा</string>
+    <string name="sup_whatsapp_btn">WhatsApp सहाय्य</string>
+    <string name="sup_confirm_note">कॉल केल्यावर फोन अॅप उघडते; WhatsApp एका संदेशासह उघडते जो पाठवण्यापूर्वी बदलता येतो.</string>
+    <string name="sup_open_failed">या फोनवर अॅप उघडता आले नाही.</string>
+    <string name="qa_add_tenant">भाडेकरू जोडा</string>
+    <string name="qa_collect">भाडे घ्या</string>
+    <string name="qa_add_room">खोली जोडा</string>
 </resources>

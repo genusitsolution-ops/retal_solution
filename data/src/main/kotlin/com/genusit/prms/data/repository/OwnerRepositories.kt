@@ -192,6 +192,14 @@ class AllocationRepositoryImpl @Inject constructor(
                 put("action", "create"); put("allocation_id", allocationId); put("opening", caller.body(OpeningInput.serializer(), input))
             })
         }
+    override suspend fun saveSimpleOpening(id: Int, allocationId: Int, amount: Double, reason: String): OpeningBalanceInfo =
+        caller.get(OpeningBalanceInfo.serializer()) {
+            api.openingBalanceAction(buildJsonObject {
+                if (id > 0) { put("action", "update"); put("id", id); put("reason", reason.trim()) } else { put("action", "create"); put("allocation_id", allocationId) }
+                put("opening", caller.body(SimpleOpeningInput.serializer(), SimpleOpeningInput(amount)))
+            })
+        }
+    override suspend fun support(): SupportInfo = caller.get(SupportInfo.serializer()) { api.ownerSupport() }
     override suspend fun updateOpening(id: Int, input: OpeningInput, reason: String): OpeningBalanceInfo =
         caller.get(OpeningBalanceInfo.serializer()) {
             api.openingBalanceAction(buildJsonObject {

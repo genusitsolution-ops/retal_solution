@@ -17,6 +17,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -46,17 +49,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.genusit.prms.R
 import com.genusit.prms.domain.model.Charge
 import com.genusit.prms.domain.model.OpeningBalanceInfo
-import com.genusit.prms.domain.model.OpeningCategory
-import com.genusit.prms.domain.model.OpeningInput
-import com.genusit.prms.domain.model.OpeningLine
 import com.genusit.prms.domain.model.Property
 import com.genusit.prms.domain.model.TenantMoneySummary
 import com.genusit.prms.domain.usecase.GetOpeningBalanceUseCase
-import com.genusit.prms.domain.usecase.SaveOpeningBalanceUseCase
+import com.genusit.prms.domain.usecase.SaveSimpleOpeningUseCase
+import com.genusit.prms.domain.usecase.GetSupportUseCase
 import com.genusit.prms.domain.util.Dates
 import com.genusit.prms.domain.util.Money
-import com.genusit.prms.domain.util.OpeningRules
-import com.genusit.prms.domain.util.OpeningRules.Problem
 import com.genusit.prms.ui.common.ActionError
 import com.genusit.prms.ui.common.AppCard
 import com.genusit.prms.ui.common.BaseViewModel
@@ -78,175 +77,46 @@ import com.genusit.prms.ui.theme.Palette
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
-/* ═════════════════════════ 1.12 Opening Balance – Migrated (existing tenants) ═════════════════════════ */
+/* ═════════════════════════ 1.12.1 Existing tenant: previous outstanding balance ═════════════════════════ */
 
-/** One editable line of the previous outstanding (text as typed). */
-class LineDraft(category: String = OpeningCategory.RENT, period: String = "", description: String = "", amount: String = "") {
-    var category by mutableStateOf(category)
-    var period by mutableStateOf(period)
-    var description by mutableStateOf(description)
-    var amount by mutableStateOf(amount)
-    fun toLine() = OpeningLine(category, period.trim(), description.trim(), Money.parse(amount) ?: if (amount.isBlank()) 0.0 else -1.0)
-}
+/** Text the owner typed as an amount: blank / invalid → null, otherwise ≥ 0 rounded to paise. */
+fun previousAmount(text: String): Double? = Money.parse(text.trim())?.takeIf { it >= 0.0 && it <= 10_000_000.0 }
 
 /**
- * The opening-balance form state, kept in the ViewModel so it survives rotation. Same fields as the web form;
- * the server validates and recalculates everything again.
+ * The three details of an existing tenant (Add Tenant form): Previous Outstanding Balance (₹, 0 allowed), Tenant Since
+ * and the room — the same room choice and monthly charges as a normal allocation.
  */
-class OpeningDraft {
-    var asOf by mutableStateOf("")
-    var billingStart by mutableStateOf("")
-    var previousRent by mutableStateOf("")
-    val lines = mutableStateListOf(LineDraft(OpeningCategory.RENT), LineDraft(OpeningCategory.RENT), LineDraft("electricity"))
-    var paidTotal by mutableStateOf("")
-    var paymentsNote by mutableStateOf("")
-    var notes by mutableStateOf("")
-    var depositAgreed by mutableStateOf("")
-    var depositCollected by mutableStateOf("")
-    var filled = false
-
-    fun fill(o: OpeningBalanceInfo) {
-        asOf = o.asOfDate; billingStart = o.billingStart; previousRent = plain(o.previousMonthlyRent)
-        lines.clear(); o.lines.forEach { lines += LineDraft(it.category, it.period, it.description, plain(it.amount)) }
-        if (lines.isEmpty()) lines += LineDraft()
-        paidTotal = o.previousPaidTotal?.let(::plain).orEmpty(); paymentsNote = o.previousPaymentsNote.orEmpty(); notes = o.notes.orEmpty()
-        depositAgreed = plain(o.depositAgreed); depositCollected = plain(o.depositCollected)
-        filled = true
-    }
-
-    fun lineValues(): List<OpeningLine> = lines.map { it.toLine() }
-    fun totals() = OpeningRules.totals(lineValues().filter { it.amount >= 0 })
-
-    fun problems(joiningDate: String?, withDeposit: Boolean): Set<Problem> =
-        OpeningRules.check(asOf.trim(), billingStart.trim(), lineValues(), joiningDate,
-            if (withDeposit) Money.parse(depositAgreed.ifBlank { "0" }) ?: -1.0 else null,
-            if (withDeposit) Money.parse(depositCollected.ifBlank { "0" }) ?: -1.0 else null)
-
-    fun toInput(withDeposit: Boolean) = OpeningInput(
-        asOfDate = asOf.trim(), billingStart = billingStart.trim(), previousMonthlyRent = Money.parse(previousRent) ?: 0.0,
-        lines = OpeningRules.effectiveLines(lineValues()), previousPaidTotal = Money.parse(paidTotal),
-        previousPaymentsNote = paymentsNote.trim(), notes = notes.trim(),
-        depositAgreed = if (withDeposit) Money.parse(depositAgreed.ifBlank { "0" }) else null,
-        depositCollected = if (withDeposit) Money.parse(depositCollected.ifBlank { "0" }) else null,
-    )
-
-    private fun plain(v: Double): String = if (v == Math.floor(v)) v.toLong().toString() else v.toString()
-}
-
-@Composable
-private fun categoryLabel(key: String): String = stringResource(when (key) {
-    "rent" -> R.string.ob_cat_rent; "electricity" -> R.string.ob_cat_electricity; "water" -> R.string.ob_cat_water
-    "maintenance" -> R.string.ob_cat_maintenance; else -> R.string.ob_cat_other
-})
-
-@Composable
-private fun problemText(p: Problem): String = stringResource(when (p) {
-    Problem.AS_OF_DATE -> R.string.ob_err_as_of
-    Problem.AS_OF_FUTURE -> R.string.ob_err_as_of_future
-    Problem.AS_OF_BEFORE_JOIN -> R.string.ob_err_as_of_before_join
-    Problem.BILLING_START -> R.string.ob_err_start
-    Problem.BILLING_START_BEFORE_AS_OF -> R.string.ob_err_start_before
-    Problem.BILLING_START_TOO_LATE -> R.string.ob_err_start_late
-    Problem.LINE_AMOUNT -> R.string.ob_err_line_amount
-    Problem.LINE_MONTH -> R.string.ob_err_line_month
-    Problem.LINE_MONTH_BILLED -> R.string.ob_err_line_billed
-    Problem.DEPOSIT -> R.string.ob_err_deposit
-})
-
-/** Opening-balance fields (used by the Add Tenant form and the record / edit screen). */
-@Composable
-fun OpeningFields(draft: OpeningDraft, tried: Boolean, problems: Set<Problem>, showDeposit: Boolean, depositLocked: Boolean = false) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        FormField(draft.asOf, { v ->
-            draft.asOf = v.filter { it.isDigit() || it == '-' }.take(10)
-            if (draft.billingStart.isBlank()) OpeningRules.defaultBillingStart(draft.asOf)?.let { draft.billingStart = it }
-        }, stringResource(R.string.ob_as_of), tried && (Problem.AS_OF_DATE in problems || Problem.AS_OF_FUTURE in problems || Problem.AS_OF_BEFORE_JOIN in problems),
-            supporting = stringResource(R.string.ob_as_of_hint))
-        FormField(draft.billingStart, { v -> draft.billingStart = v.filter { it.isDigit() || it == '-' }.take(7) }, stringResource(R.string.ob_billing_start),
-            tried && problems.any { it in setOf(Problem.BILLING_START, Problem.BILLING_START_BEFORE_AS_OF, Problem.BILLING_START_TOO_LATE) },
-            supporting = stringResource(R.string.ob_billing_start_hint))
-        FormField(draft.previousRent, { draft.previousRent = amountInput(it) }, stringResource(R.string.ob_previous_rent), keyboard = KeyboardType.Decimal,
-            supporting = stringResource(R.string.ob_previous_rent_hint))
-
-        Text(stringResource(R.string.ob_lines_title), style = MaterialTheme.typography.titleMedium)
-        draft.lines.forEachIndexed { i, l ->
-            AppCard {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.ob_line_n, i + 1), fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                        IconButton(onClick = { if (draft.lines.size > 1) draft.lines.removeAt(i) else { l.amount = ""; l.period = ""; l.description = "" } }) {
-                            Icon(Icons.Filled.Close, stringResource(R.string.ob_remove_line))
-                        }
-                    }
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        OpeningCategory.ALL.forEach { c ->
-                            FilterChip(selected = l.category == c, onClick = { l.category = c }, label = { Text(categoryLabel(c), style = MaterialTheme.typography.labelSmall) })
-                        }
-                    }
-                    FormField(l.period, { v -> l.period = v.filter { it.isDigit() || it == '-' }.take(7) }, stringResource(R.string.ob_line_month),
-                        tried && l.period.isNotBlank() && (OpeningRules.yearMonth(l.period) == null || Problem.LINE_MONTH_BILLED in problems && OpeningRules.yearMonth(draft.billingStart)?.let { s -> OpeningRules.yearMonth(l.period)?.isBefore(s) == false } == true))
-                    FormField(l.description, { l.description = it.take(120) }, stringResource(R.string.ob_line_details))
-                    FormField(l.amount, { l.amount = amountInput(it) }, stringResource(R.string.amount),
-                        tried && (l.period.isNotBlank() || l.description.isNotBlank() || l.amount.isNotBlank()) && (Money.parse(l.amount) ?: 0.0) <= 0.0, KeyboardType.Decimal)
-                }
-            }
-        }
-        OutlinedButton(onClick = { draft.lines += LineDraft("other") }) { Icon(Icons.Filled.Add, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.ob_add_line)) }
-        val t = draft.totals()
-        AppCard {
-            Column {
-                LabelValue(stringResource(R.string.ob_total_rent), Money.format(t.rent))
-                LabelValue(stringResource(R.string.ob_total_other), Money.format(t.other))
-                LabelValue(stringResource(R.string.ob_total), Money.format(t.total), Palette.Danger, bold = true)
-            }
-        }
-        if (showDeposit) {
-            FormField(draft.depositAgreed, { draft.depositAgreed = amountInput(it) }, stringResource(R.string.ob_deposit_agreed), tried && Problem.DEPOSIT in problems,
-                KeyboardType.Decimal, enabled = !depositLocked)
-            FormField(draft.depositCollected, { draft.depositCollected = amountInput(it) }, stringResource(R.string.ob_deposit_collected), tried && Problem.DEPOSIT in problems,
-                KeyboardType.Decimal, enabled = !depositLocked)
-            val pending = ((Money.parse(draft.depositAgreed) ?: 0.0) - (Money.parse(draft.depositCollected) ?: 0.0)).coerceAtLeast(0.0)
-            LabelValue(stringResource(R.string.ob_deposit_pending), Money.format(pending), if (pending > 0) Palette.Danger else Color.Unspecified, bold = true)
-            if (depositLocked) Text(stringResource(R.string.ob_deposit_locked), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        FormField(draft.paidTotal, { draft.paidTotal = amountInput(it) }, stringResource(R.string.ob_paid_total), keyboard = KeyboardType.Decimal,
-            supporting = stringResource(R.string.ob_paid_total_hint))
-        FormField(draft.paymentsNote, { draft.paymentsNote = it.take(500) }, stringResource(R.string.ob_payments_note), singleLine = false, minLines = 2)
-        FormField(draft.notes, { draft.notes = it.take(1000) }, stringResource(R.string.ob_notes), singleLine = false, minLines = 2)
-        if (tried) problems.forEach { Text(problemText(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-    }
-}
-
-/** Room, joining date, monthly charges and the opening balance of an existing tenant (Add Tenant form). */
 @Composable
 fun ExistingTenantSection(
     rooms: List<Property>, charges: List<Charge>, propertyId: Int, onProperty: (Int) -> Unit,
-    joiningDate: String, onJoiningDate: (String) -> Unit, chosen: Map<Int, Boolean>, onCharge: (Int, Boolean) -> Unit,
-    draft: OpeningDraft, tried: Boolean, problems: Set<Problem>,
+    tenantSince: String, onTenantSince: (String) -> Unit, chosen: Map<Int, Boolean>, onCharge: (Int, Boolean) -> Unit,
+    previous: String, onPrevious: (String) -> Unit, tried: Boolean,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        HorizontalDivider()
-        Text(stringResource(R.string.ob_room_title), style = MaterialTheme.typography.titleMedium)
-        ChoiceField(stringResource(R.string.room), rooms.map { it.id to "${it.propertyCode} · ${it.city} · ${Money.format(it.baseRent, decimals = 0)}" }, propertyId,
-            { id -> onProperty(id); if (draft.previousRent.isBlank()) rooms.firstOrNull { it.id == id }?.let { r -> draft.previousRent = Money.format(r.baseRent, withSymbol = false, decimals = 0).replace(",", "") } },
-            isError = tried && propertyId == 0, emptyText = stringResource(R.string.ob_no_vacant_room))
-        FormField(joiningDate, { onJoiningDate(it.filter { c -> c.isDigit() || c == '-' }.take(10)) }, stringResource(R.string.ob_joining_date),
-            tried && (Dates.parse(joiningDate) == null || Dates.parse(joiningDate)!!.isAfter(java.time.LocalDate.now())), supporting = stringResource(R.string.ob_joining_hint))
-        if (charges.isNotEmpty()) {
-            Text(stringResource(R.string.ob_monthly_charges), style = MaterialTheme.typography.titleSmall)
-            charges.forEach { ch ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = chosen[ch.id] != false, onCheckedChange = { onCharge(ch.id, it) })
-                    Text(ch.name + " · " + if (ch.isVariable) stringResource(R.string.per_unit_x, Money.format(ch.ratePerUnit ?: 0.0), ch.unitLabel ?: "unit") else Money.format(ch.fixedAmount ?: 0.0))
+    val sinceDate = Dates.parse(tenantSince)
+    val sinceOk = sinceDate != null && !sinceDate.isAfter(java.time.LocalDate.now())
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Book, null, tint = Palette.Warning); Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.ex_title), style = MaterialTheme.typography.titleMedium)
+            }
+            Text(stringResource(R.string.ex_sub), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            FormField(previous, { onPrevious(amountInput(it)) }, stringResource(R.string.ex_previous), tried && previousAmount(previous) == null,
+                KeyboardType.Decimal, supporting = stringResource(R.string.ex_previous_hint))
+            FormField(tenantSince, { onTenantSince(it.filter { c -> c.isDigit() || c == '-' }.take(10)) }, stringResource(R.string.ex_since),
+                tried && !sinceOk, supporting = stringResource(R.string.ex_since_hint))
+            ChoiceField(stringResource(R.string.ex_room), rooms.map { it.id to "${it.propertyCode} · ${it.city} · ${Money.format(it.baseRent, decimals = 0)}" }, propertyId,
+                onProperty, isError = tried && propertyId == 0, emptyText = stringResource(R.string.ob_no_vacant_room))
+            if (charges.isNotEmpty()) {
+                Text(stringResource(R.string.monthly_charges), style = MaterialTheme.typography.titleSmall)
+                charges.forEach { ch ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = chosen[ch.id] != false, onCheckedChange = { onCharge(ch.id, it) })
+                        Text(ch.name + " · " + if (ch.isVariable) stringResource(R.string.per_unit_x, Money.format(ch.ratePerUnit ?: 0.0), ch.unitLabel ?: "unit") else Money.format(ch.fixedAmount ?: 0.0))
+                    }
                 }
             }
         }
-        HorizontalDivider()
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Book, null, tint = Palette.Warning); Spacer(Modifier.width(6.dp))
-            Text(stringResource(R.string.ob_section_title), style = MaterialTheme.typography.titleMedium)
-        }
-        OpeningFields(draft, tried, problems, showDeposit = true)
     }
 }
 
@@ -256,23 +126,30 @@ fun ExistingTenantSection(
 class OpeningBalanceViewModel @Inject constructor(
     handle: SavedStateHandle,
     private val getOpening: GetOpeningBalanceUseCase,
-    private val saveOpening: SaveOpeningBalanceUseCase,
+    private val saveOpening: SaveSimpleOpeningUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val id: Int = handle.intArg()
     val allocationId: Int = handle.intArg("allocationId")
-    val draft = OpeningDraft()
     val opening = loadable(autoLoad = id > 0) { getOpening(id) }
     val saveAction = action<OpeningBalanceInfo>()
+    var amount by mutableStateOf("")
     var reason by mutableStateOf("")
+    var filled = false
 
-    fun save(withDeposit: Boolean) = saveAction.run(onSuccess = { o ->
-        draft.fill(o); reason = ""
-        if (id == 0) sendEvent(ScreenEvent.Saved) else opening.refresh()
-    }) { saveOpening(id, allocationId, draft.toInput(withDeposit), reason) }
+    fun fill(o: OpeningBalanceInfo) {
+        if (filled) return
+        amount = if (o.totalOutstanding == Math.floor(o.totalOutstanding)) o.totalOutstanding.toLong().toString() else o.totalOutstanding.toString()
+        filled = true
+    }
+
+    fun save() {
+        val a = previousAmount(amount) ?: return
+        saveAction.run(onSuccess = { reason = ""; if (id == 0) sendEvent(ScreenEvent.Saved) else opening.refresh() }) { saveOpening(id, allocationId, a, reason) }
+    }
 }
 
-/** Opening balance of one tenancy: record it (allocationId) or view / edit it (id) with the change history. */
+/** Previous outstanding balance of one tenancy: record it (allocationId) or view / change it (id) with the change history. */
 @Composable
 fun OpeningBalanceScreen(onBack: () -> Unit, onSaved: () -> Unit = onBack, openInvoice: (Int) -> Unit = {}) {
     val model: OpeningBalanceViewModel = hiltViewModel()
@@ -281,16 +158,16 @@ fun OpeningBalanceScreen(onBack: () -> Unit, onSaved: () -> Unit = onBack, openI
     EventEffect(model) { if (it == ScreenEvent.Saved) onSaved() }
     var tried by rememberSaveable { mutableStateOf(false) }
     val current = (state as? UiState.Data)?.value
-    LaunchedEffect(current) { if (current != null && !model.draft.filled) model.draft.fill(current) }
+    LaunchedEffect(current) { if (current != null) model.fill(current) }
 
-    ScreenScaffold(stringResource(R.string.ob_title), onBack = onBack) { pad ->
+    ScreenScaffold(stringResource(R.string.ex_screen_title), onBack = onBack) { pad ->
         if (model.id > 0 && current == null) {
             val failed = state as? UiState.Error
             if (failed != null) ErrorBox(failed.error, onRetry = model.opening::refresh, modifier = Modifier.padding(pad)) else LoadingBox(Modifier.padding(pad))
             return@ScreenScaffold
         }
-        val withDeposit = current != null && current.depositEditable
-        val problems = model.draft.problems(current?.joiningDate, withDeposit)
+        val amountOk = previousAmount(model.amount) != null
+        val reasonOk = current == null || model.reason.trim().length >= 3
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (current != null) {
                 AppCard {
@@ -301,8 +178,7 @@ fun OpeningBalanceScreen(onBack: () -> Unit, onSaved: () -> Unit = onBack, openI
                         }
                         Spacer(Modifier.height(6.dp))
                         LabelValue(stringResource(R.string.property), current.propertyCode ?: "—")
-                        LabelValue(stringResource(R.string.ob_as_of), dateText(current.asOfDate))
-                        LabelValue(stringResource(R.string.ob_billing_start), current.billingStartLabel)
+                        current.joiningDate?.let { LabelValue(stringResource(R.string.ex_since_short), dateText(it)) }
                         LabelValue(stringResource(R.string.ob_migration_date), dateText(current.migrationDate))
                         LabelValue(stringResource(R.string.ob_opening_balance), Money.format(current.totalOutstanding), bold = true)
                         LabelValue(stringResource(R.string.ob_paid_against), Money.format(current.paid), Palette.Success)
@@ -311,16 +187,17 @@ fun OpeningBalanceScreen(onBack: () -> Unit, onSaved: () -> Unit = onBack, openI
                     }
                 }
             } else {
-                Text(stringResource(R.string.ob_record_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.ex_record_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (current == null || current.editable) {
                 if (current != null && current.paid > 0) Text(stringResource(R.string.ob_paid_floor, Money.format(current.paid)), style = MaterialTheme.typography.bodyMedium, color = Palette.Warning)
-                OpeningFields(model.draft, tried, problems, showDeposit = current != null, depositLocked = current != null && !current.depositEditable)
-                if (current != null) FormField(model.reason, { model.reason = it.take(500) }, stringResource(R.string.ob_reason), tried && model.reason.trim().length < 3)
+                FormField(model.amount, { model.amount = amountInput(it) }, stringResource(R.string.ex_previous), tried && !amountOk, KeyboardType.Decimal,
+                    supporting = stringResource(R.string.ex_previous_hint))
+                if (current != null) FormField(model.reason, { model.reason = it.take(500) }, stringResource(R.string.ob_reason), tried && !reasonOk)
                 ActionError(act)
                 SubmitButton(stringResource(if (current != null) R.string.ob_save_changes else R.string.ob_save_new), act) {
                     tried = true
-                    if (problems.isEmpty() && (current == null || model.reason.trim().length >= 3)) model.save(withDeposit)
+                    if (amountOk && reasonOk) model.save()
                 }
             } else {
                 Text(stringResource(R.string.ob_locked), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -338,6 +215,84 @@ fun OpeningBalanceScreen(onBack: () -> Unit, onSaved: () -> Unit = onBack, openI
                     }
                 }
             }
+        }
+    }
+}
+
+/* ───────── 1.12.1 Contact Support (support person set by the Super Admin) ───────── */
+
+@HiltViewModel
+class ContactSupportViewModel @Inject constructor(getSupport: GetSupportUseCase, expiry: SessionExpiryHandler) : BaseViewModel(expiry) {
+    /** Read from the server every time the screen opens, so an admin change shows without an app update. */
+    val support = loadable { getSupport() }
+}
+
+/** Opens the phone app with the number filled in (the owner presses call) — never calls by itself. */
+fun supportDialIntent(telUrl: String): android.content.Intent =
+    android.content.Intent(android.content.Intent.ACTION_DIAL, android.net.Uri.parse(telUrl)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+
+fun dialSupport(ctx: android.content.Context, telUrl: String): Boolean = runCatching { ctx.startActivity(supportDialIntent(telUrl)); true }.getOrDefault(false)
+
+/** Opens WhatsApp (or wa.me in the browser) with the prefilled message; the owner reviews it and presses send. */
+fun supportWhatsAppIntent(url: String): android.content.Intent =
+    android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+
+fun openWhatsAppSupport(ctx: android.content.Context, url: String): Boolean = runCatching { ctx.startActivity(supportWhatsAppIntent(url)); true }.getOrDefault(false)
+
+@Composable
+fun ContactSupportScreen(onBack: () -> Unit) {
+    val model: ContactSupportViewModel = hiltViewModel()
+    val state by model.support.state.collectAsStateWithLifecycle()
+    ScreenScaffold(stringResource(R.string.sup_title), onBack = onBack) { pad ->
+        com.genusit.prms.ui.common.StateContent(state, model.support::refresh, Modifier.padding(pad)) { s ->
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SupportCard(s)
+            }
+        }
+    }
+}
+
+/** Support details with Call / WhatsApp; a short message when support is off or not set up. */
+@Composable
+fun SupportCard(s: com.genusit.prms.domain.model.SupportInfo) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var failed by rememberSaveable { mutableStateOf(false) }
+    AppCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (!s.usable) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.SupportAgent, null, tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.width(10.dp))
+                    Text(s.message ?: stringResource(R.string.sup_not_set), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                return@Column
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                com.genusit.prms.ui.common.IconBadge(Icons.Filled.SupportAgent, Palette.Brand)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(s.name.orEmpty(), style = MaterialTheme.typography.titleMedium)
+                    s.hours?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+                StatusChip(if (s.available) "active" else "inactive", s.availabilityLabel)
+            }
+            if (!s.available) Text(stringResource(R.string.sup_unavailable_note), style = MaterialTheme.typography.bodyMedium, color = Palette.Warning)
+            s.phone?.let { LabelValue(stringResource(R.string.sup_mobile), it) }
+            s.whatsapp?.let { LabelValue(stringResource(R.string.sup_whatsapp), it) }
+            s.email?.let { LabelValue(stringResource(R.string.email), it) }
+            s.instructions?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+            s.telUrl?.let { url ->
+                androidx.compose.material3.Button(onClick = { failed = !dialSupport(ctx, url) }, modifier = Modifier.fillMaxWidth().height(50.dp)) {
+                    Icon(Icons.Filled.Call, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.sup_call), fontWeight = FontWeight.Bold)
+                }
+            }
+            s.whatsappUrl?.let { url ->
+                androidx.compose.material3.Button(onClick = { failed = !openWhatsAppSupport(ctx, url) }, modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Palette.Success)) {
+                    Icon(Icons.Filled.Chat, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.sup_whatsapp_btn), fontWeight = FontWeight.Bold)
+                }
+            }
+            Text(stringResource(R.string.sup_confirm_note), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (failed) Text(stringResource(R.string.sup_open_failed), color = MaterialTheme.colorScheme.error)
         }
     }
 }

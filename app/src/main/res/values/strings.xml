@@ -795,4 +795,30 @@
     <string name="ob_view">View</string>
     <string name="ob_record">Record previous balance</string>
     <string name="ob_entry_note">Opening Balance – Migrated: outstanding from before Rental Solution. It is changed only from the tenant\'s opening balance (with a reason).</string>
+    <!-- 1.12.1 existing tenant (simple), support person, quick actions -->
+    <string name="ex_title">Existing tenant details</string>
+    <string name="ex_sub">Only three details: what was pending before, since when the tenant stays, and the room.</string>
+    <string name="ex_previous">Previous Outstanding Balance (₹)</string>
+    <string name="ex_previous_hint">Total still pending from previous months. Enter 0 if nothing is pending.</string>
+    <string name="ex_since">Tenant Since (YYYY-MM-DD)</string>
+    <string name="ex_since_short">Tenant since</string>
+    <string name="ex_since_hint">The date the tenant started staying in this room</string>
+    <string name="ex_room">Room Allocation</string>
+    <string name="ex_screen_title">Previous Outstanding Balance</string>
+    <string name="ex_record_hint">For a tenant who stayed in this room before you started using Rental Solution: enter what was still pending. It is added to the next bill as previous balance.</string>
+    <string name="sup_title">Contact Support</string>
+    <string name="sup_menu_sub">Call or WhatsApp our support person</string>
+    <string name="sup_need_help">Need help with Rental Solution?</string>
+    <string name="sup_need_help_sub">Call or WhatsApp our support person</string>
+    <string name="sup_not_set">Support details have not been set up yet. Please try again later.</string>
+    <string name="sup_unavailable_note">Support is not available at the moment. You can still leave a WhatsApp message.</string>
+    <string name="sup_mobile">Mobile</string>
+    <string name="sup_whatsapp">WhatsApp</string>
+    <string name="sup_call">Call Support</string>
+    <string name="sup_whatsapp_btn">WhatsApp Support</string>
+    <string name="sup_confirm_note">Calling opens your phone app; WhatsApp opens with a message you can edit before sending.</string>
+    <string name="sup_open_failed">Could not open the app on this phone.</string>
+    <string name="qa_add_tenant">Add Tenant</string>
+    <string name="qa_collect">Collect Rent</string>
+    <string name="qa_add_room">Add Room</string>
 </resources>

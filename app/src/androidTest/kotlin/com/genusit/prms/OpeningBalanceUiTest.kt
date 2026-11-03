@@ -14,6 +14,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -23,20 +24,23 @@ import com.genusit.prms.domain.model.DepositSummary
 import com.genusit.prms.domain.model.OpeningBalanceInfo
 import com.genusit.prms.domain.model.OpeningLine
 import com.genusit.prms.domain.model.Property
+import com.genusit.prms.domain.model.SupportInfo
 import com.genusit.prms.domain.model.TenantMoneySummary
-import com.genusit.prms.domain.util.OpeningRules
 import com.genusit.prms.ui.owner.ExistingTenantSection
-import com.genusit.prms.ui.owner.LineDraft
-import com.genusit.prms.ui.owner.OpeningDraft
+import com.genusit.prms.ui.owner.SupportCard
 import com.genusit.prms.ui.owner.TenantMoneyCard
+import com.genusit.prms.ui.owner.previousAmount
+import com.genusit.prms.ui.owner.supportDialIntent
+import com.genusit.prms.ui.owner.supportWhatsAppIntent
 import com.genusit.prms.ui.theme.PrmsTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** 1.12: existing-tenant form (room, deposit, month-wise previous balance) and the tenant money summary. */
+/** 1.12.1: simple existing-tenant form (previous outstanding, tenant since, room), Contact Support card, tenant money summary. */
 @RunWith(AndroidJUnit4::class)
 class OpeningBalanceUiTest {
     @get:Rule val rule = createComposeRule()
@@ -46,10 +50,10 @@ class OpeningBalanceUiTest {
         InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("screencap -p /data/local/tmp/$name.png").close()
     }
 
-    @Test fun existingTenantFormComputesTheOpeningBalance() {
-        val draft = OpeningDraft()
+    @Test fun existingTenantFormAsksOnlyThreeDetails() {
         val prop = mutableStateOf(0)
-        val join = mutableStateOf("2025-06-01")
+        val since = mutableStateOf("2025-06-01")
+        val prev = mutableStateOf("")
         val chosen = mutableStateMapOf<Int, Boolean>()
         val rooms = listOf(Property(id = 1, propertyCode = "R1", city = "Indore", baseRent = 4000.0, status = "available"))
         val charges = listOf(Charge(id = 4, name = "Electricity", chargeType = "fixed", fixedAmount = 500.0))
@@ -57,31 +61,49 @@ class OpeningBalanceUiTest {
             PrmsTheme {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ExistingTenantSection(rooms, charges, prop.value, { prop.value = it }, join.value, { join.value = it }, chosen, { id, on -> chosen[id] = on },
-                            draft, tried = true, problems = draft.problems(join.value, withDeposit = true))
+                        ExistingTenantSection(rooms, charges, prop.value, { prop.value = it }, since.value, { since.value = it }, chosen, { id, on -> chosen[id] = on },
+                            prev.value, { prev.value = it }, tried = true)
                     }
                 }
             }
         }
-        rule.runOnIdle {
-            draft.asOf = "2026-10-31"; draft.billingStart = "2026-11"
-            draft.lines.clear()
-            draft.lines += LineDraft("rent", "2026-09", "", "4000")
-            draft.lines += LineDraft("rent", "2026-10", "", "4000")
-            draft.lines += LineDraft("electricity", "2026-10", "", "500")
-            draft.depositAgreed = "8000"; draft.depositCollected = "5000"
-        }
+        rule.onAllNodesWithText("Previous Outstanding Balance (₹)").onFirst().assertIsDisplayed()
+        rule.onAllNodesWithText("Tenant Since (YYYY-MM-DD)").onFirst().assertIsDisplayed()
+        rule.onAllNodesWithText("Room Allocation").onFirst().performScrollTo().assertIsDisplayed()
+        // no deposit fields and no month-wise lines any more
+        assertEquals(0, rule.onAllNodesWithText("Deposit", substring = true).fetchSemanticsNodes().size)
+        assertEquals(0, rule.onAllNodesWithText("Add line", substring = true).fetchSemanticsNodes().size)
+        rule.runOnIdle { prev.value = "5000"; prop.value = 1 }
         rule.waitForIdle()
-        rule.onAllNodesWithText("₹8,500.00").onFirst().performScrollTo().assertIsDisplayed()       // total previous outstanding
-        rule.onAllNodesWithText("₹3,000.00").onFirst().performScrollTo().assertIsDisplayed() // deposit pending
         shot("existing-tenant-form")
-        val input = draft.toInput(withDeposit = true)
-        assertEquals(8500.0, OpeningRules.totals(input.lines).total, 0.001)
-        assertEquals(5000.0, input.depositCollected!!, 0.001)
-        assertTrue(draft.problems("2025-06-01", withDeposit = true).isEmpty())
-        // a month billed in Rental Solution cannot be part of the previous balance
-        rule.runOnIdle { draft.lines += LineDraft("rent", "2026-11", "", "4000") }
-        assertTrue(OpeningRules.Problem.LINE_MONTH_BILLED in draft.problems("2025-06-01", withDeposit = true))
+        assertEquals(5000.0, previousAmount(prev.value)!!, 0.001)
+        assertEquals(0.0, previousAmount("0")!!, 0.001)       // zero is allowed
+        assertNull(previousAmount(""))                           // empty is not
+        assertNull(previousAmount("-5"))                         // negative is not
+    }
+
+    @Test fun supportCardShowsCallAndWhatsApp() {
+        val wa = "https://wa.me/919876543211?text=Hello%2C%20I%20am%20using%20Rental%20Solution."
+        val on = SupportInfo(enabled = true, configured = true, name = "Priya Support", phone = "98765 43210", whatsapp = "9876543211",
+            hours = "Mon–Sat, 10 AM – 7 PM", available = true, availabilityLabel = "Available", telUrl = "tel:+919876543210", whatsappUrl = wa)
+        val state = mutableStateOf(on)
+        rule.setContent { PrmsTheme { Surface(Modifier.fillMaxSize()) { Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) { SupportCard(state.value) } } } }
+        rule.onNodeWithText("Priya Support").assertIsDisplayed()
+        rule.onNodeWithText("Call Support").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("WhatsApp Support").performScrollTo().assertIsDisplayed()
+        shot("contact-support")
+        // the buttons open the dialer / WhatsApp with exactly the server's number and message; nothing is dialled or sent
+        val dial = supportDialIntent(on.telUrl!!)
+        assertEquals(android.content.Intent.ACTION_DIAL, dial.action); assertEquals("tel:+919876543210", dial.dataString)
+        val chat = supportWhatsAppIntent(on.whatsappUrl!!)
+        assertEquals(android.content.Intent.ACTION_VIEW, chat.action); assertEquals(wa, chat.dataString)
+        assertTrue(chat.data!!.getQueryParameter("text")!!.startsWith("Hello, I am using Rental Solution"))
+        // the Super Admin switches support off: the actions disappear, a message is shown
+        rule.runOnIdle { state.value = SupportInfo(enabled = false, configured = false, message = "Support contact is not available right now. Please try again later.") }
+        rule.onNodeWithText("Support contact is not available right now. Please try again later.").assertIsDisplayed()
+        assertEquals(0, rule.onAllNodesWithText("Call Support").fetchSemanticsNodes().size)
+        assertEquals(0, rule.onAllNodesWithText("WhatsApp Support").fetchSemanticsNodes().size)
+        shot("contact-support-off")
     }
 
     @Test fun moneySummaryOfAMigratedTenant() {

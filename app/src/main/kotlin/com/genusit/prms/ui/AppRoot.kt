@@ -276,6 +276,10 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     openPayments = { nav.navigate("owner/payments?period=month") },
                     openReports = { nav.navigate("owner/reports") },
                     generateBill = { nav.navigate("owner/generate") },
+                    addTenant = { nav.navigate("owner/tenant-form/0") },
+                    collectPayment = { nav.navigate(Routes.OWNER_COLLECT) },
+                    addProperty = { nav.navigate("owner/property/new") },
+                    openSupport = { nav.navigate("owner/support") },
                 )
             }
             composable(Routes.OWNER_TENANTS) { OwnerTenantsScreen(openTenant = { nav.navigate("owner/tenant/$it") }, addTenant = { nav.navigate("owner/tenant-form/0") }) }
@@ -332,6 +336,8 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                 EditPropertyScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onDone = back)
             }
             composable("owner/charges") { ChargesScreen(onBack = back) }
+            // 1.12.1: support person set by the Super Admin (Call / WhatsApp)
+            composable("owner/support") { com.genusit.prms.ui.owner.ContactSupportScreen(onBack = back) }
             composable("owner/allocations") {
                 AllocationsScreen(onBack = back, newAllocation = { nav.navigate("owner/allocation/new") }, generateInvoice = { id -> nav.navigate("owner/generate/$id") },
                     openDetail = { id -> nav.navigate("owner/allocation/$id") }, vacate = { id -> nav.navigate("owner/vacate/$id") })

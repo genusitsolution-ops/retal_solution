@@ -38,16 +38,48 @@ data class OpeningInput(
     @SerialName("deposit_collected") val depositCollected: Double? = null,
 )
 
-/** Room + opening balance of an existing tenant, sent with the new tenant (owner/tenants.php, tenant_type "existing"). */
+/**
+ * Room + opening balance of an existing tenant, sent with the new tenant (owner/tenants.php, tenant_type "existing").
+ * 1.12.1 simple form: [previousOutstanding] (₹, zero allowed) + [joiningDate] ("Tenant Since") + room. The 1.12.0
+ * detailed form ([opening] with lines and deposit) is still accepted by the server.
+ */
 @Serializable
 data class MigrationInput(
     @SerialName("property_id") val propertyId: Int,
     @SerialName("joining_date") val joiningDate: String,
     @SerialName("charge_ids") val chargeIds: List<Int> = emptyList(),
-    @SerialName("deposit_agreed") val depositAgreed: Double,
-    @SerialName("deposit_collected") val depositCollected: Double,
-    val opening: OpeningInput,
+    @SerialName("previous_outstanding") val previousOutstanding: Double? = null,
+    @SerialName("deposit_agreed") val depositAgreed: Double? = null,
+    @SerialName("deposit_collected") val depositCollected: Double? = null,
+    val opening: OpeningInput? = null,
 )
+
+/** 1.12.1 simple record / edit of an opening balance: only the total previous outstanding. */
+@Serializable
+data class SimpleOpeningInput(@SerialName("previous_outstanding") val previousOutstanding: Double)
+
+/* ───────── 1.12.1 owner support person (set by the Super Admin) ───────── */
+
+@Serializable
+data class SupportInfo(
+    @Serializable(with = FlexBool::class) val enabled: Boolean = false,
+    @Serializable(with = FlexBool::class) val configured: Boolean = false,
+    val message: String? = null,
+    val name: String? = null,
+    val phone: String? = null,
+    val whatsapp: String? = null,
+    val email: String? = null,
+    val hours: String? = null,
+    @Serializable(with = FlexBool::class) val available: Boolean = false,
+    @SerialName("availability_label") val availabilityLabel: String? = null,
+    val instructions: String? = null,
+    @SerialName("whatsapp_message") val whatsappMessage: String? = null,
+    @SerialName("tel_url") val telUrl: String? = null,
+    @SerialName("whatsapp_url") val whatsappUrl: String? = null,
+) {
+    /** Contact actions are shown only when support is on and has a number. */
+    val usable: Boolean get() = enabled && configured && (telUrl != null || whatsappUrl != null)
+}
 
 @Serializable
 data class OpeningChange(val field: String = "", val label: String = "", val from: String = "", val to: String = "")

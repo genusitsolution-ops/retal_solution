@@ -196,6 +196,16 @@ class SaveOpeningBalanceUseCase @Inject constructor(private val repo: Allocation
         if (id > 0) repo.updateOpening(id, input, reason) else repo.createOpening(allocationId, input)
 }
 
+/** 1.12.1: record / edit an opening balance with only the total previous outstanding. */
+class SaveSimpleOpeningUseCase @Inject constructor(private val repo: AllocationRepository) {
+    suspend operator fun invoke(id: Int, allocationId: Int, amount: Double, reason: String): OpeningBalanceInfo = repo.saveSimpleOpening(id, allocationId, amount, reason)
+}
+
+/** 1.12.1: support person set by the Super Admin. */
+class GetSupportUseCase @Inject constructor(private val repo: AllocationRepository) {
+    suspend operator fun invoke(): SupportInfo = repo.support()
+}
+
 /* ───────── collection agents ───────── */
 
 class GetEmployeesUseCase @Inject constructor(private val repo: TeamRepository) {

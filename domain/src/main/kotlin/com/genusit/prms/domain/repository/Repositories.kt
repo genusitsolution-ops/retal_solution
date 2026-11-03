@@ -125,6 +125,10 @@ interface AllocationRepository {
     suspend fun createOpening(allocationId: Int, input: OpeningInput): OpeningBalanceInfo
     /** Edit with a reason; the server keeps every change. */
     suspend fun updateOpening(id: Int, input: OpeningInput, reason: String): OpeningBalanceInfo
+    /** 1.12.1: record / edit with only the total previous outstanding (id 0 = record for [allocationId]). */
+    suspend fun saveSimpleOpening(id: Int, allocationId: Int, amount: Double, reason: String): OpeningBalanceInfo
+    /** 1.12.1: support person published by the Super Admin (always read fresh from the server). */
+    suspend fun support(): SupportInfo
 }
 
 /** Owner: collection agents. */
