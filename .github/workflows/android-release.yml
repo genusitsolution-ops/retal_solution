@@ -90,10 +90,10 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Release build starts on an emulator (R8-shrunk code, live server)
+      - name: Release build starts on an Android 16 emulator (target API 36, R8-shrunk code, live server)
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: 36
           arch: x86_64
           target: google_apis
           disable-animations: true

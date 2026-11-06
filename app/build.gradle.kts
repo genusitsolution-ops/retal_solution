@@ -18,13 +18,13 @@ fun signingValue(key: String, env: String): String? = keystoreProps.getProperty(
 
 android {
     namespace = "com.genusit.prms"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.genusit.prms"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 15
+        targetSdk = 36
+        versionCode = 16
         versionName = "1.12.1"
         val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://rentalsolution.co.in/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
@@ -61,6 +61,8 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // native libraries come from dependencies (ML Kit, etc.); ship their symbol tables so Play can read native crashes
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             val rel = signingConfigs.getByName("release")
             if (rel.storeFile != null) signingConfig = rel
