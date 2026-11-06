@@ -1,0 +1,108 @@
+# Builds the signed release App Bundle (.aab) for Google Play, plus a signed release APK for checking on a phone.
+# Signing comes only from repository secrets; nothing is printed or committed. Run it from Actions → "Android release (Play)".
+name: Android release (Play)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # draft (team-only) release that carries the .aab
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      PRMS_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      PRMS_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      PRMS_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the signing secrets are set
+        run: |
+          miss=""
+          [ -n "$KS_B64" ] || miss="$miss ANDROID_KEYSTORE_BASE64"
+          [ -n "$PRMS_KEYSTORE_PASSWORD" ] || miss="$miss ANDROID_KEYSTORE_PASSWORD"
+          [ -n "$PRMS_KEY_ALIAS" ] || miss="$miss ANDROID_KEY_ALIAS"
+          [ -n "$PRMS_KEY_PASSWORD" ] || miss="$miss ANDROID_KEY_PASSWORD"
+          if [ -n "$miss" ]; then echo "::error title=Missing secrets::Add these repository secrets:$miss"; exit 1; fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Restore the keystore (runner temp only)
+        run: |
+          echo "$KS_B64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/upload.jks" 2>/dev/null \
+            || { echo "::error title=Keystore::ANDROID_KEYSTORE_BASE64 is not valid base64 of the keystore file"; exit 1; }
+          echo "PRMS_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          if ! keytool -list -keystore "$RUNNER_TEMP/upload.jks" -storepass "$PRMS_KEYSTORE_PASSWORD" -alias "$PRMS_KEY_ALIAS" > /dev/null 2>&1; then
+            if ! keytool -list -keystore "$RUNNER_TEMP/upload.jks" -storepass "$PRMS_KEYSTORE_PASSWORD" > /dev/null 2>&1; then
+              echo "::error title=Keystore::Keystore could not be opened: wrong file or wrong ANDROID_KEYSTORE_PASSWORD"
+            else
+              echo "::error title=Key alias::ANDROID_KEY_ALIAS does not match the alias inside the keystore"
+            fi
+            exit 1
+          fi
+
+      - name: Unit tests
+        run: ./gradlew :domain:test :data:test
+
+      - name: Build signed release bundle and APK
+        run: ./gradlew :app:bundleRelease :app:assembleRelease --stacktrace
+
+      - name: Verify signatures and version
+        run: |
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          jarsigner -verify "$AAB" > /dev/null || { echo "::error title=AAB::bundle is not signed"; exit 1; }
+          BT=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          $ANDROID_HOME/build-tools/$BT/apksigner verify "$APK" || { echo "::error title=APK::APK signature invalid"; exit 1; }
+          SHA=$(keytool -printcert -jarfile "$AAB" | grep -m1 "SHA256:" | sed 's/.*SHA256: //')
+          VER=$($ANDROID_HOME/build-tools/$BT/aapt dump badging "$APK" | head -1)
+          echo "::notice title=Upload certificate SHA-256::$SHA"
+          echo "::notice title=Version::$VER"
+          echo "APK_PATH=$APK" >> "$GITHUB_ENV"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Release build starts on an emulator (R8-shrunk code, live server)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r "$APK_PATH"
+            adb logcat -c
+            adb shell monkey -p com.genusit.prms -c android.intent.category.LAUNCHER 1
+            sleep 25
+            adb shell uiautomator dump /sdcard/ui.xml > /dev/null; adb pull /sdcard/ui.xml ui.xml
+            adb exec-out screencap -p > release-start.png
+            adb logcat -d -b crash > crash.txt || true
+            if grep -q "com.genusit.prms" crash.txt; then echo "::error title=Crash::release build crashed on start"; head -40 crash.txt; exit 1; fi
+            if adb shell pidof com.genusit.prms > /dev/null; then echo "::notice title=Emulator::release build is running, no crash"; else echo "::error title=Emulator::app is not running"; exit 1; fi
+
+      - name: Publish as a draft release (visible to repository members only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(grep -m1 'versionName = ' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
+          C=$(grep -m1 'versionCode = ' app/build.gradle.kts | sed 's/[^0-9]//g')
+          cp app/build/outputs/bundle/release/app-release.aab "RentalSolution-$V-$C.aab"
+          cp "$APK_PATH" "RentalSolution-$V-$C-release.apk"
+          gh release create "android-release-$V-$C-${{ github.run_number }}" "RentalSolution-$V-$C.aab" "RentalSolution-$V-$C-release.apk" release-start.png \
+            --draft --target "${{ github.sha }}" --title "Play release $V ($C)" --notes "Signed release bundle for Google Play, built from ${{ github.sha }}"
+
+      - name: Remove the keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks"
