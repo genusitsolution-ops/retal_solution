@@ -1,5 +1,5 @@
 # Google Play store screenshots of the real app: debug build → replay server with a made-up demo owner
-# (tools/store-screens). Phone 1080×1920, 7-inch tablet 1215×2160, 10-inch tablet 1440×2560 (all 9:16).
+# (tools/store-screens). Phone 1080×1920 (420 dpi), 7-inch tablet 1080×1920 (280 dpi, 617 dp wide), 10-inch tablet 1440×2560 (240 dpi) (all 9:16).
 name: Store screenshots
 
 on:
@@ -22,8 +22,8 @@ jobs:
             skin: ""
             density: ""
           - device: tablet7
-            skin: "-skin 1215x2160"
-            density: "320"
+            skin: ""
+            density: "280"
           - device: tablet10
             skin: "-skin 1440x2560"
             density: "240"
@@ -61,7 +61,7 @@ jobs:
             adb shell am broadcast -a com.android.systemui.demo -e command battery -e level 100 -e plugged false || true
             adb shell am broadcast -a com.android.systemui.demo -e command network -e wifi show -e level 4 || true
             adb shell am broadcast -a com.android.systemui.demo -e command notifications -e visible false || true
-            ./gradlew :app:connectedDebugAndroidTest -Pprms.apiBaseUrlDebug=http://10.0.2.2:8090/api/v1/ -Pandroid.testInstrumentationRunnerArguments.class=com.genusit.prms.StoreScreenshotsTest -Pandroid.testInstrumentationRunnerArguments.storeShots=true || echo "::error title=Store shots::test failed on ${{ matrix.device }}"
+            ./gradlew :app:connectedDebugAndroidTest -Pprms.apiBaseUrlDebug=http://10.0.2.2:8090/api/v1/ -Pandroid.testInstrumentationRunnerArguments.class=com.genusit.prms.StoreScreenshotsTest -Pandroid.testInstrumentationRunnerArguments.storeShots=true || { echo "::error title=Store shots::test failed on ${{ matrix.device }}"; adb exec-out screencap -p > /tmp/fail.png; adb push /tmp/fail.png /data/local/tmp/store-zz-failure.png; }
             mkdir -p out && for f in $(adb shell ls /data/local/tmp/ | tr -d '\r' | grep '^store-'); do adb pull /data/local/tmp/$f out/${{ matrix.device }}-${f#store-}; done
       - name: Check sizes and list replay misses
         run: |

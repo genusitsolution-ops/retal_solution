@@ -8,8 +8,11 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.swipeDown
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -39,6 +42,23 @@ class StoreScreenshotsTest {
 
     private fun back() { InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("input keyevent 4").close(); Thread.sleep(1500); rule.waitForIdle() }
 
+    private fun has(text: String) = rule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
+
+    /** Lazy lists only build visible rows: swipe up until [text] appears. */
+    private fun scrollTo(text: String) {
+        repeat(10) { if (has(text)) return; rule.onRoot().performTouchInput { swipeUp() }; rule.waitForIdle(); Thread.sleep(400) }
+        waitText(text, 5_000)
+    }
+
+    private fun toTop() { repeat(6) { rule.onRoot().performTouchInput { swipeDown() } }; rule.waitForIdle() }
+
+    /** Waits for the first of [names] that shows up and returns it. */
+    private fun waitAny(names: List<String>, timeout: Long = 20_000): String {
+        var hit = ""
+        rule.waitUntil(timeout) { names.firstOrNull { has(it) }?.also { hit = it } != null }
+        return hit
+    }
+
     private fun tab(label: String) { rule.onAllNodesWithText(label).onFirst().performClick(); rule.waitForIdle() }
 
     @Test fun captureStoreScreens() {
@@ -52,21 +72,22 @@ class StoreScreenshotsTest {
         rule.onAllNodes(hasSetTextAction())[1].performTextInput("demo-password")
         rule.onNode(hasText("Sign in") and hasClickAction()).performClick()
 
-        waitText("Hello"); waitText("Recent bills", 30_000)
+        waitText("Hello", 30_000); waitText("Collected", 30_000)
         shot("01-home")
 
         tab("Tenants"); waitText("Amit Verma"); shot("02-tenants")
 
-        tab("Bills"); waitText("Kavita Singh"); shot("03-bills")
-        first("Kavita Singh").performClick(); waitText("Total"); shot("04-bill-detail")
+        val names = listOf("Kavita Singh", "Amit Verma", "Priya Joshi", "Neha Gupta", "Sandeep Yadav", "Rohit Patel", "Manish Tiwari")
+        tab("Bills"); val who = waitAny(names); shot("03-bills")
+        first(who).performClick(); waitText("Total"); shot("04-bill-detail")
         back()
 
         tab("Properties"); waitText("A-101"); shot("05-rooms")
 
-        tab("More"); waitText("Reports")
-        first("Reports").performScrollTo().performClick(); waitText("Collect", 20_000); shot("06-reports")
+        tab("More"); waitText("More", 10_000); scrollTo("Reports")
+        first("Reports").performClick(); waitText("Collect", 20_000); shot("06-reports")
         back()
-        waitText("Contact Support"); first("Contact Support").performScrollTo().performClick()
+        toTop(); scrollTo("Contact Support"); first("Contact Support").performClick()
         waitText("Call Support"); shot("07-support")
         back()
 
