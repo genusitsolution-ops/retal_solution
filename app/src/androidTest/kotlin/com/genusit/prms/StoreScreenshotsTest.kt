@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.swipeDown
+import androidx.compose.ui.test.swipe
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -46,7 +47,16 @@ class StoreScreenshotsTest {
 
     /** Lazy lists only build visible rows: swipe up until [text] appears. */
     private fun scrollTo(text: String) {
-        repeat(10) { if (has(text)) return; rule.onRoot().performTouchInput { swipeUp() }; rule.waitForIdle(); Thread.sleep(400) }
+        repeat(10) {
+            if (has(text)) {
+                // bring it clear of the bottom navigation bar before tapping
+                rule.onRoot().performTouchInput { swipe(center, center.copy(y = center.y - height * 0.25f), 300) }
+                rule.waitForIdle(); Thread.sleep(400)
+                if (!has(text)) rule.onRoot().performTouchInput { swipe(center, center.copy(y = center.y + height * 0.2f), 300) }
+                return
+            }
+            rule.onRoot().performTouchInput { swipeUp() }; rule.waitForIdle(); Thread.sleep(400)
+        }
         waitText(text, 5_000)
     }
 

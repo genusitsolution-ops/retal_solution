@@ -19,12 +19,15 @@ jobs:
       matrix:
         include:
           - device: phone
+            api: 34
             skin: ""
             density: ""
           - device: tablet7
+            api: 30
             skin: ""
             density: "280"
           - device: tablet10
+            api: 30
             skin: "-skin 1440x2560"
             density: "240"
     steps:
@@ -46,7 +49,7 @@ jobs:
       - name: Capture on emulator (${{ matrix.device }})
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api }}   # tablets on Android 11: no launcher taskbar with other apps' icons
           arch: x86_64
           target: google_apis
           profile: pixel
