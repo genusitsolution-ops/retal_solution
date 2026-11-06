@@ -1,5 +1,10 @@
-# Builds the signed release App Bundle (.aab) for Google Play, plus a signed release APK for checking on a phone.
-# Signing comes only from repository secrets; nothing is printed or committed. Run it by pushing to the play-release branch, or from Actions → "Android release (Play)".
+# Builds the release App Bundle (.aab) for Google Play and checks the release (R8-shrunk) build on an emulator.
+# Two modes:
+#  - signing secrets set (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD):
+#    the .aab is signed here with the upload key;
+#  - no secrets: the .aab is left UNSIGNED and the owner signs it with the upload key on their own machine (jarsigner).
+#    The emulator check then uses a throwaway key made on the runner only for that test.
+# Nothing secret is printed or committed. Run it by pushing to the play-release branch, or from Actions.
 name: Android release (Play)
 
 on:
@@ -22,14 +27,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check the signing secrets are set
+      - name: Signing mode
         run: |
-          miss=""
-          [ -n "$KS_B64" ] || miss="$miss ANDROID_KEYSTORE_BASE64"
-          [ -n "$PRMS_KEYSTORE_PASSWORD" ] || miss="$miss ANDROID_KEYSTORE_PASSWORD"
-          [ -n "$PRMS_KEY_ALIAS" ] || miss="$miss ANDROID_KEY_ALIAS"
-          [ -n "$PRMS_KEY_PASSWORD" ] || miss="$miss ANDROID_KEY_PASSWORD"
-          if [ -n "$miss" ]; then echo "::error title=Missing secrets::Add these repository secrets:$miss"; exit 1; fi
+          set=0
+          for v in KS_B64 PRMS_KEYSTORE_PASSWORD PRMS_KEY_ALIAS PRMS_KEY_PASSWORD; do [ -n "${!v}" ] && set=$((set+1)); done
+          if [ "$set" = "4" ]; then echo "SIGNED=1" >> "$GITHUB_ENV"; echo "::notice title=Signing::signed with the upload key from the repository secrets"
+          elif [ "$set" = "0" ]; then echo "SIGNED=0" >> "$GITHUB_ENV"; echo "::notice title=Signing::no signing secrets: the bundle is built UNSIGNED, to be signed with the upload key outside CI"
+          else echo "::error title=Secrets::only $set of the 4 signing secrets are set"; exit 1; fi
 
       - uses: actions/setup-java@v4
         with:
@@ -38,6 +42,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
 
       - name: Restore the keystore (runner temp only)
+        if: env.SIGNED == '1'
         run: |
           echo "$KS_B64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/upload.jks" 2>/dev/null \
             || { echo "::error title=Keystore::ANDROID_KEYSTORE_BASE64 is not valid base64 of the keystore file"; exit 1; }
@@ -54,21 +59,30 @@ jobs:
       - name: Unit tests
         run: ./gradlew :domain:test :data:test
 
-      - name: Build signed release bundle and APK
+      - name: Build release bundle and APK
         run: ./gradlew :app:bundleRelease :app:assembleRelease --stacktrace
 
-      - name: Verify signatures and version
+      - name: Prepare files and check signatures
         run: |
+          BT=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1); BTP=$ANDROID_HOME/build-tools/$BT
           AAB=app/build/outputs/bundle/release/app-release.aab
           APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
-          jarsigner -verify "$AAB" > /dev/null || { echo "::error title=AAB::bundle is not signed"; exit 1; }
-          BT=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
-          $ANDROID_HOME/build-tools/$BT/apksigner verify "$APK" || { echo "::error title=APK::APK signature invalid"; exit 1; }
-          SHA=$(keytool -printcert -jarfile "$AAB" | grep -m1 "SHA256:" | sed 's/.*SHA256: //')
-          VER=$($ANDROID_HOME/build-tools/$BT/aapt dump badging "$APK" | head -1)
-          echo "::notice title=Upload certificate SHA-256::$SHA"
-          echo "::notice title=Version::$VER"
-          echo "APK_PATH=$APK" >> "$GITHUB_ENV"
+          if [ "$SIGNED" = "1" ]; then
+            jarsigner -verify "$AAB" > /dev/null || { echo "::error title=AAB::bundle is not signed"; exit 1; }
+            SHA=$(keytool -printcert -jarfile "$AAB" | grep -m1 "SHA256:" | sed 's/.*SHA256: //')
+            echo "::notice title=Upload certificate SHA-256::$SHA"
+            TESTAPK="$APK"
+          else
+            # throwaway key, used ONLY to install the release build on the emulator; never published
+            keytool -genkeypair -keystore "$RUNNER_TEMP/throwaway.jks" -alias t -keyalg RSA -keysize 2048 -validity 2 \
+              -storepass throwaway -keypass throwaway -dname "CN=CI emulator check only" > /dev/null 2>&1
+            $BTP/zipalign -f -p 4 "$APK" "$RUNNER_TEMP/aligned.apk"
+            $BTP/apksigner sign --ks "$RUNNER_TEMP/throwaway.jks" --ks-pass pass:throwaway --out "$RUNNER_TEMP/emulator-check.apk" "$RUNNER_TEMP/aligned.apk"
+            TESTAPK="$RUNNER_TEMP/emulator-check.apk"
+          fi
+          $BTP/apksigner verify "$TESTAPK" || { echo "::error title=APK::APK signature invalid"; exit 1; }
+          echo "::notice title=Version::$($BTP/aapt dump badging "$TESTAPK" | head -1)"
+          echo "APK_PATH=$APK" >> "$GITHUB_ENV"; echo "TEST_APK=$TESTAPK" >> "$GITHUB_ENV"
 
       - name: Enable KVM
         run: |
@@ -84,11 +98,10 @@ jobs:
           target: google_apis
           disable-animations: true
           script: |
-            adb install -r "$APK_PATH"
+            adb install -r "$TEST_APK"
             adb logcat -c
             adb shell monkey -p com.genusit.prms -c android.intent.category.LAUNCHER 1
             sleep 25
-            adb shell uiautomator dump /sdcard/ui.xml > /dev/null; adb pull /sdcard/ui.xml ui.xml
             adb exec-out screencap -p > release-start.png
             adb logcat -d -b crash > crash.txt || true
             if grep -q "com.genusit.prms" crash.txt; then echo "::error title=Crash::release build crashed on start"; head -40 crash.txt; exit 1; fi
@@ -100,11 +113,18 @@ jobs:
         run: |
           V=$(grep -m1 'versionName = ' app/build.gradle.kts | sed 's/.*"\(.*\)".*/\1/')
           C=$(grep -m1 'versionCode = ' app/build.gradle.kts | sed 's/[^0-9]//g')
-          cp app/build/outputs/bundle/release/app-release.aab "RentalSolution-$V-$C.aab"
-          cp "$APK_PATH" "RentalSolution-$V-$C-release.apk"
-          gh release create "android-release-$V-$C-${{ github.run_number }}" "RentalSolution-$V-$C.aab" "RentalSolution-$V-$C-release.apk" release-start.png \
-            --draft --target "${{ github.sha }}" --title "Play release $V ($C)" --notes "Signed release bundle for Google Play, built from ${{ github.sha }}"
+          if [ "$SIGNED" = "1" ]; then
+            cp app/build/outputs/bundle/release/app-release.aab "RentalSolution-$V-$C.aab"
+            cp "$APK_PATH" "RentalSolution-$V-$C-release.apk"
+            FILES="RentalSolution-$V-$C.aab RentalSolution-$V-$C-release.apk"
+          else
+            cp app/build/outputs/bundle/release/app-release.aab "RentalSolution-$V-$C-unsigned.aab"
+            cp "$APK_PATH" "RentalSolution-$V-$C-release-unsigned.apk"
+            FILES="RentalSolution-$V-$C-unsigned.aab RentalSolution-$V-$C-release-unsigned.apk"
+          fi
+          gh release create "android-release-$V-$C-${{ github.run_number }}" $FILES release-start.png \
+            --draft --target "${{ github.sha }}" --title "Play release $V ($C)" --notes "Release bundle for Google Play (signed=$SIGNED), built from ${{ github.sha }}"
 
-      - name: Remove the keystore
+      - name: Remove keystores
         if: always()
-        run: rm -f "$RUNNER_TEMP/upload.jks"
+        run: rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/throwaway.jks"
