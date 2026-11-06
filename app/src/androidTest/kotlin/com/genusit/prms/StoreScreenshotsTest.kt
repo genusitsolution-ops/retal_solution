@@ -11,7 +11,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
-import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assume.assumeTrue
@@ -38,6 +37,8 @@ class StoreScreenshotsTest {
 
     private fun first(text: String): SemanticsNodeInteraction = rule.onAllNodesWithText(text, substring = true).onFirst()
 
+    private fun back() { InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand("input keyevent 4").close(); Thread.sleep(1500); rule.waitForIdle() }
+
     private fun tab(label: String) { rule.onAllNodesWithText(label).onFirst().performClick(); rule.waitForIdle() }
 
     @Test fun captureStoreScreens() {
@@ -58,16 +59,16 @@ class StoreScreenshotsTest {
 
         tab("Bills"); waitText("Kavita Singh"); shot("03-bills")
         first("Kavita Singh").performClick(); waitText("Total"); shot("04-bill-detail")
-        Espresso.pressBack(); rule.waitForIdle()
+        back()
 
         tab("Properties"); waitText("A-101"); shot("05-rooms")
 
         tab("More"); waitText("Reports")
         first("Reports").performScrollTo().performClick(); waitText("Collect", 20_000); shot("06-reports")
-        Espresso.pressBack(); rule.waitForIdle()
+        back()
         waitText("Contact Support"); first("Contact Support").performScrollTo().performClick()
         waitText("Call Support"); shot("07-support")
-        Espresso.pressBack(); rule.waitForIdle()
+        back()
 
         tab("Home"); waitText("Hello")
     }
