@@ -1,11 +1,11 @@
 # Builds the signed release App Bundle (.aab) for Google Play, plus a signed release APK for checking on a phone.
-# Signing comes only from repository secrets; nothing is printed or committed. Run it by pushing a tag play-release-<version>, or from Actions → "Android release (Play)".
+# Signing comes only from repository secrets; nothing is printed or committed. Run it by pushing to the play-release branch, or from Actions → "Android release (Play)".
 name: Android release (Play)
 
 on:
   workflow_dispatch:
   push:
-    tags: [ 'play-release-*' ]
+    branches: [ play-release ]
 
 permissions:
   contents: write   # draft (team-only) release that carries the .aab
