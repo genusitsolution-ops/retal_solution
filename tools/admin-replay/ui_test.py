@@ -17,13 +17,14 @@ def texts(): return [label(n) for n in nodes() if label(n)]
 def center(n):
     a, b, c, d = map(int, re.findall(r"\d+", n.get("bounds"))); return (a + c) // 2, (b + d) // 2
 def find(t, exact=True, timeout=12):
+    """The matching on-screen text ("" when absent). Returns the text, not the XML node: a node without children is falsy."""
     end = time.time() + timeout
     while time.time() < end:
         for n in nodes():
             l = label(n)
-            if (l == t) if exact else (t in l): return n
+            if (l == t) if exact else (t in l): return l
         time.sleep(0.7)
-    return None
+    return ""
 def tap(t, exact=True, timeout=12, nth=0):
     end = time.time() + timeout
     while time.time() < end:
@@ -47,7 +48,9 @@ def scroll_to(t, exact=True, tries=8):
         sh("input", "swipe", "540", "1600", "540", "700", "350"); time.sleep(0.8)
     return False
 def back(): sh("input", "keyevent", "4"); time.sleep(1)
-def hide_kb(): sh("input", "keyevent", "111"); time.sleep(0.4)
+def hide_kb():
+    # BACK only while the keyboard is up (BACK without a keyboard would close the dialog)
+    if "mInputShown=true" in sh("dumpsys", "input_method"): sh("input", "keyevent", "4"); time.sleep(0.6)
 def shot(name): subprocess.run(f"adb exec-out screencap -p > shots/{name}.png", shell=True); time.sleep(0.3)
 def check(name, ok, info=""):
     results.append(bool(ok)); print(("PASS " if ok else "FAIL ") + name + ("" if ok else f" — {info}"[:400]), flush=True)
@@ -56,22 +59,24 @@ def posts():
     except FileNotFoundError: return []
 def last_post(): p = posts(); return p[-1] if p else {}
 
-sh("pm", "clear", PKG)
-sh("am", "start", "-n", f"{PKG}/com.genusit.prms.admin.ui.MainActivity"); time.sleep(4)
+def fresh_start():
+    sh("am", "force-stop", PKG); sh("pm", "clear", PKG)
+    sh("am", "start", "-n", f"{PKG}/com.genusit.prms.admin.ui.MainActivity"); time.sleep(4)
+def sign_in(user, pw):
+    fresh_start()
+    edit(0, user); edit(1, pw)
+    sh("input", "keyevent", "66")   # Done on the password field signs in (the keyboard may cover the button)
+    time.sleep(3)
+
+fresh_start()
 check("sign-in screen shown", find("Rental Solution Admin") and find("Sign in", timeout=3))
 shot("01-sign-in")
-
-# owner account refused
-edit(0, "testowner"); edit(1, "Test@1234"); hide_kb(); tap_last("Sign in")
+sign_in("testowner", "Test@1234")
 check("owner account refused by the app", find("This app is only for the Super Admin", exact=False), texts())
-# wrong password shows the server message
-edit(1, "x"); hide_kb(); tap_last("Sign in")
+shot("01b-owner-refused")
+sign_in("testadmin", "wrong-pass")
 check("wrong password: server message", find("Invalid credentials", exact=False), texts())
-# admin
-e = [n for n in nodes() if n.get("class") == "android.widget.EditText"]
-for i in (0, 1):  # clear both fields
-    x, y = center(e[i]); sh("input", "tap", str(x), str(y)); sh("input", "keyevent", "KEYCODE_MOVE_END"); sh("input", "keyevent", *["67"] * 30)
-edit(0, "testadmin"); edit(1, "Test@1234"); hide_kb(); tap_last("Sign in")
+sign_in("testadmin", "Test@1234")
 check("admin signs in → dashboard", find("Welcome, Test Admin", timeout=15), texts())
 time.sleep(1.5); shot("02-dashboard")
 t = texts()
