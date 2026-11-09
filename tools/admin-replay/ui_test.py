@@ -45,9 +45,25 @@ def edit(i, value):
 def scroll_to(t, exact=True, tries=8):
     for _ in range(tries):
         if find(t, exact, timeout=2): return True
-        sh("input", "swipe", "540", "1600", "540", "700", "350"); time.sleep(0.8)
+        swipe_up()
     return False
 def back(): sh("input", "keyevent", "4"); time.sleep(1)
+_m = re.search(r"(\d+)x(\d+)", sh("wm", "size").split("Override size:")[-1]) or re.search(r"(\d+)x(\d+)", sh("wm", "size"))
+W, H = (int(_m.group(1)), int(_m.group(2))) if _m else (1080, 1920)
+print(f"screen {W}x{H}", flush=True)
+def swipe_up(): sh("input", "swipe", str(W // 2), str(int(H * .78)), str(W // 2), str(int(H * .30)), "350"); time.sleep(0.8)
+def to_top():
+    for _ in range(4): sh("input", "swipe", str(W // 2), str(int(H * .30)), str(W // 2), str(int(H * .85)), "250")
+    time.sleep(0.6)
+def chip(t, row_hint):
+    """Taps a filter chip; scrolls the chip row sideways when the chip is off-screen."""
+    for _ in range(3):
+        if tap(t, timeout=2): return True
+        m = [n for n in nodes() if label(n) == row_hint or label(n).startswith(row_hint)]
+        if not m: to_top(); m = [n for n in nodes() if label(n) == row_hint or label(n).startswith(row_hint)]
+        if m:
+            _, y = center(m[0]); sh("input", "swipe", str(int(W * .9)), str(y), str(int(W * .1)), str(y), "300"); time.sleep(0.6)
+    return False
 def hide_kb():
     # BACK only while the keyboard is up (BACK without a keyboard would close the dialog)
     if "mInputShown=true" in sh("dumpsys", "input_method"): sh("input", "keyevent", "4"); time.sleep(0.6)
@@ -71,10 +87,10 @@ def sign_in(user, pw):
 fresh_start()
 check("sign-in screen shown", find("Rental Solution Admin") and find("Sign in", timeout=3))
 shot("01-sign-in")
-sign_in("testowner", "Test@1234")
+sign_in("testowner", "Test@1234"); hide_kb()
 check("owner account refused by the app", find("This app is only for the Super Admin", exact=False), texts())
 shot("01b-owner-refused")
-sign_in("testadmin", "wrong-pass")
+sign_in("testadmin", "wrong-pass"); hide_kb()
 check("wrong password: server message", find("Invalid credentials", exact=False), texts())
 sign_in("testadmin", "Test@1234")
 check("admin signs in → dashboard", find("Welcome, Test Admin", timeout=15), texts())
@@ -82,8 +98,7 @@ time.sleep(1.5); shot("02-dashboard")
 t = texts()
 check("dashboard: pending approvals 1, payments to verify 2, owners 7, vendors 1/1",
       "Pending approvals" in t and "Payments to verify" in t and "7" in t and "1 / 1" in t, t)
-scroll_to("Vendor commission"); shot("03-dashboard-more")
-check("dashboard: vendor commission block", find("Approved, to pay", timeout=3))
+check("dashboard: vendor commission block", scroll_to("Approved, to pay")); shot("03-dashboard-more")
 
 # ── approvals ──
 tap("Approvals"); time.sleep(1.5)
@@ -98,17 +113,17 @@ tap("Reject", nth=0); time.sleep(0.8)
 check("reject asks for a reason; Reject disabled until typed", find("Reject Pooja Rao?") is not None)
 edit(0, "Incomplete details"); hide_kb(); shot("06-reject-reason"); tap_last("Reject"); time.sleep(1.5)
 p = last_post(); check("reject sent with reason", p.get("action") == "reject" and p.get("reason") == "Incomplete details", p)
-tap("All"); time.sleep(1.5); shot("07-approvals-all")
-check("approvals: All shows approved and rejected", find("Duplicate test account", timeout=6), texts())
+chip("Rejected (1)", "Pending"); time.sleep(1.5); shot("07-approvals-rejected")
+check("approvals: Rejected shows the reason", find("Duplicate test account", timeout=6), texts())
 
 # ── owners ──
 tap("Owners"); time.sleep(1.5); shot("08-owners")
-check("owners list: 7 owners incl. suspended Sunita", find("All (7)", timeout=8) and find("Sunita Sharma"), texts())
-tap("Suspended (1)"); time.sleep(1.5)
+check("owners list: 7 owners incl. suspended Sunita", find("All (7)", timeout=8) and scroll_to("Sunita Sharma"), texts())
+to_top(); chip("Suspended (1)", "All (7)"); time.sleep(1.5)
 check("filter Suspended", find("Sunita Sharma") and not find("Amit Kulkarni", timeout=2), texts())
 tap("Sunita Sharma"); time.sleep(1.5); shot("09-owner-detail")
-check("owner detail: subscription and vendor sections", find("Subscription") and scroll_to("Convert to vendor"), texts())
-scroll_to("Change status", tries=2) or sh("input", "swipe", "540", "700", "540", "1600", "300")
+check("owner detail: subscription and vendor sections", scroll_to("Subscription") and scroll_to("Convert to vendor"), texts())
+to_top(); scroll_to("Change status", tries=3)
 tap("Change status"); time.sleep(0.8)
 check("status dialog with Active / Inactive / Suspended", find("Active") and find("Inactive") and find("Suspended"), texts())
 tap("Active"); shot("10-owner-status"); tap("Save"); time.sleep(1.5)
@@ -123,7 +138,7 @@ back(); time.sleep(1)
 tap("Vendors"); time.sleep(1.5); shot("12-vendors")
 check("vendors list: Ramesh Patel 10%", find("Ramesh Patel") and find("10% commission", exact=False), texts())
 tap("Ramesh Patel"); time.sleep(1.5); shot("13-vendor-detail")
-check("vendor detail: totals and monthly payout", find("Earned") and scroll_to("Record payout"), texts())
+check("vendor detail: totals and monthly payout", scroll_to("Earned") and scroll_to("Record payout"), texts())
 tap("Record payout"); time.sleep(0.8)
 check("payout dialog explains it only records the transfer", find("this only records it", exact=False), texts())
 check("payout dialog offers to approve the pending one", find("Also approve and pay", exact=False))
@@ -131,20 +146,20 @@ tap("Also approve and pay", exact=False)
 edit(1, "UTR998877"); hide_kb(); shot("14-record-payout"); tap("Save payout"); time.sleep(1.5)
 p = last_post(); check("payout sent with month, UTR, date, approve_pending", p.get("action") == "pay_month" and p.get("payout_reference") == "UTR998877"
                        and re.match(r"\d{4}-\d{2}$", p.get("month", "")) and re.match(r"\d{4}-\d{2}-\d{2}$", p.get("paid_date", "")) and p.get("approve_pending") is True, p)
-sh("input", "swipe", "540", "700", "540", "1700", "300"); time.sleep(0.6)
-tap("Commissions"); time.sleep(1); scroll_to("History"); shot("15-vendor-commissions")
+to_top()
+chip("Commissions", "Monthly payout"); time.sleep(1); scroll_to("History"); shot("15-vendor-commissions")
 check("commissions tab: paid one with UTR, pending one with Approve", find("NEFT-HDFC-88231", exact=False) and find("Approve"), texts())
 tap("Approve"); time.sleep(0.8); tap_last("Approve"); time.sleep(1.5)
 p = last_post(); check("commission approve sent", p.get("action") == "approve" and p.get("commission_id"), p)
 tap("History"); time.sleep(2); shot("16-commission-history")
 check("commission history dialog", find("History of C-", exact=False) and (find("Created", exact=False, timeout=4)), texts())
 tap("Close")
-sh("input", "swipe", "540", "700", "540", "1700", "300"); time.sleep(0.6)
-tap("Referred owners"); time.sleep(1); shot("17-vendor-referred")
-check("referred owners tab: Amit and Neha", find("Amit Kulkarni") and find("Neha Joshi"), texts())
-tap("Payout history"); time.sleep(1); shot("18-vendor-payouts")
-check("payout history tab: NEFT-HDFC-88231 by Test Admin", find("NEFT-HDFC-88231") and find("Test Admin"), texts())
-tap("Edit % / status", timeout=3) or (sh("input", "swipe", "540", "700", "540", "1700", "300"), tap("Edit % / status"))
+to_top()
+scroll_to("Commissions"); chip("Referred owners", "Monthly payout"); time.sleep(1); scroll_to("Amit Kulkarni"); shot("17-vendor-referred")
+check("referred owners tab: Amit and Neha", scroll_to("Amit Kulkarni") and scroll_to("Neha Joshi"), texts())
+to_top(); scroll_to("Commissions"); chip("Payout history", "Monthly payout"); time.sleep(1); scroll_to("Recorded by"); shot("18-vendor-payouts")
+check("payout history tab: NEFT-HDFC-88231 by Test Admin", scroll_to("NEFT-HDFC-88231") and scroll_to("Test Admin"), texts())
+to_top(); tap("Edit % / status")
 time.sleep(0.8); shot("19-vendor-edit"); tap("Inactive"); tap("Save"); time.sleep(1.5)
 p = last_post(); check("vendor update sent (inactive, 10%)", p.get("action") == "update" and p.get("status") == "inactive" and p.get("commission_percent") == "10", p)
 back()
