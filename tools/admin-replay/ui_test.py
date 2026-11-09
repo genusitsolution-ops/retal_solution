@@ -153,9 +153,8 @@ to_top()
 for _ in range(20):   # wait until no snackbar message is on screen (it can cover the chip row on a 320x640 screen)
     if not any(m in " ".join(texts()) for m in ("Payout saved", "Owner converted", "Owner status updated", "Registration rejected", "Owner approved")): break
     time.sleep(1)
-print("DEBUG before chip:", [(label(n), n.get("bounds"), n.get("clickable")) for n in nodes() if label(n) in ("Monthly payout", "Commissions", "Referred owners")], flush=True)
-chip("Commissions", "Monthly payout"); time.sleep(1.5); shot("15a-after-chip")
-print("DEBUG after chip:", texts()[:40], flush=True)
+scroll_to("Commissions")   # on a 320x640 screen the tab row is below the fold when the page is at the top
+chip("Commissions", "Monthly payout"); time.sleep(1.5)
 scroll_to("History"); shot("15-vendor-commissions")
 check("commissions tab: paid one with UTR, pending one with Approve", find("NEFT-HDFC-88231", exact=False) and find("Approve"), texts())
 tap("Approve"); time.sleep(0.8); tap_last("Approve"); time.sleep(1.5)
