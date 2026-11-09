@@ -7,3 +7,6 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+# Tink (used by EncryptedSharedPreferences) refers to compile-time-only annotations
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
