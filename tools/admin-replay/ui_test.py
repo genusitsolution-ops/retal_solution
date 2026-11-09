@@ -150,8 +150,13 @@ edit(1, "UTR998877"); hide_kb(); shot("14-record-payout"); tap("Save payout"); t
 p = last_post(); check("payout sent with month, UTR, date, approve_pending", p.get("action") == "pay_month" and p.get("payout_reference") == "UTR998877"
                        and re.match(r"\d{4}-\d{2}$", p.get("month", "")) and re.match(r"\d{4}-\d{2}-\d{2}$", p.get("paid_date", "")) and p.get("approve_pending") is True, p)
 to_top()
-time.sleep(5)   # the "Payout saved" snackbar covers the chip row on a 320x640 screen
-chip("Commissions", "Monthly payout"); time.sleep(1); scroll_to("History"); shot("15-vendor-commissions")
+for _ in range(20):   # wait until no snackbar message is on screen (it can cover the chip row on a 320x640 screen)
+    if not any(m in " ".join(texts()) for m in ("Payout saved", "Owner converted", "Owner status updated", "Registration rejected", "Owner approved")): break
+    time.sleep(1)
+print("DEBUG before chip:", [(label(n), n.get("bounds"), n.get("clickable")) for n in nodes() if label(n) in ("Monthly payout", "Commissions", "Referred owners")], flush=True)
+chip("Commissions", "Monthly payout"); time.sleep(1.5); shot("15a-after-chip")
+print("DEBUG after chip:", texts()[:40], flush=True)
+scroll_to("History"); shot("15-vendor-commissions")
 check("commissions tab: paid one with UTR, pending one with Approve", find("NEFT-HDFC-88231", exact=False) and find("Approve"), texts())
 tap("Approve"); time.sleep(0.8); tap_last("Approve"); time.sleep(1.5)
 p = last_post(); check("commission approve sent", p.get("action") == "approve" and p.get("commission_id"), p)
