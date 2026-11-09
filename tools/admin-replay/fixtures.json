@@ -1,0 +1,2110 @@
+{
+ "admin/dashboard.php": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "pending_signups": 1,
+    "pending_payments": 2,
+    "signup_mode": "approval",
+    "owners": {
+     "total": 7,
+     "active": 4,
+     "inactive": 2,
+     "suspended": 1
+    },
+    "vendors": {
+     "ready": true,
+     "total": 1,
+     "active": 1,
+     "commission_pending": 49.9,
+     "commission_approved": 0,
+     "commission_paid": 49.9
+    },
+    "recent_signups": [
+     {
+      "id": 4,
+      "owner_id": 6,
+      "full_name": "Pooja Rao",
+      "username": "pooja.r",
+      "created_at": "2026-11-09 18:13:59",
+      "referral_code": "RSP882P2"
+     }
+    ],
+    "recent_payments": [
+     {
+      "id": 4,
+      "request_no": "RR-202611-000004",
+      "owner_name": "Vikas Mehta",
+      "amount": 400,
+      "utr": "712345678904",
+      "created_at": "2026-11-09 18:14:00"
+     },
+     {
+      "id": 3,
+      "request_no": "RR-202611-000003",
+      "owner_name": "Neha Joshi",
+      "amount": 499,
+      "utr": "612345678903",
+      "created_at": "2026-11-09 18:14:00"
+     }
+    ]
+   }
+  }
+ },
+ "admin/signups.php?status=pending": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "mode": "approval",
+    "counts": {
+     "pending": 1,
+     "approved": 3,
+     "rejected": 1
+    },
+    "signups": [
+     {
+      "id": 4,
+      "owner_id": 6,
+      "referral_code": "RSP882P2",
+      "mode": "approval",
+      "status": "pending",
+      "source": "app",
+      "notes": null,
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": null,
+      "full_name": "Pooja Rao",
+      "email": "pooja.r@example.com",
+      "phone": "9123470004",
+      "username": "pooja.r",
+      "owner_status": "inactive",
+      "referrer_name": "Ramesh Patel",
+      "reviewer_name": null
+     }
+    ]
+   }
+  }
+ },
+ "admin/signups.php?status=approved": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "mode": "approval",
+    "counts": {
+     "pending": 1,
+     "approved": 3,
+     "rejected": 1
+    },
+    "signups": [
+     {
+      "id": 3,
+      "owner_id": 5,
+      "referral_code": null,
+      "mode": "approval",
+      "status": "approved",
+      "source": "app",
+      "notes": null,
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": null,
+      "full_name": "Vikas Mehta",
+      "email": "vikas.m@example.com",
+      "phone": "9123470003",
+      "username": "vikas.m",
+      "owner_status": "active",
+      "referrer_name": null,
+      "reviewer_name": null
+     },
+     {
+      "id": 2,
+      "owner_id": 4,
+      "referral_code": "RSP882P2",
+      "mode": "approval",
+      "status": "approved",
+      "source": "app",
+      "notes": null,
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": "2026-11-09 18:13:59",
+      "full_name": "Neha Joshi",
+      "email": "neha.j@example.com",
+      "phone": "9123470002",
+      "username": "neha.j",
+      "owner_status": "active",
+      "referrer_name": "Ramesh Patel",
+      "reviewer_name": "Test Admin"
+     },
+     {
+      "id": 1,
+      "owner_id": 3,
+      "referral_code": "RSP882P2",
+      "mode": "approval",
+      "status": "approved",
+      "source": "app",
+      "notes": null,
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": "2026-11-09 18:13:59",
+      "full_name": "Amit Kulkarni",
+      "email": "amit.k@example.com",
+      "phone": "9123470001",
+      "username": "amit.k",
+      "owner_status": "active",
+      "referrer_name": "Ramesh Patel",
+      "reviewer_name": "Test Admin"
+     }
+    ]
+   }
+  }
+ },
+ "admin/signups.php?status=rejected": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "mode": "approval",
+    "counts": {
+     "pending": 1,
+     "approved": 3,
+     "rejected": 1
+    },
+    "signups": [
+     {
+      "id": 5,
+      "owner_id": 7,
+      "referral_code": null,
+      "mode": "approval",
+      "status": "rejected",
+      "source": "app",
+      "notes": "Duplicate test account",
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": "2026-11-09 18:13:59",
+      "full_name": "Test Duplicate",
+      "email": "test.dup@example.com",
+      "phone": "9123470005",
+      "username": "test.dup",
+      "owner_status": "inactive",
+      "referrer_name": null,
+      "reviewer_name": "Test Admin"
+     }
+    ]
+   }
+  }
+ },
+ "admin/signups.php?status=all": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "mode": "approval",
+    "counts": {
+     "pending": 1,
+     "approved": 3,
+     "rejected": 1
+    },
+    "signups": [
+     {
+      "id": 5,
+      "owner_id": 7,
+      "referral_code": null,
+      "mode": "approval",
+      "status": "rejected",
+      "source": "app",
+      "notes": "Duplicate test account",
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": "2026-11-09 18:13:59",
+      "full_name": "Test Duplicate",
+      "email": "test.dup@example.com",
+      "phone": "9123470005",
+      "username": "test.dup",
+      "owner_status": "inactive",
+      "referrer_name": null,
+      "reviewer_name": "Test Admin"
+     },
+     {
+      "id": 4,
+      "owner_id": 6,
+      "referral_code": "RSP882P2",
+      "mode": "approval",
+      "status": "pending",
+      "source": "app",
+      "notes": null,
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": null,
+      "full_name": "Pooja Rao",
+      "email": "pooja.r@example.com",
+      "phone": "9123470004",
+      "username": "pooja.r",
+      "owner_status": "inactive",
+      "referrer_name": "Ramesh Patel",
+      "reviewer_name": null
+     },
+     {
+      "id": 3,
+      "owner_id": 5,
+      "referral_code": null,
+      "mode": "approval",
+      "status": "approved",
+      "source": "app",
+      "notes": null,
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": null,
+      "full_name": "Vikas Mehta",
+      "email": "vikas.m@example.com",
+      "phone": "9123470003",
+      "username": "vikas.m",
+      "owner_status": "active",
+      "referrer_name": null,
+      "reviewer_name": null
+     },
+     {
+      "id": 2,
+      "owner_id": 4,
+      "referral_code": "RSP882P2",
+      "mode": "approval",
+      "status": "approved",
+      "source": "app",
+      "notes": null,
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": "2026-11-09 18:13:59",
+      "full_name": "Neha Joshi",
+      "email": "neha.j@example.com",
+      "phone": "9123470002",
+      "username": "neha.j",
+      "owner_status": "active",
+      "referrer_name": "Ramesh Patel",
+      "reviewer_name": "Test Admin"
+     },
+     {
+      "id": 1,
+      "owner_id": 3,
+      "referral_code": "RSP882P2",
+      "mode": "approval",
+      "status": "approved",
+      "source": "app",
+      "notes": null,
+      "created_at": "2026-11-09 18:13:59",
+      "reviewed_at": "2026-11-09 18:13:59",
+      "full_name": "Amit Kulkarni",
+      "email": "amit.k@example.com",
+      "phone": "9123470001",
+      "username": "amit.k",
+      "owner_status": "active",
+      "referrer_name": "Ramesh Patel",
+      "reviewer_name": "Test Admin"
+     }
+    ]
+   }
+  }
+ },
+ "admin/owners.php": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "counts": {
+     "all": 7,
+     "active": 4,
+     "inactive": 2,
+     "suspended": 1
+    },
+    "owners": [
+     {
+      "id": 7,
+      "full_name": "Test Duplicate",
+      "username": "test.dup",
+      "email": "test.dup@example.com",
+      "phone": "9123470005",
+      "business_name": null,
+      "status": "inactive",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": null,
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "rejected"
+     },
+     {
+      "id": 6,
+      "full_name": "Pooja Rao",
+      "username": "pooja.r",
+      "email": "pooja.r@example.com",
+      "phone": "9123470004",
+      "business_name": null,
+      "status": "inactive",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": null,
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "pending"
+     },
+     {
+      "id": 5,
+      "full_name": "Vikas Mehta",
+      "username": "vikas.m",
+      "email": "vikas.m@example.com",
+      "phone": "9123470003",
+      "business_name": null,
+      "status": "active",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": "2026-11-09 18:14:00",
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "approved"
+     },
+     {
+      "id": 4,
+      "full_name": "Neha Joshi",
+      "username": "neha.j",
+      "email": "neha.j@example.com",
+      "phone": "9123470002",
+      "business_name": null,
+      "status": "active",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": "2026-11-09 18:14:00",
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "approved"
+     },
+     {
+      "id": 3,
+      "full_name": "Amit Kulkarni",
+      "username": "amit.k",
+      "email": "amit.k@example.com",
+      "phone": "9123470001",
+      "business_name": null,
+      "status": "active",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": "2026-11-09 18:13:59",
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "approved"
+     },
+     {
+      "id": 2,
+      "full_name": "Sunita Sharma",
+      "username": "realowner",
+      "email": "real@test.invalid",
+      "phone": "9000000002",
+      "business_name": "Sharma PG",
+      "status": "suspended",
+      "created_at": "2026-11-09 12:43:59",
+      "last_login": null,
+      "package_name": "Test Basic",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": null
+     },
+     {
+      "id": 1,
+      "full_name": "Ramesh Patel",
+      "username": "testowner",
+      "email": "owner@test.invalid",
+      "phone": "9000000001",
+      "business_name": "Patel Residency",
+      "status": "active",
+      "created_at": "2026-11-09 12:43:59",
+      "last_login": null,
+      "package_name": "Test Basic",
+      "referral_code": "RSP882P2",
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": true,
+      "vendor_status": "active",
+      "signup_status": null
+     }
+    ]
+   }
+  }
+ },
+ "admin/owners.php?status=active": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "counts": {
+     "all": 7,
+     "active": 4,
+     "inactive": 2,
+     "suspended": 1
+    },
+    "owners": [
+     {
+      "id": 5,
+      "full_name": "Vikas Mehta",
+      "username": "vikas.m",
+      "email": "vikas.m@example.com",
+      "phone": "9123470003",
+      "business_name": null,
+      "status": "active",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": "2026-11-09 18:14:00",
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "approved"
+     },
+     {
+      "id": 4,
+      "full_name": "Neha Joshi",
+      "username": "neha.j",
+      "email": "neha.j@example.com",
+      "phone": "9123470002",
+      "business_name": null,
+      "status": "active",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": "2026-11-09 18:14:00",
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "approved"
+     },
+     {
+      "id": 3,
+      "full_name": "Amit Kulkarni",
+      "username": "amit.k",
+      "email": "amit.k@example.com",
+      "phone": "9123470001",
+      "business_name": null,
+      "status": "active",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": "2026-11-09 18:13:59",
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "approved"
+     },
+     {
+      "id": 1,
+      "full_name": "Ramesh Patel",
+      "username": "testowner",
+      "email": "owner@test.invalid",
+      "phone": "9000000001",
+      "business_name": "Patel Residency",
+      "status": "active",
+      "created_at": "2026-11-09 12:43:59",
+      "last_login": null,
+      "package_name": "Test Basic",
+      "referral_code": "RSP882P2",
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": true,
+      "vendor_status": "active",
+      "signup_status": null
+     }
+    ]
+   }
+  }
+ },
+ "admin/owners.php?status=inactive": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "counts": {
+     "all": 7,
+     "active": 4,
+     "inactive": 2,
+     "suspended": 1
+    },
+    "owners": [
+     {
+      "id": 7,
+      "full_name": "Test Duplicate",
+      "username": "test.dup",
+      "email": "test.dup@example.com",
+      "phone": "9123470005",
+      "business_name": null,
+      "status": "inactive",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": null,
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "rejected"
+     },
+     {
+      "id": 6,
+      "full_name": "Pooja Rao",
+      "username": "pooja.r",
+      "email": "pooja.r@example.com",
+      "phone": "9123470004",
+      "business_name": null,
+      "status": "inactive",
+      "created_at": "2026-11-09 18:13:59",
+      "last_login": null,
+      "package_name": "Monthly 499",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": "pending"
+     }
+    ]
+   }
+  }
+ },
+ "admin/owners.php?status=suspended": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "counts": {
+     "all": 7,
+     "active": 4,
+     "inactive": 2,
+     "suspended": 1
+    },
+    "owners": [
+     {
+      "id": 2,
+      "full_name": "Sunita Sharma",
+      "username": "realowner",
+      "email": "real@test.invalid",
+      "phone": "9000000002",
+      "business_name": "Sharma PG",
+      "status": "suspended",
+      "created_at": "2026-11-09 12:43:59",
+      "last_login": null,
+      "package_name": "Test Basic",
+      "referral_code": null,
+      "is_test": false,
+      "properties": 0,
+      "tenants": 0,
+      "is_vendor": false,
+      "vendor_status": null,
+      "signup_status": null
+     }
+    ]
+   }
+  }
+ },
+ "admin/owners.php?id=7": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 7,
+    "full_name": "Test Duplicate",
+    "username": "test.dup",
+    "email": "test.dup@example.com",
+    "phone": "9123470005",
+    "business_name": null,
+    "status": "inactive",
+    "created_at": "2026-11-09 18:13:59",
+    "last_login": null,
+    "package_name": "Monthly 499",
+    "referral_code": null,
+    "is_test": false,
+    "properties": 0,
+    "tenants": 0,
+    "is_vendor": false,
+    "vendor_status": null,
+    "signup_status": "rejected",
+    "address": null,
+    "employees": 0,
+    "subscription": {
+     "state": "none",
+     "package_name": "Monthly 499",
+     "start_date": null,
+     "end_date": null,
+     "days_left": null,
+     "is_trial": false,
+     "restricted": true
+    },
+    "signup": {
+     "id": 5,
+     "mode": "approval",
+     "status": "rejected",
+     "referral_code": null,
+     "notes": "Duplicate test account",
+     "created_at": "2026-11-09 18:13:59",
+     "reviewed_at": "2026-11-09 18:13:59"
+    },
+    "referred_by": null,
+    "vendor": null,
+    "recent_payments": []
+   }
+  }
+ },
+ "admin/owners.php?id=6": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 6,
+    "full_name": "Pooja Rao",
+    "username": "pooja.r",
+    "email": "pooja.r@example.com",
+    "phone": "9123470004",
+    "business_name": null,
+    "status": "inactive",
+    "created_at": "2026-11-09 18:13:59",
+    "last_login": null,
+    "package_name": "Monthly 499",
+    "referral_code": null,
+    "is_test": false,
+    "properties": 0,
+    "tenants": 0,
+    "is_vendor": false,
+    "vendor_status": null,
+    "signup_status": "pending",
+    "address": null,
+    "employees": 0,
+    "subscription": {
+     "state": "none",
+     "package_name": "Monthly 499",
+     "start_date": null,
+     "end_date": null,
+     "days_left": null,
+     "is_trial": false,
+     "restricted": true
+    },
+    "signup": {
+     "id": 4,
+     "mode": "approval",
+     "status": "pending",
+     "referral_code": "RSP882P2",
+     "notes": null,
+     "created_at": "2026-11-09 18:13:59",
+     "reviewed_at": null
+    },
+    "referred_by": null,
+    "vendor": null,
+    "recent_payments": []
+   }
+  }
+ },
+ "admin/owners.php?id=5": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 5,
+    "full_name": "Vikas Mehta",
+    "username": "vikas.m",
+    "email": "vikas.m@example.com",
+    "phone": "9123470003",
+    "business_name": null,
+    "status": "active",
+    "created_at": "2026-11-09 18:13:59",
+    "last_login": "2026-11-09 18:14:00",
+    "package_name": "Monthly 499",
+    "referral_code": null,
+    "is_test": false,
+    "properties": 0,
+    "tenants": 0,
+    "is_vendor": false,
+    "vendor_status": null,
+    "signup_status": "approved",
+    "address": null,
+    "employees": 0,
+    "subscription": {
+     "state": "trial",
+     "package_name": "Test Basic",
+     "start_date": "2026-10-20",
+     "end_date": "2026-12-19",
+     "days_left": 40,
+     "is_trial": true,
+     "restricted": false
+    },
+    "signup": {
+     "id": 3,
+     "mode": "approval",
+     "status": "approved",
+     "referral_code": null,
+     "notes": null,
+     "created_at": "2026-11-09 18:13:59",
+     "reviewed_at": null
+    },
+    "referred_by": null,
+    "vendor": null,
+    "recent_payments": [
+     {
+      "id": 4,
+      "request_no": "RR-202611-000004",
+      "amount": 400,
+      "utr": "712345678904",
+      "status": "pending",
+      "created_at": "2026-11-09 18:14:00"
+     }
+    ]
+   }
+  }
+ },
+ "admin/owners.php?id=4": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 4,
+    "full_name": "Neha Joshi",
+    "username": "neha.j",
+    "email": "neha.j@example.com",
+    "phone": "9123470002",
+    "business_name": null,
+    "status": "active",
+    "created_at": "2026-11-09 18:13:59",
+    "last_login": "2026-11-09 18:14:00",
+    "package_name": "Monthly 499",
+    "referral_code": null,
+    "is_test": false,
+    "properties": 0,
+    "tenants": 0,
+    "is_vendor": false,
+    "vendor_status": null,
+    "signup_status": "approved",
+    "address": null,
+    "employees": 0,
+    "subscription": {
+     "state": "trial",
+     "package_name": "Monthly 499",
+     "start_date": "2026-11-09",
+     "end_date": "2027-01-07",
+     "days_left": 59,
+     "is_trial": true,
+     "restricted": false
+    },
+    "signup": {
+     "id": 2,
+     "mode": "approval",
+     "status": "approved",
+     "referral_code": "RSP882P2",
+     "notes": null,
+     "created_at": "2026-11-09 18:13:59",
+     "reviewed_at": "2026-11-09 18:13:59"
+    },
+    "referred_by": {
+     "owner_id": 1,
+     "name": "Ramesh Patel",
+     "status": "pending",
+     "date": "2026-11-09 18:13:59"
+    },
+    "vendor": null,
+    "recent_payments": [
+     {
+      "id": 3,
+      "request_no": "RR-202611-000003",
+      "amount": 499,
+      "utr": "612345678903",
+      "status": "pending",
+      "created_at": "2026-11-09 18:14:00"
+     },
+     {
+      "id": 2,
+      "request_no": "RR-202611-000002",
+      "amount": 499,
+      "utr": "512345678902",
+      "status": "approved",
+      "created_at": "2026-11-09 18:14:00"
+     }
+    ]
+   }
+  }
+ },
+ "admin/owners.php?id=3": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 3,
+    "full_name": "Amit Kulkarni",
+    "username": "amit.k",
+    "email": "amit.k@example.com",
+    "phone": "9123470001",
+    "business_name": null,
+    "status": "active",
+    "created_at": "2026-11-09 18:13:59",
+    "last_login": "2026-11-09 18:13:59",
+    "package_name": "Monthly 499",
+    "referral_code": null,
+    "is_test": false,
+    "properties": 0,
+    "tenants": 0,
+    "is_vendor": false,
+    "vendor_status": null,
+    "signup_status": "approved",
+    "address": null,
+    "employees": 0,
+    "subscription": {
+     "state": "trial",
+     "package_name": "Monthly 499",
+     "start_date": "2026-11-09",
+     "end_date": "2027-01-07",
+     "days_left": 59,
+     "is_trial": true,
+     "restricted": false
+    },
+    "signup": {
+     "id": 1,
+     "mode": "approval",
+     "status": "approved",
+     "referral_code": "RSP882P2",
+     "notes": null,
+     "created_at": "2026-11-09 18:13:59",
+     "reviewed_at": "2026-11-09 18:13:59"
+    },
+    "referred_by": {
+     "owner_id": 1,
+     "name": "Ramesh Patel",
+     "status": "pending",
+     "date": "2026-11-09 18:13:59"
+    },
+    "vendor": null,
+    "recent_payments": [
+     {
+      "id": 1,
+      "request_no": "RR-202611-000001",
+      "amount": 499,
+      "utr": "412345678901",
+      "status": "approved",
+      "created_at": "2026-11-09 18:13:59"
+     }
+    ]
+   }
+  }
+ },
+ "admin/owners.php?id=2": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 2,
+    "full_name": "Sunita Sharma",
+    "username": "realowner",
+    "email": "real@test.invalid",
+    "phone": "9000000002",
+    "business_name": "Sharma PG",
+    "status": "suspended",
+    "created_at": "2026-11-09 12:43:59",
+    "last_login": null,
+    "package_name": "Test Basic",
+    "referral_code": null,
+    "is_test": false,
+    "properties": 0,
+    "tenants": 0,
+    "is_vendor": false,
+    "vendor_status": null,
+    "signup_status": null,
+    "address": null,
+    "employees": 0,
+    "subscription": {
+     "state": "none",
+     "package_name": "Test Basic",
+     "start_date": null,
+     "end_date": null,
+     "days_left": null,
+     "is_trial": false,
+     "restricted": true
+    },
+    "signup": null,
+    "referred_by": null,
+    "vendor": null,
+    "recent_payments": []
+   }
+  }
+ },
+ "admin/owners.php?id=1": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 1,
+    "full_name": "Ramesh Patel",
+    "username": "testowner",
+    "email": "owner@test.invalid",
+    "phone": "9000000001",
+    "business_name": "Patel Residency",
+    "status": "active",
+    "created_at": "2026-11-09 12:43:59",
+    "last_login": null,
+    "package_name": "Test Basic",
+    "referral_code": "RSP882P2",
+    "is_test": false,
+    "properties": 0,
+    "tenants": 0,
+    "is_vendor": true,
+    "vendor_status": "active",
+    "signup_status": null,
+    "address": null,
+    "employees": 0,
+    "subscription": {
+     "state": "active",
+     "package_name": "Test Basic",
+     "start_date": "2026-11-04",
+     "end_date": "2026-12-04",
+     "days_left": 25,
+     "is_trial": false,
+     "restricted": false
+    },
+    "signup": null,
+    "referred_by": null,
+    "vendor": {
+     "id": 1,
+     "status": "active",
+     "commission_percent": 10,
+     "totals": {
+      "paid_renewals": 2,
+      "total": 99.8,
+      "pending": 49.9,
+      "approved": 0,
+      "paid": 49.9,
+      "reversed": 0,
+      "referrals": 2
+     }
+    },
+    "recent_payments": []
+   }
+  }
+ },
+ "admin/vendors.php": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "totals": {
+     "paid_renewals": 2,
+     "total": 99.8,
+     "pending": 49.9,
+     "approved": 0,
+     "paid": 49.9,
+     "reversed": 0,
+     "referrals": 2
+    },
+    "vendors": [
+     {
+      "id": 1,
+      "owner_id": 1,
+      "full_name": "Ramesh Patel",
+      "username": "testowner",
+      "phone": "9000000001",
+      "email": "owner@test.invalid",
+      "referral_code": "RSP882P2",
+      "owner_status": "active",
+      "status": "active",
+      "commission_percent": 10,
+      "remarks": "Agent for Indore",
+      "converted_at": "2026-11-09 18:13:59",
+      "updated_at": "2026-11-09 18:13:59",
+      "totals": {
+       "paid_renewals": 2,
+       "total": 99.8,
+       "pending": 49.9,
+       "approved": 0,
+       "paid": 49.9,
+       "reversed": 0,
+       "referrals": 2
+      }
+     }
+    ]
+   }
+  }
+ },
+ "admin/vendors.php?status=active": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "totals": {
+     "paid_renewals": 2,
+     "total": 99.8,
+     "pending": 49.9,
+     "approved": 0,
+     "paid": 49.9,
+     "reversed": 0,
+     "referrals": 2
+    },
+    "vendors": [
+     {
+      "id": 1,
+      "owner_id": 1,
+      "full_name": "Ramesh Patel",
+      "username": "testowner",
+      "phone": "9000000001",
+      "email": "owner@test.invalid",
+      "referral_code": "RSP882P2",
+      "owner_status": "active",
+      "status": "active",
+      "commission_percent": 10,
+      "remarks": "Agent for Indore",
+      "converted_at": "2026-11-09 18:13:59",
+      "updated_at": "2026-11-09 18:13:59",
+      "totals": {
+       "paid_renewals": 2,
+       "total": 99.8,
+       "pending": 49.9,
+       "approved": 0,
+       "paid": 49.9,
+       "reversed": 0,
+       "referrals": 2
+      }
+     }
+    ]
+   }
+  }
+ },
+ "admin/vendors.php?status=inactive": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "totals": {
+     "paid_renewals": 2,
+     "total": 99.8,
+     "pending": 49.9,
+     "approved": 0,
+     "paid": 49.9,
+     "reversed": 0,
+     "referrals": 2
+    },
+    "vendors": []
+   }
+  }
+ },
+ "admin/vendors.php?id=1": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "vendor": {
+     "id": 1,
+     "owner_id": 1,
+     "full_name": "Ramesh Patel",
+     "username": "testowner",
+     "phone": "9000000001",
+     "email": "owner@test.invalid",
+     "referral_code": "RSP882P2",
+     "owner_status": "active",
+     "status": "active",
+     "commission_percent": 10,
+     "remarks": "Agent for Indore",
+     "converted_at": "2026-11-09 18:13:59",
+     "updated_at": "2026-11-09 18:13:59",
+     "totals": {
+      "paid_renewals": 2,
+      "total": 99.8,
+      "pending": 49.9,
+      "approved": 0,
+      "paid": 49.9,
+      "reversed": 0,
+      "referrals": 2
+     }
+    },
+    "totals": {
+     "paid_renewals": 2,
+     "total": 99.8,
+     "pending": 49.9,
+     "approved": 0,
+     "paid": 49.9,
+     "reversed": 0,
+     "referrals": 2
+    },
+    "referred_owners": [
+     {
+      "owner_id": 4,
+      "owner_name": "Neha Joshi",
+      "referral_date": "2026-11-09 18:13:59",
+      "trial_status": "On Free Trial · until 07 Jan 2027",
+      "renewal_label": "Renewed",
+      "renewal_amount": 499,
+      "payment_label": "Payment Pending",
+      "payment_status": "pending",
+      "paid_renewals": 1,
+      "commission_amount": 49.9,
+      "commission_total": 49.9,
+      "commission_status": "pending",
+      "commission_label": "Commission Pending",
+      "referral_type": "vendor"
+     },
+     {
+      "owner_id": 3,
+      "owner_name": "Amit Kulkarni",
+      "referral_date": "2026-11-09 18:13:59",
+      "trial_status": "On Free Trial · until 07 Jan 2027",
+      "renewal_label": "Renewed",
+      "renewal_amount": 499,
+      "payment_label": "Payment Confirmed",
+      "payment_status": "confirmed",
+      "paid_renewals": 1,
+      "commission_amount": 49.9,
+      "commission_total": 49.9,
+      "commission_status": "paid",
+      "commission_label": "Commission Paid",
+      "referral_type": "vendor"
+     }
+    ],
+    "commissions": [
+     {
+      "id": 2,
+      "vendor_owner_id": 1,
+      "vendor_name": "Ramesh Patel",
+      "referred_owner_id": 4,
+      "referred_name": "Neha Joshi",
+      "invoice_number": "SUB-202611-0004-3AAA",
+      "renewal_amount": 499,
+      "eligible_amount": 499,
+      "commission_percent": 10,
+      "commission_amount": 49.9,
+      "payment_confirmed_at": "2026-11-09 18:14:00",
+      "status": "pending",
+      "status_label": "Commission Pending",
+      "approved_at": null,
+      "paid_at": null,
+      "payout_reference": null,
+      "admin_remarks": null,
+      "reversal_reason": null
+     },
+     {
+      "id": 1,
+      "vendor_owner_id": 1,
+      "vendor_name": "Ramesh Patel",
+      "referred_owner_id": 3,
+      "referred_name": "Amit Kulkarni",
+      "invoice_number": "SUB-202611-0003-913A",
+      "renewal_amount": 499,
+      "eligible_amount": 499,
+      "commission_percent": 10,
+      "commission_amount": 49.9,
+      "payment_confirmed_at": "2026-10-09 18:13:59",
+      "status": "paid",
+      "status_label": "Commission Paid",
+      "approved_at": "2026-11-09 18:13:59",
+      "paid_at": "2026-11-09",
+      "payout_reference": "NEFT-HDFC-88231",
+      "admin_remarks": null,
+      "reversal_reason": null
+     }
+    ],
+    "unpaid_months": [
+     {
+      "month": "2026-11",
+      "pending_n": 1,
+      "pending_amount": 49.9,
+      "approved_n": 0,
+      "approved_amount": 0
+     }
+    ],
+    "payouts": [
+     {
+      "paid_at": "2026-11-09",
+      "payout_reference": "NEFT-HDFC-88231",
+      "entries": 1,
+      "amount": 49.9,
+      "reversed_amount": 0,
+      "first_confirmed": "2026-10-09 18:13:59",
+      "last_confirmed": "2026-10-09 18:13:59",
+      "recorded_by": "Test Admin"
+     }
+    ]
+   }
+  }
+ },
+ "admin/vendors.php?commission_id=2": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "history": [
+     {
+      "id": 4,
+      "commission_id": 2,
+      "action": "created",
+      "from_status": null,
+      "to_status": "pending",
+      "note": "10% of 499.00 (invoice SUB-202611-0004-3AAA)",
+      "actor_type": "system",
+      "actor_id": null,
+      "created_at": "2026-11-09 18:14:00",
+      "admin_name": null
+     }
+    ]
+   }
+  }
+ },
+ "admin/vendors.php?commission_id=1": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "history": [
+     {
+      "id": 1,
+      "commission_id": 1,
+      "action": "created",
+      "from_status": null,
+      "to_status": "pending",
+      "note": "10% of 499.00 (invoice SUB-202611-0003-913A)",
+      "actor_type": "system",
+      "actor_id": null,
+      "created_at": "2026-11-09 18:13:59",
+      "admin_name": null
+     },
+     {
+      "id": 2,
+      "commission_id": 1,
+      "action": "approved",
+      "from_status": "pending",
+      "to_status": "approved",
+      "note": null,
+      "actor_type": "admin",
+      "actor_id": 1,
+      "created_at": "2026-11-09 18:13:59",
+      "admin_name": "Test Admin"
+     },
+     {
+      "id": 3,
+      "commission_id": 1,
+      "action": "paid",
+      "from_status": "approved",
+      "to_status": "paid",
+      "note": "Monthly payout 2026-10: paid on 2026-11-09, ref NEFT-HDFC-88231",
+      "actor_type": "admin",
+      "actor_id": 1,
+      "created_at": "2026-11-09 18:13:59",
+      "admin_name": "Test Admin"
+     }
+    ]
+   }
+  }
+ },
+ "admin/payments.php?status=pending": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "counts": {
+     "pending": 2,
+     "approved": 2,
+     "rejected": 0
+    },
+    "payments": [
+     {
+      "id": 4,
+      "request_no": "RR-202611-000004",
+      "status": "pending",
+      "source": "app",
+      "created_at": "2026-11-09 18:14:00",
+      "method": "upi",
+      "utr": "712345678904",
+      "paid_on": "2026-11-09",
+      "amount": 400,
+      "expected_amount": 499,
+      "invoice_total": 499,
+      "owner_note": null,
+      "admin_remarks": null,
+      "review_note": null,
+      "reviewed_at": null,
+      "reviewer_name": null,
+      "gateway_status": null,
+      "has_screenshot": true,
+      "owner": {
+       "id": 5,
+       "name": "Vikas Mehta",
+       "username": "vikas.m",
+       "phone": "9123470003",
+       "email": "vikas.m@example.com",
+       "status": "active"
+      },
+      "invoice": {
+       "number": "SUB-202611-0005-0CC9",
+       "status": "unpaid",
+       "period_start": "2026-12-20",
+       "period_end": "2027-01-18",
+       "current_package": "Monthly 499",
+       "requested_package": "Monthly 499",
+       "duration_days": 30
+      },
+      "checks": {
+       "amount_differs": true,
+       "short_paid": true,
+       "same_utr_count": 0,
+       "ocr": {
+        "utr": "712345678909",
+        "utr_matches": false,
+        "amount": 400,
+        "amount_matches": true,
+        "paid_on": null,
+        "status": "success",
+        "app": "paytm"
+       }
+      }
+     },
+     {
+      "id": 3,
+      "request_no": "RR-202611-000003",
+      "status": "pending",
+      "source": "app",
+      "created_at": "2026-11-09 18:14:00",
+      "method": "upi",
+      "utr": "612345678903",
+      "paid_on": "2026-11-09",
+      "amount": 499,
+      "expected_amount": 499,
+      "invoice_total": 499,
+      "owner_note": null,
+      "admin_remarks": null,
+      "review_note": null,
+      "reviewed_at": null,
+      "reviewer_name": null,
+      "gateway_status": null,
+      "has_screenshot": true,
+      "owner": {
+       "id": 4,
+       "name": "Neha Joshi",
+       "username": "neha.j",
+       "phone": "9123470002",
+       "email": "neha.j@example.com",
+       "status": "active"
+      },
+      "invoice": {
+       "number": "SUB-202611-0004-0B61",
+       "status": "unpaid",
+       "period_start": "2027-02-07",
+       "period_end": "2027-03-08",
+       "current_package": "Monthly 499",
+       "requested_package": "Monthly 499",
+       "duration_days": 30
+      },
+      "checks": {
+       "amount_differs": false,
+       "short_paid": false,
+       "same_utr_count": 0,
+       "ocr": {
+        "utr": "612345678903",
+        "utr_matches": true,
+        "amount": 499,
+        "amount_matches": true,
+        "paid_on": null,
+        "status": "success",
+        "app": "phonepe"
+       }
+      }
+     }
+    ]
+   }
+  }
+ },
+ "admin/payments.php?id=4": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 4,
+    "request_no": "RR-202611-000004",
+    "status": "pending",
+    "source": "app",
+    "created_at": "2026-11-09 18:14:00",
+    "method": "upi",
+    "utr": "712345678904",
+    "paid_on": "2026-11-09",
+    "amount": 400,
+    "expected_amount": 499,
+    "invoice_total": 499,
+    "owner_note": null,
+    "admin_remarks": null,
+    "review_note": null,
+    "reviewed_at": null,
+    "reviewer_name": null,
+    "gateway_status": null,
+    "has_screenshot": true,
+    "owner": {
+     "id": 5,
+     "name": "Vikas Mehta",
+     "username": "vikas.m",
+     "phone": "9123470003",
+     "email": "vikas.m@example.com",
+     "status": "active"
+    },
+    "invoice": {
+     "number": "SUB-202611-0005-0CC9",
+     "status": "unpaid",
+     "period_start": "2026-12-20",
+     "period_end": "2027-01-18",
+     "current_package": "Monthly 499",
+     "requested_package": "Monthly 499",
+     "duration_days": 30
+    },
+    "checks": {
+     "amount_differs": true,
+     "short_paid": true,
+     "same_utr_count": 0,
+     "ocr": {
+      "utr": "712345678909",
+      "utr_matches": false,
+      "amount": 400,
+      "amount_matches": true,
+      "paid_on": null,
+      "status": "success",
+      "app": "paytm"
+     }
+    }
+   }
+  }
+ },
+ "admin/payments.php?id=3": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 3,
+    "request_no": "RR-202611-000003",
+    "status": "pending",
+    "source": "app",
+    "created_at": "2026-11-09 18:14:00",
+    "method": "upi",
+    "utr": "612345678903",
+    "paid_on": "2026-11-09",
+    "amount": 499,
+    "expected_amount": 499,
+    "invoice_total": 499,
+    "owner_note": null,
+    "admin_remarks": null,
+    "review_note": null,
+    "reviewed_at": null,
+    "reviewer_name": null,
+    "gateway_status": null,
+    "has_screenshot": true,
+    "owner": {
+     "id": 4,
+     "name": "Neha Joshi",
+     "username": "neha.j",
+     "phone": "9123470002",
+     "email": "neha.j@example.com",
+     "status": "active"
+    },
+    "invoice": {
+     "number": "SUB-202611-0004-0B61",
+     "status": "unpaid",
+     "period_start": "2027-02-07",
+     "period_end": "2027-03-08",
+     "current_package": "Monthly 499",
+     "requested_package": "Monthly 499",
+     "duration_days": 30
+    },
+    "checks": {
+     "amount_differs": false,
+     "short_paid": false,
+     "same_utr_count": 0,
+     "ocr": {
+      "utr": "612345678903",
+      "utr_matches": true,
+      "amount": 499,
+      "amount_matches": true,
+      "paid_on": null,
+      "status": "success",
+      "app": "phonepe"
+     }
+    }
+   }
+  }
+ },
+ "admin/payments.php?status=approved": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "counts": {
+     "pending": 2,
+     "approved": 2,
+     "rejected": 0
+    },
+    "payments": [
+     {
+      "id": 2,
+      "request_no": "RR-202611-000002",
+      "status": "approved",
+      "source": "app",
+      "created_at": "2026-11-09 18:14:00",
+      "method": "upi",
+      "utr": "512345678902",
+      "paid_on": "2026-11-09",
+      "amount": 499,
+      "expected_amount": 499,
+      "invoice_total": 499,
+      "owner_note": null,
+      "admin_remarks": null,
+      "review_note": null,
+      "reviewed_at": "2026-11-09 18:14:00",
+      "reviewer_name": "Test Admin",
+      "gateway_status": null,
+      "has_screenshot": true,
+      "owner": {
+       "id": 4,
+       "name": "Neha Joshi",
+       "username": "neha.j",
+       "phone": "9123470002",
+       "email": "neha.j@example.com",
+       "status": "active"
+      },
+      "invoice": {
+       "number": "SUB-202611-0004-3AAA",
+       "status": "paid",
+       "period_start": "2027-01-08",
+       "period_end": "2027-02-06",
+       "current_package": "Monthly 499",
+       "requested_package": "Monthly 499",
+       "duration_days": 30
+      },
+      "checks": {
+       "amount_differs": false,
+       "short_paid": false,
+       "same_utr_count": 0,
+       "ocr": {
+        "utr": "512345678902",
+        "utr_matches": true,
+        "amount": 499,
+        "amount_matches": true,
+        "paid_on": null,
+        "status": "success",
+        "app": "gpay"
+       }
+      }
+     },
+     {
+      "id": 1,
+      "request_no": "RR-202611-000001",
+      "status": "approved",
+      "source": "app",
+      "created_at": "2026-11-09 18:13:59",
+      "method": "upi",
+      "utr": "412345678901",
+      "paid_on": "2026-11-09",
+      "amount": 499,
+      "expected_amount": 499,
+      "invoice_total": 499,
+      "owner_note": null,
+      "admin_remarks": null,
+      "review_note": "In HDFC statement",
+      "reviewed_at": "2026-11-09 18:13:59",
+      "reviewer_name": "Test Admin",
+      "gateway_status": null,
+      "has_screenshot": true,
+      "owner": {
+       "id": 3,
+       "name": "Amit Kulkarni",
+       "username": "amit.k",
+       "phone": "9123470001",
+       "email": "amit.k@example.com",
+       "status": "active"
+      },
+      "invoice": {
+       "number": "SUB-202611-0003-913A",
+       "status": "paid",
+       "period_start": "2027-01-08",
+       "period_end": "2027-02-06",
+       "current_package": "Monthly 499",
+       "requested_package": "Monthly 499",
+       "duration_days": 30
+      },
+      "checks": {
+       "amount_differs": false,
+       "short_paid": false,
+       "same_utr_count": 0,
+       "ocr": {
+        "utr": "412345678901",
+        "utr_matches": true,
+        "amount": 499,
+        "amount_matches": true,
+        "paid_on": null,
+        "status": "success",
+        "app": "phonepe"
+       }
+      }
+     }
+    ]
+   }
+  }
+ },
+ "admin/payments.php?id=2": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 2,
+    "request_no": "RR-202611-000002",
+    "status": "approved",
+    "source": "app",
+    "created_at": "2026-11-09 18:14:00",
+    "method": "upi",
+    "utr": "512345678902",
+    "paid_on": "2026-11-09",
+    "amount": 499,
+    "expected_amount": 499,
+    "invoice_total": 499,
+    "owner_note": null,
+    "admin_remarks": null,
+    "review_note": null,
+    "reviewed_at": "2026-11-09 18:14:00",
+    "reviewer_name": "Test Admin",
+    "gateway_status": null,
+    "has_screenshot": true,
+    "owner": {
+     "id": 4,
+     "name": "Neha Joshi",
+     "username": "neha.j",
+     "phone": "9123470002",
+     "email": "neha.j@example.com",
+     "status": "active"
+    },
+    "invoice": {
+     "number": "SUB-202611-0004-3AAA",
+     "status": "paid",
+     "period_start": "2027-01-08",
+     "period_end": "2027-02-06",
+     "current_package": "Monthly 499",
+     "requested_package": "Monthly 499",
+     "duration_days": 30
+    },
+    "checks": {
+     "amount_differs": false,
+     "short_paid": false,
+     "same_utr_count": 0,
+     "ocr": {
+      "utr": "512345678902",
+      "utr_matches": true,
+      "amount": 499,
+      "amount_matches": true,
+      "paid_on": null,
+      "status": "success",
+      "app": "gpay"
+     }
+    }
+   }
+  }
+ },
+ "admin/payments.php?id=1": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "id": 1,
+    "request_no": "RR-202611-000001",
+    "status": "approved",
+    "source": "app",
+    "created_at": "2026-11-09 18:13:59",
+    "method": "upi",
+    "utr": "412345678901",
+    "paid_on": "2026-11-09",
+    "amount": 499,
+    "expected_amount": 499,
+    "invoice_total": 499,
+    "owner_note": null,
+    "admin_remarks": null,
+    "review_note": "In HDFC statement",
+    "reviewed_at": "2026-11-09 18:13:59",
+    "reviewer_name": "Test Admin",
+    "gateway_status": null,
+    "has_screenshot": true,
+    "owner": {
+     "id": 3,
+     "name": "Amit Kulkarni",
+     "username": "amit.k",
+     "phone": "9123470001",
+     "email": "amit.k@example.com",
+     "status": "active"
+    },
+    "invoice": {
+     "number": "SUB-202611-0003-913A",
+     "status": "paid",
+     "period_start": "2027-01-08",
+     "period_end": "2027-02-06",
+     "current_package": "Monthly 499",
+     "requested_package": "Monthly 499",
+     "duration_days": 30
+    },
+    "checks": {
+     "amount_differs": false,
+     "short_paid": false,
+     "same_utr_count": 0,
+     "ocr": {
+      "utr": "412345678901",
+      "utr_matches": true,
+      "amount": 499,
+      "amount_matches": true,
+      "paid_on": null,
+      "status": "success",
+      "app": "phonepe"
+     }
+    }
+   }
+  }
+ },
+ "admin/payments.php?status=rejected": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "counts": {
+     "pending": 2,
+     "approved": 2,
+     "rejected": 0
+    },
+    "payments": []
+   }
+  }
+ },
+ "admin/payments.php?status=all": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "counts": {
+     "pending": 2,
+     "approved": 2,
+     "rejected": 0
+    },
+    "payments": [
+     {
+      "id": 4,
+      "request_no": "RR-202611-000004",
+      "status": "pending",
+      "source": "app",
+      "created_at": "2026-11-09 18:14:00",
+      "method": "upi",
+      "utr": "712345678904",
+      "paid_on": "2026-11-09",
+      "amount": 400,
+      "expected_amount": 499,
+      "invoice_total": 499,
+      "owner_note": null,
+      "admin_remarks": null,
+      "review_note": null,
+      "reviewed_at": null,
+      "reviewer_name": null,
+      "gateway_status": null,
+      "has_screenshot": true,
+      "owner": {
+       "id": 5,
+       "name": "Vikas Mehta",
+       "username": "vikas.m",
+       "phone": "9123470003",
+       "email": "vikas.m@example.com",
+       "status": "active"
+      },
+      "invoice": {
+       "number": "SUB-202611-0005-0CC9",
+       "status": "unpaid",
+       "period_start": "2026-12-20",
+       "period_end": "2027-01-18",
+       "current_package": "Monthly 499",
+       "requested_package": "Monthly 499",
+       "duration_days": 30
+      },
+      "checks": {
+       "amount_differs": true,
+       "short_paid": true,
+       "same_utr_count": 0,
+       "ocr": {
+        "utr": "712345678909",
+        "utr_matches": false,
+        "amount": 400,
+        "amount_matches": true,
+        "paid_on": null,
+        "status": "success",
+        "app": "paytm"
+       }
+      }
+     },
+     {
+      "id": 3,
+      "request_no": "RR-202611-000003",
+      "status": "pending",
+      "source": "app",
+      "created_at": "2026-11-09 18:14:00",
+      "method": "upi",
+      "utr": "612345678903",
+      "paid_on": "2026-11-09",
+      "amount": 499,
+      "expected_amount": 499,
+      "invoice_total": 499,
+      "owner_note": null,
+      "admin_remarks": null,
+      "review_note": null,
+      "reviewed_at": null,
+      "reviewer_name": null,
+      "gateway_status": null,
+      "has_screenshot": true,
+      "owner": {
+       "id": 4,
+       "name": "Neha Joshi",
+       "username": "neha.j",
+       "phone": "9123470002",
+       "email": "neha.j@example.com",
+       "status": "active"
+      },
+      "invoice": {
+       "number": "SUB-202611-0004-0B61",
+       "status": "unpaid",
+       "period_start": "2027-02-07",
+       "period_end": "2027-03-08",
+       "current_package": "Monthly 499",
+       "requested_package": "Monthly 499",
+       "duration_days": 30
+      },
+      "checks": {
+       "amount_differs": false,
+       "short_paid": false,
+       "same_utr_count": 0,
+       "ocr": {
+        "utr": "612345678903",
+        "utr_matches": true,
+        "amount": 499,
+        "amount_matches": true,
+        "paid_on": null,
+        "status": "success",
+        "app": "phonepe"
+       }
+      }
+     },
+     {
+      "id": 2,
+      "request_no": "RR-202611-000002",
+      "status": "approved",
+      "source": "app",
+      "created_at": "2026-11-09 18:14:00",
+      "method": "upi",
+      "utr": "512345678902",
+      "paid_on": "2026-11-09",
+      "amount": 499,
+      "expected_amount": 499,
+      "invoice_total": 499,
+      "owner_note": null,
+      "admin_remarks": null,
+      "review_note": null,
+      "reviewed_at": "2026-11-09 18:14:00",
+      "reviewer_name": "Test Admin",
+      "gateway_status": null,
+      "has_screenshot": true,
+      "owner": {
+       "id": 4,
+       "name": "Neha Joshi",
+       "username": "neha.j",
+       "phone": "9123470002",
+       "email": "neha.j@example.com",
+       "status": "active"
+      },
+      "invoice": {
+       "number": "SUB-202611-0004-3AAA",
+       "status": "paid",
+       "period_start": "2027-01-08",
+       "period_end": "2027-02-06",
+       "current_package": "Monthly 499",
+       "requested_package": "Monthly 499",
+       "duration_days": 30
+      },
+      "checks": {
+       "amount_differs": false,
+       "short_paid": false,
+       "same_utr_count": 0,
+       "ocr": {
+        "utr": "512345678902",
+        "utr_matches": true,
+        "amount": 499,
+        "amount_matches": true,
+        "paid_on": null,
+        "status": "success",
+        "app": "gpay"
+       }
+      }
+     },
+     {
+      "id": 1,
+      "request_no": "RR-202611-000001",
+      "status": "approved",
+      "source": "app",
+      "created_at": "2026-11-09 18:13:59",
+      "method": "upi",
+      "utr": "412345678901",
+      "paid_on": "2026-11-09",
+      "amount": 499,
+      "expected_amount": 499,
+      "invoice_total": 499,
+      "owner_note": null,
+      "admin_remarks": null,
+      "review_note": "In HDFC statement",
+      "reviewed_at": "2026-11-09 18:13:59",
+      "reviewer_name": "Test Admin",
+      "gateway_status": null,
+      "has_screenshot": true,
+      "owner": {
+       "id": 3,
+       "name": "Amit Kulkarni",
+       "username": "amit.k",
+       "phone": "9123470001",
+       "email": "amit.k@example.com",
+       "status": "active"
+      },
+      "invoice": {
+       "number": "SUB-202611-0003-913A",
+       "status": "paid",
+       "period_start": "2027-01-08",
+       "period_end": "2027-02-06",
+       "current_package": "Monthly 499",
+       "requested_package": "Monthly 499",
+       "duration_days": 30
+      },
+      "checks": {
+       "amount_differs": false,
+       "short_paid": false,
+       "same_utr_count": 0,
+       "ocr": {
+        "utr": "412345678901",
+        "utr_matches": true,
+        "amount": 499,
+        "amount_matches": true,
+        "paid_on": null,
+        "status": "success",
+        "app": "phonepe"
+       }
+      }
+     }
+    ]
+   }
+  }
+ },
+ "__files__": {
+  "4": "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A8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8j+B4hq8opGUUrtAAAAAElFTkSuQmCC",
+  "3": "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A8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8j+B4hq8opGUUrtAAAAAElFTkSuQmCC",
+  "2": "iVBORw0KGgoAAAANSUhEUgAAAWgAAAKACAIAAAA+eHXwAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAMJElEQVR4nO3aXY7TWAKA0TCiZyVIiKUxC2KWhpDYBkLiaR6ijjL+ueXPlao46XOEWkWcXF/Tdb/YTj789e3rCaD4170nADwe4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QCyj/eewKH9+fpt/uC///uf95/Jzc0P7eGO6/oQNk7+8pKHO9ij+fDXt6/3nsNxnX/Prn/J5o8cQZ3VoxzXwPWE0+Qf7kiPyRkHp5OFRCQcrzI54V97A7w88ufrt/N/L39dfOb1aJOXL26aPO31RzQ4GVk85LRp8JLBjk7rhzb/hxocDjchHC9bWw/zFXXuwoujnRMw+eE0O/2ejHb9tMvPO87VT383aLDOB5NfO+SNmwYvud462LTxGHlTwvGyF9/obmKyVCZNGW/aYfLaLQPOF/PgrX5t03jygwm83UkWOwjHfoufuRxwzCNY+3xq7cRnvOkkGfcmHDuNb0/s9qwrYeNZ2/wqbHETd+cLYLcxv/l3eWRjUCavOv29VHbM5MVXDZ4zmPxghvs2Daax79j3/cuzg+9xjIzPhyeLau3Th8WPUdY+WKkf06xNZuOhzfc1mPxghrs37f5UZfC/ZuPknby8hnDc3vyM2gU5T0Y43sT27yDAIxIOIHNzFMiEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8g+/Pr9595zAB6MMw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4g+3ivHX/5/Gn+4PcfP287/vWA13uc7Giwqe5lyyZ4dHc+4/j+4+flz2mlJjvMx7ks4/mOBps27mVtd2k0eCBPeKkyqMb5r9eBGGzaspfblggexUHD8eXzp8mf7S88vf0FwluUCB7IncMxScP1MttxFbNWjckI8zsariwgOcoZxyUQO7aejc81LoH48vnT5DmDTcCiu32qcra4aL//+Dm/PNm4pCevmgw7ngaw0SHOOOYXI9fXKRsvVeYvOV0VYfDyHZcnixc45wcHm+BpHCIcp9n9xbe41zBYzON1vjif63OlyUsGm+A5fPj1+89ddry2etfOL+ryu9UXwMbfDfMFMP6Z7haOByIBMCEcQHaUexzAAxEOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIPt4x31/+fzp+4+fk79++fxp/szz0yabrl9b97X24PUuJnMb7/d6qPkhLA615fk75nPe9OIk4TXuGY5F12tm/ls+D82WMRdjNH9wMWSDxwdDrU3sxYO6Hm3HfNaeszhJ2O35L1U2nmvcdvxXPvP1M5mcuznX4LaePBxrC2b7g4PHB+Pv9kYrXDW4rcNdqoy9eK9h8uR9C2bxNsHivYnBJcniPNP8J2cNa2cT8P4eLBxrF/A39OJJyot7nxfnes2/uKO1JwzGGQwCb+HBwnF2fsvd0o56nV+TdNv7CO5E8CgeMhwb1Y9g1p6z5UaJNc8/yqPeHD3ydf57TmztkxQh403d84xj7ebfO7heYKf/v39x/bTz43WeG29q7h7ntHSndvKSwXdDtuwaxj78+v3n3nMAHsyjXqoAdyQcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQPbxXjv+8vnT/MHvP36+fqh9g1yPtn2E867r88+2vKqOf1qffzouGLtbOC6/xDf5hb4e4T1XyPcfPxcLuGgysS3zTOPDu7lbOA7oskR3vM8fwXj+D3c4HNlBw1FP6dM457f6y6bL4+cfFk8EbjWfa5Ozj+3jr525vDj/jce19u8DF0cMx45T+sECWBxn7edbzWfRZTVOXn6r8bfseuN+078P/0BHDMcOgzfbwfPT4KeVG7rJZZ51Du/syHPjCJ4kHGfn99W1S4DXuF7qN8yH9cmDeqpwzN1kZd5qhSsFT+PZvgB2w88vF8c52oejg/kcbao8kyOecUwW/+536X3jzG9hTj5imHzqedp8z2JtPmuPr42/Np+1+W8ZZ8v84eLDr99/7j0H4ME826UK8A6EA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8j+B4hq8opGUUrtAAAAAElFTkSuQmCC",
+  "1": "iVBORw0KGgoAAAANSUhEUgAAAWgAAAKACAIAAAA+eHXwAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAMJElEQVR4nO3aXY7TWAKA0TCiZyVIiKUxC2KWhpDYBkLiaR6ijjL+ueXPlao46XOEWkWcXF/Tdb/YTj789e3rCaD4170nADwe4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QAy4QCyj/eewKH9+fpt/uC///uf95/Jzc0P7eGO6/oQNk7+8pKHO9ij+fDXt6/3nsNxnX/Prn/J5o8cQZ3VoxzXwPWE0+Qf7kiPyRkHp5OFRCQcrzI54V97A7w88ufrt/N/L39dfOb1aJOXL26aPO31RzQ4GVk85LRp8JLBjk7rhzb/hxocDjchHC9bWw/zFXXuwoujnRMw+eE0O/2ejHb9tMvPO87VT383aLDOB5NfO+SNmwYvud462LTxGHlTwvGyF9/obmKyVCZNGW/aYfLaLQPOF/PgrX5t03jygwm83UkWOwjHfoufuRxwzCNY+3xq7cRnvOkkGfcmHDuNb0/s9qwrYeNZ2/wqbHETd+cLYLcxv/l3eWRjUCavOv29VHbM5MVXDZ4zmPxghvs2Daax79j3/cuzg+9xjIzPhyeLau3Th8WPUdY+WKkf06xNZuOhzfc1mPxghrs37f5UZfC/ZuPknby8hnDc3vyM2gU5T0Y43sT27yDAIxIOIHNzFMiEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8g+/Pr9595zAB6MMw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4gEw4g+3ivHX/5/Gn+4PcfP287/vWA13uc7Giwqe5lyyZ4dHc+4/j+4+flz2mlJjvMx7ks4/mOBps27mVtd2k0eCBPeKkyqMb5r9eBGGzaspfblggexUHD8eXzp8mf7S88vf0FwluUCB7IncMxScP1MttxFbNWjckI8zsariwgOcoZxyUQO7aejc81LoH48vnT5DmDTcCiu32qcra4aL//+Dm/PNm4pCevmgw7ngaw0SHOOOYXI9fXKRsvVeYvOV0VYfDyHZcnixc45wcHm+BpHCIcp9n9xbe41zBYzON1vjif63OlyUsGm+A5fPj1+89ddry2etfOL+ryu9UXwMbfDfMFMP6Z7haOByIBMCEcQHaUexzAAxEOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIBMOIPt4x31/+fzp+4+fk79++fxp/szz0yabrl9b97X24PUuJnMb7/d6qPkhLA615fk75nPe9OIk4TXuGY5F12tm/ls+D82WMRdjNH9wMWSDxwdDrU3sxYO6Hm3HfNaeszhJ2O35L1U2nmvcdvxXPvP1M5mcuznX4LaePBxrC2b7g4PHB+Pv9kYrXDW4rcNdqoy9eK9h8uR9C2bxNsHivYnBJcniPNP8J2cNa2cT8P4eLBxrF/A39OJJyot7nxfnes2/uKO1JwzGGQwCb+HBwnF2fsvd0o56nV+TdNv7CO5E8CgeMhwb1Y9g1p6z5UaJNc8/yqPeHD3ydf57TmztkxQh403d84xj7ebfO7heYKf/v39x/bTz43WeG29q7h7ntHSndvKSwXdDtuwaxj78+v3n3nMAHsyjXqoAdyQcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQCYcQPbxXjv+8vnT/MHvP36+fqh9g1yPtn2E867r88+2vKqOf1qffzouGLtbOC6/xDf5hb4e4T1XyPcfPxcLuGgysS3zTOPDu7lbOA7oskR3vM8fwXj+D3c4HNlBw1FP6dM457f6y6bL4+cfFk8EbjWfa5Ozj+3jr525vDj/jce19u8DF0cMx45T+sECWBxn7edbzWfRZTVOXn6r8bfseuN+078P/0BHDMcOgzfbwfPT4KeVG7rJZZ51Du/syHPjCJ4kHGfn99W1S4DXuF7qN8yH9cmDeqpwzN1kZd5qhSsFT+PZvgB2w88vF8c52oejg/kcbao8kyOecUwW/+536X3jzG9hTj5imHzqedp8z2JtPmuPr42/Np+1+W8ZZ8v84eLDr99/7j0H4ME826UK8A6EA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8iEA8j+B4hq8opGUUrtAAAAAElFTkSuQmCC"
+ },
+ "POST auth/login.php": {
+  "status": "success",
+  "message": "Login successful.",
+  "data": {
+   "token": "replay-admin-token",
+   "expires_in": 86400,
+   "user_type": "admin",
+   "user": {
+    "id": 1,
+    "username": "testadmin",
+    "email": "admin@test.invalid",
+    "full_name": "Test Admin",
+    "phone": null,
+    "status": "active",
+    "lang_pref": null,
+    "last_login": "2026-11-09 18:13:59",
+    "created_at": "2026-11-09 12:43:59",
+    "user_type": "admin"
+   },
+   "lang": "en",
+   "subscription": null
+  }
+ },
+ "POST auth/login.php#owner": {
+  "status": "success",
+  "message": "Login successful.",
+  "data": {
+   "token": "replay-owner-token",
+   "expires_in": 86400,
+   "user_type": "owner",
+   "user": {
+    "id": 1,
+    "package_id": 1,
+    "username": "testowner",
+    "email": "owner@test.invalid",
+    "full_name": "Ramesh Patel",
+    "phone": "9000000001",
+    "address": null,
+    "business_name": "Patel Residency",
+    "logo": null,
+    "status": "active",
+    "lang_pref": null,
+    "last_login": null,
+    "created_at": "2026-11-09 12:43:59",
+    "updated_at": null,
+    "is_test": 0,
+    "referral_code": "RSP882P2",
+    "photo": null,
+    "user_type": "owner"
+   },
+   "lang": "en",
+   "subscription": {
+    "state": "active",
+    "restricted": false,
+    "mode": "read_only",
+    "end_date": "2026-12-04",
+    "days_left": 25,
+    "is_trial": false,
+    "package_name": "Test Basic"
+   }
+  }
+ }
+}

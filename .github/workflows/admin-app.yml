@@ -1,0 +1,82 @@
+# Rental Solution Admin app (private, Super Admin only; not published on Play).
+# Unit tests → debug APK (for the emulator test) → release bundle (unsigned; signed afterwards with the admin key)
+# → emulator walkthrough of every screen and action against a replay of the real admin API (made-up accounts).
+name: Admin app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ admin-app ]
+
+permissions:
+  contents: write   # draft (team-only) release with the build outputs and screenshots
+
+jobs:
+  admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Unit tests (API client against recorded server answers)
+        run: ./gradlew :admin:testDebugUnitTest --stacktrace
+
+      - name: Debug APK (pointed at the emulator replay server) + release bundle + lint
+        id: build
+        run: |
+          ./gradlew :admin:assembleDebug -Padmin.apiBaseUrlDebug=http://10.0.2.2:8091/api/v1/ :admin:bundleRelease :admin:assembleRelease :admin:lintDebug --stacktrace 2>&1 | tee build-output.txt; exit ${PIPESTATUS[0]}
+
+      - name: Show build errors as annotations
+        if: failure() && steps.build.outcome == 'failure'
+        run: |
+          grep -E "^e: |error:|What went wrong|Error:" -A2 build-output.txt | head -40 | while IFS= read -r l; do
+            echo "::error title=build::$(echo "$l" | sed 's#file:///home/runner/work/retal_solution/retal_solution/##' | cut -c1-400)"
+          done
+
+      - name: Start the replay server
+        run: nohup python3 tools/admin-replay/replay.py tools/admin-replay/fixtures.json 8091 > replay.log 2>&1 &
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Walk through the app on an emulator (Android 11)
+        id: ui
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r admin/build/outputs/apk/debug/admin-debug.apk
+            python3 tools/admin-replay/ui_test.py 2>&1 | tee ui-test.txt; exit ${PIPESTATUS[0]}
+
+      - name: Report
+        if: always()
+        run: |
+          grep -E "^(PASS|FAIL)|passed$" ui-test.txt 2>/dev/null | tail -80 || true
+          [ -f admin-replay-posts.txt ] && echo "--- actions sent by the app:" && cat admin-replay-posts.txt || true
+          grep -c "^FAIL" ui-test.txt 2>/dev/null | sed 's/^/::notice title=UI walkthrough::failed checks: /' || true
+
+      - name: Publish build outputs (draft release, members only)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="admin-app-${{ github.run_number }}"
+          mkdir -p out
+          cp admin/build/outputs/bundle/release/admin-release.aab out/RSAdmin-release-unsigned.aab 2>/dev/null || true
+          cp admin/build/outputs/apk/release/admin-release-unsigned.apk out/RSAdmin-release-unsigned.apk 2>/dev/null || true
+          cp admin/build/outputs/apk/debug/admin-debug.apk out/RSAdmin-debug-emulator-only.apk 2>/dev/null || true
+          cp ui-test.txt out/ 2>/dev/null || true
+          cp admin-replay-posts.txt out/ 2>/dev/null || true
+          [ -d shots ] && (cd shots && zip -q ../out/screenshots.zip *.png) || true
+          gh release create "$TAG" out/* --draft --target "${{ github.sha }}" --title "Admin app build ${{ github.run_number }}" --notes "Admin app outputs from ${{ github.sha }}"

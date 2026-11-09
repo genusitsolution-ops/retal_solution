@@ -11,3 +11,5 @@ captures/
 keystore.properties
 *.jks
 *.keystore
+admin-replay-posts.txt
+admin-replay-misses.txt

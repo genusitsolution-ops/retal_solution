@@ -24,6 +24,7 @@ zxing = "3.5.3"
 firebaseMessaging = "24.0.1"
 androidxTestExt = "1.2.1"
 androidxTestRunner = "1.6.2"
+securityCrypto = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -63,6 +64,7 @@ androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
 [plugins]
