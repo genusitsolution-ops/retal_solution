@@ -38,6 +38,7 @@ def tap_last(t):
     if not m: return False
     x, y = center(m[-1]); sh("input", "tap", str(x), str(y)); time.sleep(0.9); return True
 def edit(i, value):
+    hide_kb()   # on a small screen the keyboard can cover the next field
     e = [n for n in nodes() if n.get("class") == "android.widget.EditText"]
     if len(e) <= i: return False
     x, y = center(e[i]); sh("input", "tap", str(x), str(y)); time.sleep(0.4)
@@ -54,11 +55,13 @@ print(f"screen {W}x{H}", flush=True)
 def swipe_up(): sh("input", "swipe", str(W // 2), str(int(H * .78)), str(W // 2), str(int(H * .30)), "350"); time.sleep(0.8)
 def to_top():
     for _ in range(4): sh("input", "swipe", str(W // 2), str(int(H * .30)), str(W // 2), str(int(H * .85)), "250")
-    time.sleep(0.6)
+    time.sleep(1.8)   # let the fling stop: a tap during a fling only stops it
 def chip(t, row_hint):
     """Taps a filter chip; scrolls the chip row sideways when the chip is off-screen."""
     for _ in range(3):
-        if tap(t, timeout=2): return True
+        if tap(t, timeout=2):
+            time.sleep(0.8); tap(t, timeout=2)   # second tap in case the first only stopped a scroll (selecting twice is harmless)
+            return True
         m = [n for n in nodes() if label(n) == row_hint or label(n).startswith(row_hint)]
         if not m: to_top(); m = [n for n in nodes() if label(n) == row_hint or label(n).startswith(row_hint)]
         if m:
