@@ -280,6 +280,7 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     collectPayment = { nav.navigate(Routes.OWNER_COLLECT) },
                     addProperty = { nav.navigate("owner/property/new") },
                     openSupport = { nav.navigate("owner/support") },
+                    openVendor = { nav.navigate("owner/vendor") },
                 )
             }
             composable(Routes.OWNER_TENANTS) { OwnerTenantsScreen(openTenant = { nav.navigate("owner/tenant/$it") }, addTenant = { nav.navigate("owner/tenant-form/0") }) }
@@ -382,6 +383,7 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
             }
             composable("owner/reports") { ReportsScreen(onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") }, openReceipt = openReceipt) }
             composable("owner/referrals") { ReferralScreen(onBack = back) }
+            composable("owner/vendor") { com.genusit.prms.ui.owner.VendorDashboardScreen(onBack = back) }
             composable("owner/collections-hub") {
                 com.genusit.prms.ui.owner.CollectionDashboardScreen(onBack = back, openEmployee = { id -> nav.navigate("owner/collections-hub/employee/$id") },
                     openSettlement = { id -> nav.navigate("handover/$id?role=owner") }, openReceipt = openReceipt)

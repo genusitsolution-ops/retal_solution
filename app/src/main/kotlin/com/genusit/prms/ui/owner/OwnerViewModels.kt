@@ -230,6 +230,11 @@ class TenantFormViewModel @Inject constructor(
     val existing = loadable(autoLoad = id != 0) { getEditable(id) }
     val saveAction = action<SaveTenantResult>()
 
+    /** 1.13: welcome message (app link, login, deposit, documents) of the tenant just added — offered before leaving. */
+    private val _welcome = MutableStateFlow<com.genusit.prms.domain.model.WhatsAppMessage?>(null)
+    val welcome: StateFlow<com.genusit.prms.domain.model.WhatsAppMessage?> = _welcome.asStateFlow()
+    fun welcomeHandled() { _welcome.value = null }
+
     private val _scan = MutableStateFlow<ScanState>(ScanState.Idle)
     val scan: StateFlow<ScanState> = _scan.asStateFlow()
 
@@ -250,6 +255,7 @@ class TenantFormViewModel @Inject constructor(
         val tokens = _uploads.value.mapValues { (it.value as? DocUpload.Uploaded)?.token }
         val withDocs = input.copy(aadhaarDraft = tokens[DocumentType.AADHAAR], panDraft = tokens[DocumentType.PAN])
         saveAction.run(onSuccess = { r ->
+            if (id == 0) _welcome.value = r.whatsapp?.takeIf { it.text.isNotBlank() }
             _uploads.value.values.forEach { scanner.discard(it.preview) }
             _uploads.value = emptyMap()
             val pending = _photo.value
@@ -511,9 +517,16 @@ class NewAllocationViewModel @Inject constructor(
     val properties = loadable { getProperties() }
     val tenants = loadable { getTenants() }
     val charges = loadable { getCharges() }
-    val allocateAction = action<Unit>()
+    val allocateAction = action<com.genusit.prms.domain.model.AllocationCreated>()
 
-    fun allocate(a: NewAllocation) = allocateAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { allocateRoom(a); Unit }
+    /** 1.13: room + deposit message for the tenant, offered after the allocation is saved. */
+    private val _depositMsg = MutableStateFlow<com.genusit.prms.domain.model.WhatsAppMessage?>(null)
+    val depositMsg: StateFlow<com.genusit.prms.domain.model.WhatsAppMessage?> = _depositMsg.asStateFlow()
+
+    fun allocate(a: NewAllocation) = allocateAction.run(onSuccess = { r ->
+        _depositMsg.value = r.whatsapp?.takeIf { it.text.isNotBlank() }
+        sendEvent(ScreenEvent.Saved)
+    }) { allocateRoom(a) }
 }
 
 /* ═════════════════════════ generate bill ═════════════════════════ */

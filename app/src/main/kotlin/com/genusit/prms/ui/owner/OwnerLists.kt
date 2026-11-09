@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
@@ -151,6 +152,14 @@ fun OwnerTenantDetailScreen(
                                 Spacer(Modifier.height(8.dp))
                                 androidx.compose.material3.OutlinedButton(onClick = { dial(ctx, t.phone!!) }) {
                                     Icon(Icons.Filled.Call, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.call))
+                                }
+                            }
+                            // 1.13: resend the login, room, deposit and document details (no password) on WhatsApp
+                            t.whatsapp?.takeIf { it.text.isNotBlank() }?.let { msg ->
+                                Spacer(Modifier.height(8.dp))
+                                androidx.compose.material3.Button(onClick = { com.genusit.prms.ui.common.sendWhatsAppMessage(ctx, msg) },
+                                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF075E54), contentColor = androidx.compose.ui.graphics.Color.White)) {
+                                    Icon(Icons.Filled.Share, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.wa_send_details))
                                 }
                             }
                             Spacer(Modifier.height(8.dp))

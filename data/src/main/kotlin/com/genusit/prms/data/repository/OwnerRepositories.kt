@@ -42,6 +42,8 @@ class ReportRepositoryImpl @Inject constructor(
         caller.get(ListSerializer(RevenueRow.serializer())) { api.ownerReport("revenue", from.orNullIfBlank(), to.orNullIfBlank()) }
     override suspend fun pending(): PendingReport = caller.get(PendingReport.serializer()) { api.ownerReport("pending", null, null) }
     override suspend fun referrals(): ReferralSummary = caller.get(ReferralSummary.serializer()) { api.ownerReferrals() }
+    override suspend fun vendorDashboard(): com.genusit.prms.domain.model.VendorDashboard =
+        caller.get(com.genusit.prms.domain.model.VendorDashboard.serializer()) { api.ownerVendor() }
 }
 
 class PropertyRepositoryImpl @Inject constructor(

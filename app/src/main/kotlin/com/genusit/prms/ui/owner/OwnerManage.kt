@@ -103,15 +103,21 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val uploads by model.uploads.collectAsStateWithLifecycle()
     val uploadBusy = uploads.values.any { it is DocUpload.Uploading }
     val formCtx = androidx.compose.ui.platform.LocalContext.current
+    // 1.13: after adding, the welcome message is offered first; the screen closes when the owner chose Send or Later
+    val welcome by model.welcome.collectAsStateWithLifecycle()
+    var leaveAfterWelcome by remember { mutableStateOf(false) }
     EventEffect(model) {
-        if (it == ScreenEvent.Saved) onSaved()
-        if (it == ScreenEvent.SavedDocumentFailed) {
+        if (it == ScreenEvent.SavedDocumentFailed)
             android.widget.Toast.makeText(formCtx, formCtx.getString(R.string.doc_upload_failed_after_save), android.widget.Toast.LENGTH_LONG).show()
-            onSaved()
-        }
-        if (it == ScreenEvent.SavedPhotoFailed) {
+        if (it == ScreenEvent.SavedPhotoFailed)
             android.widget.Toast.makeText(formCtx, formCtx.getString(R.string.photo_failed_after_save), android.widget.Toast.LENGTH_LONG).show()
-            onSaved()
+        if (it == ScreenEvent.Saved || it == ScreenEvent.SavedDocumentFailed || it == ScreenEvent.SavedPhotoFailed) {
+            if (model.welcome.value != null) leaveAfterWelcome = true else onSaved()
+        }
+    }
+    welcome?.let { msg ->
+        if (leaveAfterWelcome) com.genusit.prms.ui.common.WhatsAppSendDialog(stringResource(R.string.wa_welcome_title), msg) {
+            model.welcomeHandled(); leaveAfterWelcome = false; onSaved()
         }
     }
     val pendingPhoto by model.photo.collectAsStateWithLifecycle()
@@ -579,7 +585,11 @@ fun NewAllocationScreen(onBack: () -> Unit, onDone: () -> Unit) {
     val tState by model.tenants.state.collectAsStateWithLifecycle()
     val cState by model.charges.state.collectAsStateWithLifecycle()
     val act by model.allocateAction.state.collectAsStateWithLifecycle()
-    EventEffect(model) { if (it == ScreenEvent.Saved) onDone() }
+    // 1.13: offer the room + deposit message before leaving
+    val depositMsg by model.depositMsg.collectAsStateWithLifecycle()
+    var saved by remember { mutableStateOf(false) }
+    EventEffect(model) { if (it == ScreenEvent.Saved) { if (model.depositMsg.value != null) saved = true else onDone() } }
+    depositMsg?.let { msg -> if (saved) com.genusit.prms.ui.common.WhatsAppSendDialog(stringResource(R.string.wa_deposit_title), msg) { saved = false; onDone() } }
 
     var propId by rememberSaveable { mutableStateOf(0) }
     var tenantId by rememberSaveable { mutableStateOf(0) }

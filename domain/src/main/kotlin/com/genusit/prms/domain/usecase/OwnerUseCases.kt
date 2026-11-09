@@ -32,6 +32,10 @@ class GetReferralsUseCase @Inject constructor(private val repo: ReportRepository
     suspend operator fun invoke(): ReferralSummary = repo.referrals()
 }
 
+class GetVendorDashboardUseCase @Inject constructor(private val repo: ReportRepository) {
+    suspend operator fun invoke(): com.genusit.prms.domain.model.VendorDashboard = repo.vendorDashboard()
+}
+
 /* ───────── rooms ───────── */
 
 class GetPropertiesUseCase @Inject constructor(private val repo: PropertyRepository) {
@@ -75,8 +79,12 @@ class GetEditableTenantUseCase @Inject constructor(private val repo: TenantAdmin
 class SaveTenantUseCase @Inject constructor(private val repo: TenantAdminRepository) {
     suspend operator fun invoke(id: Int, input: TenantInput, idempotencyKey: String? = null): SaveTenantResult {
         val sent = listOfNotNull(input.aadhaarDraft?.let { "aadhaar" }, input.panDraft?.let { "pan" })
-        val (tenantId, attached) = if (id == 0) repo.add(input, idempotencyKey).let { it.id to it.documents } else id to repo.update(id, input)
-        return SaveTenantResult(tenantId, sent.all { attached[it] == true })
+        if (id == 0) {
+            val r = repo.add(input, idempotencyKey)
+            return SaveTenantResult(r.id, sent.all { r.documents[it] == true }, r.whatsapp)
+        }
+        val attached = repo.update(id, input)
+        return SaveTenantResult(id, sent.all { attached[it] == true })
     }
 }
 

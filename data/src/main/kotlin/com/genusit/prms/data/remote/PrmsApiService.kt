@@ -77,6 +77,10 @@ interface PrmsApiService {
     @GET("owner/referrals.php")
     suspend fun ownerReferrals(): Response<ResponseBody>
 
+    /** 1.13: Vendor Dashboard (active vendors only). */
+    @GET("owner/vendor.php")
+    suspend fun ownerVendor(): Response<ResponseBody>
+
     /* ───────── owner: rooms ───────── */
 
     @GET("owner/properties.php")

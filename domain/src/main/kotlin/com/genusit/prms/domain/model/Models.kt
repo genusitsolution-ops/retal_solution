@@ -295,6 +295,8 @@ data class OwnerDashboard(
     @SerialName("dues_by_tenant") val duesByTenant: List<TenantDues> = emptyList(),
     @SerialName("chart_6months") val chart: List<ChartPoint> = emptyList(),
     val subscription: SubscriptionBrief? = null,
+    /** 1.13: true when the owner is an active vendor (shows the Vendor Dashboard). False on older servers. */
+    @SerialName("is_vendor") val isVendor: Boolean = false,
 )
 
 @Serializable
@@ -348,6 +350,8 @@ data class CreatedId(
     @SerialName("ticket_id") val ticketId: String? = null,
     /** owner/tenants.php: which draft documents were attached ({"aadhaar":true}). */
     val documents: Map<String, Boolean> = emptyMap(),
+    /** 1.13 owner/tenants.php (add): welcome message with the login details for WhatsApp. */
+    val whatsapp: WhatsAppMessage? = null,
 )
 
 @Serializable
@@ -397,6 +401,8 @@ data class TenantDetail(
     @SerialName("tenant_type") val tenantType: String = "new",
     val summary: TenantMoneySummary? = null,
     @SerialName("opening_balances") val openingBalances: List<OpeningBalanceInfo> = emptyList(),
+    /** 1.13: resend the welcome (login, room, deposit, documents — without the password) on WhatsApp. */
+    val whatsapp: WhatsAppMessage? = null,
 )
 
 @Serializable

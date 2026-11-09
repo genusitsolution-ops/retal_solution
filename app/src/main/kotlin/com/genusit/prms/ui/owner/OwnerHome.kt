@@ -65,6 +65,7 @@ fun OwnerHomeScreen(
     collectPayment: () -> Unit = {},
     addProperty: () -> Unit = {},
     openSupport: () -> Unit = {},
+    openVendor: () -> Unit = {},
 ) {
     val model: OwnerHomeViewModel = hiltViewModel()
     val vm = model.dashboard
@@ -106,6 +107,8 @@ fun OwnerHomeScreen(
                 item { GenerateBillCard(onClick = generateBill) }
                 // 1.12.1: the owner's everyday actions one tap away
                 item { QuickActionsRow(addTenant, collectPayment, addProperty) }
+                // 1.13: owners converted to vendors by the Super Admin
+                if (d.isVendor) item { VendorHomeCard(openVendor) }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         StatTile(Icons.Filled.Apartment, stringResource(R.string.rooms_occupied), "${s.occupiedProperties}/${s.properties}", Palette.Brand, Modifier.weight(1f), onClick = openProperties)

@@ -163,6 +163,8 @@ interface ReportRepository {
     suspend fun revenue(from: String?, to: String?): List<RevenueRow>
     suspend fun pending(): PendingReport
     suspend fun referrals(): ReferralSummary
+    /** 1.13: owner/vendor.php — only for active vendors (403 otherwise). */
+    suspend fun vendorDashboard(): VendorDashboard
 }
 
 /** Owner: plan status and renewal. */

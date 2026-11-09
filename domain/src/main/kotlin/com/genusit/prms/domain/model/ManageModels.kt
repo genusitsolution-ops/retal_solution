@@ -56,7 +56,7 @@ data class TenantInput(
 )
 
 /** Result of saving a tenant: the id, and whether every draft document was attached. */
-data class SaveTenantResult(val id: Int, val documentsAttached: Boolean)
+data class SaveTenantResult(val id: Int, val documentsAttached: Boolean, val whatsapp: WhatsAppMessage? = null)
 
 /* ───────── charges ───────── */
 
@@ -133,7 +133,19 @@ data class NewAllocation(
 )
 
 @Serializable
-data class AllocationCreated(@SerialName("allocation_id") val allocationId: Int = 0)
+data class AllocationCreated(
+    @SerialName("allocation_id") val allocationId: Int = 0,
+    /** 1.13: room + security deposit message for the tenant (null on older servers). */
+    val whatsapp: WhatsAppMessage? = null,
+)
+
+/**
+ * 1.13: a WhatsApp message prepared by the server (tenant welcome / room and deposit details).
+ * [url] is a wa.me link with the text filled in; null when the tenant's number is not a valid Indian mobile.
+ * Nothing is sent automatically: the owner opens WhatsApp and taps Send.
+ */
+@Serializable
+data class WhatsAppMessage(val text: String = "", val url: String? = null)
 
 @Serializable
 data class AllocationClosed(

@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Add
@@ -105,6 +106,10 @@ fun OwnerMoreScreen(open: (String) -> Unit) {
             MenuRow(Icons.Filled.CurrencyRupee, Palette.Success, stringResource(R.string.payments), stringResource(R.string.payments_sub)) { open("owner/payments") }
             MenuRow(Icons.Filled.WorkspacePremium, Palette.Warning, stringResource(R.string.subscription), stringResource(R.string.subscription_sub)) { open("owner/subscription") }
             MenuRow(Icons.Filled.Redeem, Palette.Success, stringResource(R.string.refer_earn), stringResource(R.string.refer_earn_sub)) { open("owner/referrals") }
+            // 1.13: Vendor Dashboard for owners converted to vendors
+            val flagState by hiltViewModel<VendorFlagViewModel>().dashboard.state.collectAsStateWithLifecycle()
+            if ((flagState as? com.genusit.prms.ui.common.UiState.Data)?.value?.isVendor == true)
+                MenuRow(Icons.Filled.Storefront, Palette.Success, stringResource(R.string.vendor_dashboard), stringResource(R.string.vendor_home_sub)) { open("owner/vendor") }
             MenuRow(Icons.Filled.SupportAgent, Palette.Brand, stringResource(R.string.sup_title), stringResource(R.string.sup_menu_sub)) { open("owner/support") }
             MenuRow(Icons.Filled.Notifications, Palette.Info, stringResource(R.string.notifications)) { open("notifications") }
             MenuRow(Icons.Filled.Settings, Palette.Muted, stringResource(R.string.settings), stringResource(R.string.settings_sub)) { open("settings") }
