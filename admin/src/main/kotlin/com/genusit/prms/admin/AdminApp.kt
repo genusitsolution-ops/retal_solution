@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import androidx.security.crypto.MasterKeys
 import com.genusit.prms.admin.net.AdminApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,8 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class Session(context: Context) {
     private val prefs: SharedPreferences = try {
         EncryptedSharedPreferences.create(
-            context, "rs_admin_session",
-            MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+            "rs_admin_session", MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC), context,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
