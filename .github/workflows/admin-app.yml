@@ -57,7 +57,7 @@ jobs:
           disable-animations: true
           script: |
             adb install -r admin/build/outputs/apk/debug/admin-debug.apk
-            python3 tools/admin-replay/ui_test.py 2>&1 | tee ui-test.txt; exit ${PIPESTATUS[0]}
+            python3 tools/admin-replay/ui_test.py > ui-test.txt 2>&1; s=$?; cat ui-test.txt; exit $s
 
       - name: Report
         if: always()
