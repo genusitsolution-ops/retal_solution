@@ -150,6 +150,7 @@ edit(1, "UTR998877"); hide_kb(); shot("14-record-payout"); tap("Save payout"); t
 p = last_post(); check("payout sent with month, UTR, date, approve_pending", p.get("action") == "pay_month" and p.get("payout_reference") == "UTR998877"
                        and re.match(r"\d{4}-\d{2}$", p.get("month", "")) and re.match(r"\d{4}-\d{2}-\d{2}$", p.get("paid_date", "")) and p.get("approve_pending") is True, p)
 to_top()
+time.sleep(5)   # the "Payout saved" snackbar covers the chip row on a 320x640 screen
 chip("Commissions", "Monthly payout"); time.sleep(1); scroll_to("History"); shot("15-vendor-commissions")
 check("commissions tab: paid one with UTR, pending one with Approve", find("NEFT-HDFC-88231", exact=False) and find("Approve"), texts())
 tap("Approve"); time.sleep(0.8); tap_last("Approve"); time.sleep(1.5)
@@ -190,7 +191,7 @@ p = last_post(); check("remarks saved", p.get("action") == "remarks" and "Called
 back()
 
 # ── sign out ──
-tap("Dashboard"); time.sleep(1); tap("Sign out"); time.sleep(0.6); tap_last("Sign out"); time.sleep(1.5)
+tap("Home"); time.sleep(1); tap("Sign out"); time.sleep(0.6); tap_last("Sign out"); time.sleep(1.5)
 check("sign out → sign-in screen", find("Rental Solution Admin", timeout=6))
 sh("am", "force-stop", PKG); sh("am", "start", "-n", f"{PKG}/com.genusit.prms.admin.ui.MainActivity"); time.sleep(3)
 check("after sign-out a restart asks for sign-in again", find("Sign in", timeout=8))

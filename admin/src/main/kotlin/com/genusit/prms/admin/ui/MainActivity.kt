@@ -85,7 +85,7 @@ fun Messages(flow: SharedFlow<String>) {
 }
 
 private enum class Tab(val route: String, val label: String) {
-    DASH("dashboard", "Dashboard"), APPROVALS("approvals", "Approvals"), OWNERS("owners", "Owners"),
+    DASH("dashboard", "Home"), APPROVALS("approvals", "Approvals"), OWNERS("owners", "Owners"),
     VENDORS("vendors", "Vendors"), PAYMENTS("payments", "Payments")
 }
 
@@ -115,7 +115,7 @@ fun Home() {
                                     }, contentDescription = t.label)
                                 }
                             },
-                            label = { Text(t.label, maxLines = 1) },
+                            label = { Text(t.label, maxLines = 1, softWrap = false, style = androidx.compose.material3.MaterialTheme.typography.labelSmall) },
                         )
                     }
                 }

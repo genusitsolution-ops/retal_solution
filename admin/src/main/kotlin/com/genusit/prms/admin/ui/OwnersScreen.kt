@@ -148,7 +148,10 @@ fun OwnerDetailScreen(nav: NavHostController, id: Int) {
                         Column {
                             SectionTitle("Subscription")
                             InfoRow("Plan", d.subscription.packageName ?: d.packageName)
-                            InfoRow("State", d.subscription.state.replaceFirstChar { it.uppercase() } + if (d.subscription.isTrial) " (free trial)" else "",
+                            InfoRow("State", when (d.subscription.state) {
+                                    "active" -> "Active"; "trial" -> "Free trial"; "grace" -> "Grace period (expired, short extra time)"
+                                    "expired" -> "Expired"; "none" -> "No active plan"; else -> d.subscription.state.replaceFirstChar { it.uppercase() }
+                                },
                                 statusColors(if (d.subscription.restricted) "expired" else "active").first)
                             InfoRow("Valid until", date(d.subscription.endDate) + if (d.subscription.endDate != null) " · ${d.subscription.daysLeft} days left" else "")
                             InfoRow("Usage", "${d.properties} properties · ${d.tenants} tenants · ${d.employees} employees")
