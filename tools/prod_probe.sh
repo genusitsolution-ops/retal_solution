@@ -37,6 +37,15 @@ show "app_config (https -k)"; curl -k -s --max-time 20 "https://$H/api/v1/common
 show "app_config (http)"; curl -s --max-time 20 "http://$H/api/v1/common/app_config.php" | head -c 1200; echo
 show "login with a made-up account (expect 401 INVALID_CREDENTIALS)"
 curl -k -s -w "\nHTTP %{http_code}\n" --max-time 20 -H "Content-Type: application/json" -d '{"username":"probe_nonexistent_user","password":"x"}' "https://$H/api/v1/auth/login.php" | head -c 600
+show "1.13 / 1.13.1 deployment markers (new files must answer from the site root)"
+for p in "api/v1/owner/vendor.php" "admin/vendors/index.php" "includes/TenantOnboarding.php" "owner/vendor.php" \
+         "web/api/v1/owner/vendor.php" "web/login.php" "rentalsolutionfinal/api/v1/owner/vendor.php" "admin/owners/signups.php"; do
+  c=$(curl -k -s -o $B -w "%{http_code} -> %{redirect_url}" --max-time 20 "https://$H/$p"); echo "/$p => $c [$(wc -c <$B)b] $(head -c 160 $B | tr '\n\r' '  ')"
+done
+echo "-- API login answers for an owner name that does not exist (both versions answer 401; only checks the file runs):"
+curl -k -s -w " HTTP %{http_code}\n" --max-time 20 -H "Content-Type: application/json" -d '{"username":"probe_nonexistent_user2","password":"x1234567"}' "https://$H/api/v1/auth/login.php" | head -c 400; echo
+echo "-- response headers of the login API (cache / PHP version):"
+curl -k -s -D - -o /dev/null --max-time 20 -H "Content-Type: application/json" -d '{"username":"probe_nonexistent_user3","password":"x"}' "https://$H/api/v1/auth/login.php" | grep -iE "^(server|x-powered-by|cache|x-litespeed|cf-|age|x-cache|x-proxy)" 
 show "old-domain / dev references in public pages (https -k)"
 for p in "" "login.php" "index.php"; do
   curl -k -s --max-time 20 "https://$H/$p" | grep -oiE "(genusitsolution\.com[^\"' <]*|rentalsolutionfinal[^\"' <]*|localhost[^\"' <]*)" | sort -u | sed "s#^#  /$p: #"
