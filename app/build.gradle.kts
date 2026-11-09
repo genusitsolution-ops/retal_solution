@@ -24,14 +24,21 @@ android {
         applicationId = "com.genusit.prms"
         minSdk = 24
         targetSdk = 36
-        versionCode = 16
-        versionName = "1.12.1"
+        versionCode = 17
+        versionName = "1.12.2"
         val apiUrl = (project.findProperty("prms.apiBaseUrl") as String?) ?: "https://rentalsolution.co.in/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
         vectorDrawables { useSupportLibrary = true }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Only the three supported app languages are packaged
         resourceConfigurations += listOf("en", "hi", "mr")
+    }
+
+    // Keep Hindi/Marathi/English inside the base APK. With the default App Bundle language
+    // splits, Google Play installs only the phone's own language, so the in-app language
+    // switch had no Hindi/Marathi text to show on an English phone (fixed in 1.12.2).
+    bundle {
+        language { enableSplit = false }
     }
 
     signingConfigs {
