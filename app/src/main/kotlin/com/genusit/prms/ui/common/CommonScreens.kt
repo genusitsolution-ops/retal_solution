@@ -101,7 +101,7 @@ fun ReceiptScreen(receiptNo: String, onBack: () -> Unit) {
                 Button(
                     // message built on the phone in the app's language (not the server's pre-built text)
                     onClick = { ReceiptShare.share(ctx, r) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                    colors = ButtonDefaults.buttonColors(containerColor = com.genusit.prms.ui.theme.Palette.Success),
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                 ) { Icon(Icons.Filled.Share, null); Spacer(Modifier.width(8.dp)); Text(stringResource(if (com.genusit.prms.domain.util.ReceiptMessage.normalizeIndianMobile(r.tenantPhone) != null) R.string.send_whatsapp else R.string.share_receipt)) }
             }

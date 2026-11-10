@@ -67,6 +67,9 @@ import com.genusit.prms.ui.common.errorText
 import com.genusit.prms.ui.owner.PaymentForm
 import com.genusit.prms.ui.owner.SearchField
 import com.genusit.prms.ui.theme.Palette
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.filled.History
 
 @Composable
 fun EmployeeHomeScreen(
@@ -76,13 +79,15 @@ fun EmployeeHomeScreen(
     openTenants: () -> Unit = {},
     openCollections: () -> Unit = {},
     openHandover: () -> Unit = {},
+    openCollect: () -> Unit = {},
 ) {
     val model: AgentHomeViewModel = hiltViewModel()
     val vm = model.dashboard
     val state by vm.state.collectAsStateWithLifecycle()
     val name by model.userName.collectAsStateWithLifecycle()
     ScreenScaffold(
-        stringResource(R.string.hello_name, name.substringBefore(' ')),
+        stringResource(R.string.hello_name, name.substringBefore(' ')) + " 👋",
+        subtitle = stringResource(R.string.role_employee),
         actions = {
             IconButton(onClick = vm::refresh) { Icon(Icons.Filled.Refresh, stringResource(R.string.refresh)) }
             com.genusit.prms.ui.common.NotificationBell(onClick = openNotifications)
@@ -96,12 +101,19 @@ fun EmployeeHomeScreen(
                         stringResource(R.string.collected_this_month), d.summary.monthCollected,
                         stringResource(R.string.all_time_n, Money.format(d.summary.allTimeCollected), d.summary.totalTransactions),
                         onClick = openCollections,
-                    )
+                    ) {
+                        com.genusit.prms.ui.common.WalletFigures(
+                            stringResource(R.string.assigned_rooms) to d.summary.assignedProperties.toString(),
+                            stringResource(R.string.active_tenants) to d.summary.activeTenants.toString(),
+                        )
+                    }
                 }
                 item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        StatTile(Icons.Filled.Apartment, stringResource(R.string.assigned_rooms), d.summary.assignedProperties.toString(), Palette.Brand, Modifier.weight(1f), onClick = openTenants)
-                        StatTile(Icons.Filled.Groups, stringResource(R.string.active_tenants), d.summary.activeTenants.toString(), Palette.Info, Modifier.weight(1f), onClick = openTenants)
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Max)) {
+                        val m = Modifier.weight(1f).fillMaxHeight()
+                        com.genusit.prms.ui.common.ActionTile(Icons.Filled.CurrencyRupee, stringResource(R.string.qa_collect), Palette.Gold, m, openCollect)
+                        com.genusit.prms.ui.common.ActionTile(Icons.Filled.Groups, stringResource(R.string.my_tenants), Palette.Teal, m, openTenants)
+                        com.genusit.prms.ui.common.ActionTile(Icons.Filled.History, stringResource(R.string.my_collections), Palette.Brand, m, openCollections)
                     }
                 }
                 item { HandoverHomeCard(openHandover, d.handover) }
@@ -183,7 +195,7 @@ fun EmployeeCollectionsScreen(openReceipt: (String) -> Unit) {
  * server applies the money to the oldest unpaid invoices first and never above the balance.
  */
 @Composable
-fun EmployeeCollectScreen(preTenant: Int, preInvoice: Int, onBack: () -> Unit, onDone: (String) -> Unit) {
+fun EmployeeCollectScreen(preTenant: Int, preInvoice: Int, onBack: (() -> Unit)?, onDone: (String) -> Unit) {
     val model: AgentCollectViewModel = hiltViewModel()
     val vmT = model.tenants
     val tState by vmT.state.collectAsStateWithLifecycle()

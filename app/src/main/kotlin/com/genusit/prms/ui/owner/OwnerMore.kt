@@ -75,16 +75,24 @@ import com.genusit.prms.ui.common.WalletCard
 import com.genusit.prms.ui.common.dateText
 import com.genusit.prms.ui.common.errorText
 import com.genusit.prms.ui.theme.Palette
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 
 @Composable
 fun MenuRow(icon: ImageVector, tint: Color, title: String, subtitle: String? = null, onClick: () -> Unit) {
     AppCard(onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBadge(icon, tint)
-            Spacer(Modifier.width(12.dp))
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(46.dp).clip(RoundedCornerShape(15.dp))
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(tint.copy(alpha = .16f), tint.copy(alpha = .07f)))),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp)) }
+            Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.SemiBold)
-                if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = Palette.Ink)
+                if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Palette.Muted)
         }
@@ -95,24 +103,25 @@ fun MenuRow(icon: ImageVector, tint: Color, title: String, subtitle: String? = n
 fun OwnerMoreScreen(open: (String) -> Unit) {
     ScreenScaffold(stringResource(R.string.nav_more)) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            MenuRow(Icons.AutoMirrored.Filled.ReceiptLong, Palette.Accent, stringResource(R.string.generate_bill), stringResource(R.string.generate_bill_sub)) { open("owner/generate") }
-            MenuRow(Icons.Filled.Apartment, Palette.Brand, stringResource(R.string.properties), stringResource(R.string.properties_sub)) { open("owner/properties") }
-            MenuRow(Icons.Filled.Key, Palette.Info, stringResource(R.string.allocations), stringResource(R.string.allocations_sub)) { open("owner/allocations") }
-            MenuRow(Icons.Filled.Bolt, Palette.Warning, stringResource(R.string.charges), stringResource(R.string.charges_menu_sub)) { open("owner/charges") }
-            MenuRow(Icons.Filled.Badge, Palette.Brand, stringResource(R.string.employees), stringResource(R.string.employees_sub)) { open("owner/employees") }
+            com.genusit.prms.ui.common.BrandHeader()
+            MenuRow(Icons.AutoMirrored.Filled.ReceiptLong, Palette.Purple, stringResource(R.string.generate_bill), stringResource(R.string.generate_bill_sub)) { open("owner/generate") }
+            MenuRow(Icons.Filled.Apartment, Palette.NavSelected, stringResource(R.string.properties), stringResource(R.string.properties_sub)) { open("owner/properties") }
+            MenuRow(Icons.Filled.Key, Palette.Teal, stringResource(R.string.allocations), stringResource(R.string.allocations_sub)) { open("owner/allocations") }
+            MenuRow(Icons.Filled.Bolt, Palette.Gold, stringResource(R.string.charges), stringResource(R.string.charges_menu_sub)) { open("owner/charges") }
+            MenuRow(Icons.Filled.Badge, Palette.Purple, stringResource(R.string.employees), stringResource(R.string.employees_sub)) { open("owner/employees") }
             MenuRow(Icons.Filled.QuestionAnswer, Palette.Danger, stringResource(R.string.complaints), stringResource(R.string.complaints_sub)) { open("owner/queries") }
-            MenuRow(Icons.Filled.AccountBalanceWallet, Palette.Accent, stringResource(R.string.ho_dashboard_title), stringResource(R.string.ho_dashboard_sub)) { open("owner/collections-hub") }
-            MenuRow(Icons.Filled.Assessment, Palette.Info, stringResource(R.string.reports), stringResource(R.string.reports_sub)) { open("owner/reports") }
-            MenuRow(Icons.Filled.CurrencyRupee, Palette.Success, stringResource(R.string.payments), stringResource(R.string.payments_sub)) { open("owner/payments") }
-            MenuRow(Icons.Filled.WorkspacePremium, Palette.Warning, stringResource(R.string.subscription), stringResource(R.string.subscription_sub)) { open("owner/subscription") }
+            MenuRow(Icons.Filled.AccountBalanceWallet, Palette.Purple, stringResource(R.string.ho_dashboard_title), stringResource(R.string.ho_dashboard_sub)) { open("owner/collections-hub") }
+            MenuRow(Icons.Filled.Assessment, Palette.Success, stringResource(R.string.reports), stringResource(R.string.reports_sub)) { open("owner/reports") }
+            MenuRow(Icons.Filled.CurrencyRupee, Palette.Teal, stringResource(R.string.payments), stringResource(R.string.payments_sub)) { open("owner/payments") }
+            MenuRow(Icons.Filled.WorkspacePremium, Palette.Gold, stringResource(R.string.subscription), stringResource(R.string.subscription_sub)) { open("owner/subscription") }
             MenuRow(Icons.Filled.Redeem, Palette.Success, stringResource(R.string.refer_earn), stringResource(R.string.refer_earn_sub)) { open("owner/referrals") }
             // 1.13: Vendor Dashboard for owners converted to vendors
             val flagState by hiltViewModel<VendorFlagViewModel>().dashboard.state.collectAsStateWithLifecycle()
             if ((flagState as? com.genusit.prms.ui.common.UiState.Data)?.value?.isVendor == true)
                 MenuRow(Icons.Filled.Storefront, Palette.Success, stringResource(R.string.vendor_dashboard), stringResource(R.string.vendor_home_sub)) { open("owner/vendor") }
-            MenuRow(Icons.Filled.SupportAgent, Palette.Brand, stringResource(R.string.sup_title), stringResource(R.string.sup_menu_sub)) { open("owner/support") }
-            MenuRow(Icons.Filled.Notifications, Palette.Info, stringResource(R.string.notifications)) { open("notifications") }
-            MenuRow(Icons.Filled.Settings, Palette.Muted, stringResource(R.string.settings), stringResource(R.string.settings_sub)) { open("settings") }
+            MenuRow(Icons.Filled.SupportAgent, Palette.Teal, stringResource(R.string.sup_title), stringResource(R.string.sup_menu_sub)) { open("owner/support") }
+            MenuRow(Icons.Filled.Notifications, Palette.NavSelected, stringResource(R.string.notifications)) { open("notifications") }
+            MenuRow(Icons.Filled.Settings, Palette.Brand, stringResource(R.string.settings), stringResource(R.string.settings_sub)) { open("settings") }
         }
     }
 }

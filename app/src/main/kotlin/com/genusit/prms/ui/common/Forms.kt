@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.genusit.prms.R
 import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.theme.Palette
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 /** One labelled text field used by every form (red outline after the first submit attempt). */
 @Composable
@@ -91,12 +92,13 @@ fun FormField(
         // explicit colours: typed text, cursor and selection stay readable on every device theme
         colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
             focusedTextColor = Palette.Ink, unfocusedTextColor = Palette.Ink, disabledTextColor = Palette.Muted, errorTextColor = Palette.Ink,
-            focusedContainerColor = Palette.Card, unfocusedContainerColor = Palette.Card, disabledContainerColor = Color(0xFFF8FAFC), errorContainerColor = Palette.Card,
+            focusedContainerColor = Palette.Card, unfocusedContainerColor = Palette.Card, disabledContainerColor = Color(0xFFF4F5FA), errorContainerColor = Palette.Card,
             cursorColor = Palette.Brand, errorCursorColor = Palette.Danger,
-            focusedBorderColor = Palette.Brand, unfocusedBorderColor = Color(0xFFCBD5E1),
+            focusedBorderColor = Palette.Brand, unfocusedBorderColor = Color(0xFFD5D8E5),
             focusedLabelColor = Palette.Brand, unfocusedLabelColor = Palette.Muted,
             selectionColors = androidx.compose.foundation.text.selection.TextSelectionColors(handleColor = Palette.Brand, backgroundColor = Palette.Brand.copy(alpha = .25f)),
         ),
+        shape = RoundedCornerShape(14.dp),
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -107,8 +109,8 @@ fun amountInput(s: String): String = s.filter { it.isDigit() || it == '.' }.take
 /** Primary submit button that shows a spinner while [state] is running. */
 @Composable
 fun SubmitButton(label: String, state: ActionState<*>, onClick: () -> Unit) {
-    Button(onClick = onClick, enabled = state !is ActionState.Running, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-        if (state is ActionState.Running) CircularProgressIndicator(color = Color.White) else Text(label, fontWeight = FontWeight.Bold)
+    Button(onClick = onClick, enabled = state !is ActionState.Running, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp)) {
+        if (state is ActionState.Running) CircularProgressIndicator(color = Color.White) else Text(label, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
     }
 }
 

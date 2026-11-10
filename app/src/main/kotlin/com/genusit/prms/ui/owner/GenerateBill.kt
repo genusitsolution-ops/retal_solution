@@ -88,8 +88,8 @@ import javax.inject.Inject
 fun GenerateBillCard(onClick: () -> Unit) {
     val shape = RoundedCornerShape(22.dp)
     Box(
-        Modifier.fillMaxWidth().shadow(8.dp, shape, ambientColor = Palette.Accent, spotColor = Palette.Accent).clip(shape)
-            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF4F46E5), Color(0xFF7C3AED))))
+        Modifier.fillMaxWidth().shadow(8.dp, shape, ambientColor = Palette.BrandDark, spotColor = Palette.BrandDark).clip(shape)
+            .background(Palette.WalletGradient)
             .clickable(onClick = onClick, role = Role.Button),
     ) {
         Box(Modifier.align(Alignment.CenterEnd).offset(x = 30.dp).size(110.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f)))

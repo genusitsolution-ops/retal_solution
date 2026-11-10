@@ -864,4 +864,13 @@
     <string name="vendor_utr">UTR / reference</string>
     <string name="vendor_entries">Entries</string>
     <string name="vendor_reversed_later">Reversed later</string>
+    <!-- 1.14 redesign -->
+    <string name="nav_collect">Collect</string>
+    <string name="nav_history">History</string>
+    <string name="quick_actions">Quick actions</string>
+    <string name="loading">Loading…</string>
+    <string name="step_documents">Photo &amp; documents</string>
+    <string name="step_tenant_details">Tenant details</string>
+    <string name="step_login">App login</string>
+    <string name="step_room_rent">Room &amp; rent</string>
 </resources>

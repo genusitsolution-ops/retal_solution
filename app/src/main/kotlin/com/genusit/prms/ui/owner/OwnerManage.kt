@@ -177,6 +177,7 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                 }
                 Text(stringResource(if (existingType) R.string.ob_type_existing_sub else R.string.ob_type_new_sub), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            com.genusit.prms.ui.common.StepHeader(1, stringResource(R.string.step_documents))
             // profile photo — kept apart from the Aadhaar / PAN documents below
             if (id != 0) {
                 val version = (existing as? UiState.Data)?.value?.photoVersion
@@ -224,6 +225,7 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                     onDismiss = model::dismissScan,
                 )
             }
+            com.genusit.prms.ui.common.StepHeader(2, stringResource(R.string.step_tenant_details))
             FormField(name, { name = it.take(150) }, stringResource(R.string.full_name), tried && name.isBlank())
             FormField(phone, { phone = it.filter { c -> c.isDigit() || c == '+' }.take(15) }, stringResource(R.string.phone), tried && !Validators.phone(phone), KeyboardType.Phone)
             FormField(email, { email = it.trim().take(150) }, stringResource(R.string.email_optional), tried && !emailOk, KeyboardType.Email)
@@ -235,6 +237,7 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
             FormField(pan, { pan = it.uppercase().filter(Char::isLetterOrDigit).take(10) }, stringResource(R.string.pan_number), tried && !panOk,
                 KeyboardType.Ascii, supporting = stringResource(R.string.pan_hint) + " · ${pan.length}/10",
                 capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Characters, autoCorrect = false)
+            com.genusit.prms.ui.common.StepHeader(3, stringResource(R.string.step_login))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.tenant_login), fontWeight = FontWeight.SemiBold)
@@ -248,6 +251,7 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                     tried && ((needPassword && password.length < 6) || (password.isNotEmpty() && password.length < 6)), password = true)
             }
             if (existingType) {
+                com.genusit.prms.ui.common.StepHeader(4, stringResource(R.string.step_room_rent))
                 val rooms = (roomsState as? UiState.Data)?.value
                 val charges = (chargesState as? UiState.Data)?.value
                 if (rooms == null || charges == null) {

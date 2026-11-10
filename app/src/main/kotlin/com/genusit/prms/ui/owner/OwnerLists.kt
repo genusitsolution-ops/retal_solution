@@ -62,15 +62,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CircularProgressIndicator
 import com.genusit.prms.ui.common.dial
 import com.genusit.prms.ui.theme.Palette
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 
 @Composable
 fun SearchField(value: String, onChange: (String) -> Unit) {
     OutlinedTextField(
         value = value, onValueChange = onChange, singleLine = true,
         placeholder = { Text(stringResource(R.string.search)) },
-        leadingIcon = { Icon(Icons.Filled.Search, null) },
+        leadingIcon = { Icon(Icons.Filled.Search, null, tint = Palette.Muted) },
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = Palette.Card, unfocusedContainerColor = Palette.Card,
+            unfocusedBorderColor = Palette.Line, focusedBorderColor = Palette.Brand,
+            focusedTextColor = Palette.Ink, unfocusedTextColor = Palette.Ink, cursorColor = Palette.Brand,
+        ),
     )
 }
 
@@ -91,20 +99,24 @@ fun OwnerTenantsScreen(openTenant: (Int) -> Unit, addTenant: (() -> Unit)? = nul
                 item { SearchField(query) { query = it } }
                 if (shown.isEmpty()) item { EmptyState(stringResource(R.string.no_tenants)) }
                 items(shown, key = { it.id }) { t ->
-                    AppCard(onClick = { openTenant(t.id) }) {
+                    AppCard(onClick = { openTenant(t.id) }) { Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             com.genusit.prms.ui.common.Avatar(com.genusit.prms.domain.model.PhotoSubject.TENANT, t.id, t.photoVersion, t.fullName)
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(t.fullName, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(t.fullName, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Palette.Ink)
                                 Text(listOfNotNull(t.allocatedProperty ?: stringResource(R.string.not_allocated), t.phone).joinToString(" · "),
                                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                             }
-                            Column(horizontalAlignment = Alignment.End) {
-                                if (t.pendingAmount > 0) Text(Money.format(t.pendingAmount), color = Palette.Danger, fontWeight = FontWeight.Bold)
-                                StatusChip(t.status, t.statusLabel)
-                            }
+                            StatusChip(t.status, t.statusLabel)
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Palette.Muted)
                         }
+                        Row(Modifier.fillMaxWidth().padding(top = 10.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                            .background(Palette.Canvas).padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.outstanding), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                            Text(Money.format(t.pendingAmount), color = if (t.pendingAmount > 0) Palette.Danger else Palette.Success, fontWeight = FontWeight.Bold)
+                        }
+                    }
                     }
                 }
             }

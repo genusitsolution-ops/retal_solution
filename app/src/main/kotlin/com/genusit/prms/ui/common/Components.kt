@@ -37,6 +37,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.CurrencyRupee
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Refresh
@@ -80,6 +82,8 @@ fun ScreenScaffold(
     title: String,
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
+    /** Small line under the title (e.g. the role on a home screen). */
+    subtitle: String? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -88,14 +92,24 @@ fun ScreenScaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleLarge, color = Palette.Ink)
+                        if (subtitle != null) Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 navigationIcon = {
                     if (onBack != null) IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Palette.Ink)
                     }
                 },
                 actions = actions,
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                    actionIconContentColor = Palette.Brand,
+                ),
             )
         },
         content = content,
@@ -114,7 +128,7 @@ fun <T> StateContent(state: UiState<T>, onRetry: () -> Unit, modifier: Modifier 
             else -> (state as? UiState.Data)?.let { s ->
                 Box(modifier.fillMaxSize()) {
                     content(s.value)
-                    if (s.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = Palette.Brand, trackColor = Palette.BrandSoft)
+                    if (s.refreshing) LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter), color = Palette.Teal, trackColor = Palette.TealSoft)
                 }
             }
         }
@@ -151,8 +165,8 @@ fun ErrorBox(error: UiError, onRetry: () -> Unit, modifier: Modifier = Modifier)
 @Composable
 fun EmptyState(text: String, icon: ImageVector = Icons.Filled.Inbox, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().padding(vertical = 36.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(76.dp).clip(CircleShape).background(Palette.BrandSoft.copy(alpha = .6f)), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = Palette.Brand.copy(alpha = .7f), modifier = Modifier.size(36.dp))
+        Box(Modifier.size(76.dp).clip(RoundedCornerShape(24.dp)).background(Palette.TealSoft), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = Palette.Teal, modifier = Modifier.size(36.dp))
         }
         Spacer(Modifier.height(12.dp))
         Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
@@ -164,9 +178,9 @@ fun EmptyState(text: String, icon: ImageVector = Icons.Filled.Inbox, modifier: M
 @Composable
 fun AppCard(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
     val shape = MaterialTheme.shapes.medium
-    val base = modifier.fillMaxWidth().shadow(6.dp, shape, ambientColor = Palette.Shadow, spotColor = Palette.Shadow)
+    val base = modifier.fillMaxWidth().shadow(5.dp, shape, ambientColor = Palette.Shadow, spotColor = Palette.Shadow)
     val colors = CardDefaults.cardColors(containerColor = Palette.Card)
-    val border = BorderStroke(1.dp, Palette.Line.copy(alpha = .7f))
+    val border = BorderStroke(1.dp, Palette.Line.copy(alpha = .8f))
     if (onClick != null) {
         // Material card with onClick: ripple, button semantics for TalkBack, and a gentle press scale
         val interaction = remember { MutableInteractionSource() }
@@ -190,26 +204,127 @@ fun OpenHint(tint: Color = Palette.Muted) {
     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = tint.copy(alpha = .8f), modifier = Modifier.size(20.dp))
 }
 
-/** Gradient "wallet" card from the FiMobile reference — the main figure of each dashboard. */
+/** Navy-to-teal money card with a gold sweep — the main figure of each dashboard. */
 @Composable
 fun WalletCard(label: String, amount: Double, footer: String? = null, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, extra: @Composable () -> Unit = {}) {
-    val shape = RoundedCornerShape(26.dp)
-    val base = modifier.fillMaxWidth().shadow(14.dp, shape, ambientColor = Palette.Brand, spotColor = Palette.Brand).clip(shape).background(Palette.WalletGradient)
+    val shape = RoundedCornerShape(24.dp)
+    val base = modifier.fillMaxWidth().shadow(12.dp, shape, ambientColor = Palette.BrandDark, spotColor = Palette.BrandDark).clip(shape).background(Palette.WalletGradient)
     Box(if (onClick != null) base.clickable(onClick = onClick, role = Role.Button) else base) {
-        // soft decorative circles (purely visual)
-        Box(Modifier.align(Alignment.TopEnd).offset(x = 40.dp, y = (-50).dp).size(160.dp).clip(CircleShape).background(Color.White.copy(alpha = .08f)))
-        Box(Modifier.align(Alignment.BottomEnd).offset(x = (-30).dp, y = 60.dp).size(120.dp).clip(CircleShape).background(Color.White.copy(alpha = .06f)))
-        if (onClick != null) Box(Modifier.align(Alignment.TopEnd).padding(14.dp)) { OpenHint(Color.White) }
-        Column(Modifier.padding(22.dp)) {
-            Text(label, color = Color.White.copy(alpha = .85f), style = MaterialTheme.typography.labelLarge)
-            Spacer(Modifier.height(6.dp))
+        // decorative only: soft circle + gold / teal sweeps along the bottom edge
+        Box(Modifier.align(Alignment.TopEnd).offset(x = 46.dp, y = (-56).dp).size(170.dp).clip(CircleShape).background(Color.White.copy(alpha = .06f)))
+        BrandWave(Modifier.matchParentSize(), alpha = .55f)
+        Box(Modifier.align(Alignment.TopEnd).padding(16.dp)) {
+            Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(Palette.GoldGradient), contentAlignment = Alignment.Center) {
+                Icon(if (onClick != null) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.Filled.CurrencyRupee, null,
+                    tint = Palette.BrandDark, modifier = Modifier.size(22.dp))
+            }
+        }
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 20.dp)) {
+            Text(label, color = Color.White.copy(alpha = .88f), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(end = 48.dp))
+            Spacer(Modifier.height(4.dp))
             Text(Money.format(amount), color = Color.White, style = MaterialTheme.typography.headlineMedium)
             if (footer != null) {
                 Spacer(Modifier.height(6.dp))
-                Text(footer, color = Color.White.copy(alpha = .8f), style = MaterialTheme.typography.labelMedium)
+                Text(footer, color = Color.White.copy(alpha = .82f), style = MaterialTheme.typography.labelMedium)
             }
             extra()
         }
+    }
+}
+
+/** One figure on a [WalletCard] (e.g. Billed / Pending), with a thin divider drawn by [WalletFigures]. */
+@Composable
+fun WalletFigures(vararg figures: Pair<String, String>) {
+    Spacer(Modifier.height(12.dp))
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = .10f)).padding(horizontal = 12.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        figures.forEachIndexed { i, (label, value) ->
+            if (i > 0) Box(Modifier.padding(horizontal = 10.dp).width(1.dp).height(30.dp).background(Color.White.copy(alpha = .25f)))
+            Column(Modifier.weight(1f)) {
+                Text(label, color = Color.White.copy(alpha = .78f), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(value, color = Color.White, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+/** Gold and teal sweeps from the logo (purely decorative). */
+@Composable
+fun BrandWave(modifier: Modifier = Modifier, alpha: Float = 1f, fromTop: Boolean = false) {
+    androidx.compose.foundation.Canvas(modifier) {
+        val w = size.width; val h = size.height
+        fun y(f: Float) = if (fromTop) h * (1 - f) else h * f
+        val teal = androidx.compose.ui.graphics.Path().apply {
+            moveTo(0f, y(.86f))
+            cubicTo(w * .30f, y(.70f), w * .62f, y(1.02f), w, y(.66f))
+            lineTo(w, y(1f)); lineTo(0f, y(1f)); close()
+        }
+        drawPath(teal, Brush.horizontalGradient(listOf(Palette.TealBright.copy(alpha = .55f * alpha), Palette.Teal.copy(alpha = .9f * alpha))))
+        val gold = androidx.compose.ui.graphics.Path().apply {
+            moveTo(0f, y(.80f))
+            cubicTo(w * .28f, y(.66f), w * .58f, y(.98f), w, y(.62f))
+            lineTo(w, y(.655f))
+            cubicTo(w * .58f, y(1.0f), w * .28f, y(.70f), 0f, y(.84f)); close()
+        }
+        drawPath(gold, Brush.horizontalGradient(listOf(Palette.Gold.copy(alpha = .2f * alpha), Palette.GoldBright.copy(alpha = alpha), Palette.Gold.copy(alpha = .8f * alpha))))
+    }
+}
+
+/** Compact dashboard figure: icon, value and a short label (four fit in a row). */
+@Composable
+fun MiniStat(icon: ImageVector, value: String, label: String, tint: Color, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val shape = RoundedCornerShape(16.dp)
+    val base = modifier.shadow(4.dp, shape, ambientColor = Palette.Shadow, spotColor = Palette.Shadow).clip(shape).background(Palette.Card)
+    Column((if (onClick != null) base.clickable(onClick = onClick, role = Role.Button) else base).padding(horizontal = 6.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(tint.copy(alpha = .12f)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = tint, modifier = Modifier.size(19.dp))
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(value, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Palette.Ink)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2,
+            textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Large, labelled shortcut on a soft tinted tile. */
+@Composable
+fun ActionTile(icon: ImageVector, label: String, tint: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    Column(
+        modifier.shadow(4.dp, shape, ambientColor = Palette.Shadow, spotColor = Palette.Shadow).clip(shape)
+            .background(Brush.verticalGradient(listOf(Palette.Card, tint.copy(alpha = .07f))))
+            .clickable(onClick = onClick, role = Role.Button).padding(horizontal = 6.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(Modifier.size(42.dp).clip(RoundedCornerShape(14.dp)).background(tint.copy(alpha = .14f)), contentAlignment = Alignment.Center) {
+            Icon(icon, null, tint = tint, modifier = Modifier.size(23.dp))
+        }
+        Spacer(Modifier.height(7.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = Palette.Ink, maxLines = 2, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Gold call-to-action on dark cards (e.g. "View bill" on the tenant's rent card). */
+@Composable
+fun GoldButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        modifier.fillMaxWidth().heightIn(min = 50.dp).clip(shape).background(Palette.GoldGradient).clickable(onClick = onClick, role = Role.Button),
+        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text, color = Palette.BrandDark, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.width(8.dp))
+        Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Palette.BrandDark)
+    }
+}
+
+/** Round avatar with the first letter of a name (no photo). */
+@Composable
+fun InitialAvatar(name: String, size: androidx.compose.ui.unit.Dp = 44.dp, tint: Color = Palette.Brand) {
+    val letter = name.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+    Box(Modifier.size(size).clip(CircleShape).background(tint.copy(alpha = .12f)), contentAlignment = Alignment.Center) {
+        Text(letter, color = tint, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleMedium)
     }
 }
 
@@ -218,7 +333,7 @@ fun StatTile(icon: ImageVector, label: String, value: String, tint: Color, modif
     AppCard(modifier, onClick) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Brush.linearGradient(listOf(tint.copy(alpha = .18f), tint.copy(alpha = .08f)))), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(tint.copy(alpha = .12f)), contentAlignment = Alignment.Center) {
                     Icon(icon, null, tint = tint, modifier = Modifier.size(21.dp))
                 }
                 Spacer(Modifier.weight(1f))
@@ -234,9 +349,9 @@ fun StatTile(icon: ImageVector, label: String, value: String, tint: Color, modif
 @Composable
 fun SectionHeader(title: String, action: String? = null, onAction: (() -> Unit)? = null) {
     Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+        Text(title, style = MaterialTheme.typography.titleMedium, color = Palette.Ink, modifier = Modifier.weight(1f))
         if (action != null && onAction != null) TextButton(onClick = onAction) {
-            Text(action, fontWeight = FontWeight.SemiBold); Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp))
+            Text(action, fontWeight = FontWeight.SemiBold, color = Palette.NavSelected); Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(18.dp))
         }
     }
 }
@@ -256,7 +371,7 @@ fun statusColors(status: String): Pair<Color, Color> = when (status) {
     "partial", "in_progress", "trial", "allocated", "occupied" -> Palette.Info to Palette.InfoSoft
     "pending", "unpaid", "grace", "medium", "maintenance" -> Palette.Warning to Palette.WarningSoft
     "overdue", "expired", "suspended", "high", "cancelled" -> Palette.Danger to Palette.DangerSoft
-    else -> Palette.Muted to Color(0xFFF1F5F9)
+    else -> Palette.Muted to Color(0xFFF0F1F7)
 }
 
 @Composable
@@ -267,7 +382,7 @@ fun StatusChip(status: String, label: String?) {
         color = fg,
         style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.clip(CircleShape).background(bg).padding(horizontal = 10.dp, vertical = 3.dp),
+        modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(bg).padding(horizontal = 9.dp, vertical = 3.dp),
     )
 }
 
@@ -305,4 +420,33 @@ fun SubscriptionBanner(sub: SubscriptionBrief?, onClick: (() -> Unit)? = null) {
 @Composable
 fun MoneyText(amount: Double, color: Color = Color.Unspecified, bold: Boolean = true) {
     Text(Money.format(amount), color = color, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
+}
+
+/** Light status-bar icons while a dark (navy) screen is shown; restores the previous look afterwards. */
+@Composable
+fun LightStatusBarIcons() {
+    val view = androidx.compose.ui.platform.LocalView.current
+    if (view.isInEditMode) return
+    androidx.compose.runtime.DisposableEffect(view) {
+        var ctx = view.context
+        while (ctx is android.content.ContextWrapper && ctx !is android.app.Activity) ctx = ctx.baseContext
+        val window = (ctx as? android.app.Activity)?.window
+        val controller = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, view) }
+        val previous = controller?.isAppearanceLightStatusBars
+        controller?.isAppearanceLightStatusBars = false
+        onDispose { if (controller != null && previous != null) controller.isAppearanceLightStatusBars = previous }
+    }
+}
+
+/** Numbered section title of a long form ("1  Photo & documents"). The form itself stays one page. */
+@Composable
+fun StepHeader(number: Int, title: String) {
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(28.dp).clip(CircleShape).background(Palette.Brand), contentAlignment = Alignment.Center) {
+            Text(number.toString(), color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, color = Palette.Ink, modifier = Modifier.weight(1f))
+        Box(Modifier.weight(.35f).height(2.dp).clip(CircleShape).background(Brush.horizontalGradient(listOf(Palette.Gold, Color.Transparent))))
+    }
 }

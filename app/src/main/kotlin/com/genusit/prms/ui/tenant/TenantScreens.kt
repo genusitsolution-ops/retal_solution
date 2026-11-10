@@ -70,16 +70,21 @@ import com.genusit.prms.ui.common.errorText
 import com.genusit.prms.ui.owner.InvoiceBody
 import com.genusit.prms.ui.owner.MenuRow
 import com.genusit.prms.ui.theme.Palette
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 
 @Composable
-fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit, openInvoices: () -> Unit = {}, openPayments: () -> Unit = {}) {
+fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit, openInvoices: () -> Unit = {}, openPayments: () -> Unit = {}, openComplaints: () -> Unit = {}) {
     val model: TenantHomeViewModel = hiltViewModel()
     val vm = model.dashboard
     val state by vm.state.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
     val name by model.userName.collectAsStateWithLifecycle()
+    val room = (state as? com.genusit.prms.ui.common.UiState.Data)?.value?.allocation?.propertyCode
     ScreenScaffold(
-        stringResource(R.string.hello_name, name.substringBefore(' ')),
+        stringResource(R.string.hello_name, name.substringBefore(' ')) + " 👋",
+        subtitle = listOfNotNull(stringResource(R.string.role_tenant), room).joinToString(" · "),
         actions = {
             IconButton(onClick = vm::refresh) { Icon(Icons.Filled.Refresh, stringResource(R.string.refresh)) }
             com.genusit.prms.ui.common.NotificationBell(onClick = openNotifications)
@@ -97,8 +102,21 @@ fun TenantHomeScreen(openInvoice: (Int) -> Unit, openNotifications: () -> Unit, 
                             Dates.isPast(nd.dueDate) -> stringResource(R.string.overdue_since, dateText(nd.dueDate))
                             else -> stringResource(R.string.next_due_on, dateText(nd.dueDate))
                         },
-                        onClick = openInvoices,
-                    )
+                    ) {
+                        Spacer(Modifier.height(14.dp))
+                        // opens the bill that is due next (or all bills when nothing is due); paying stays with the owner / agent
+                        com.genusit.prms.ui.common.GoldButton(stringResource(if (nd != null) R.string.view_bill else R.string.my_invoices)) {
+                            if (nd != null && nd.id > 0) openInvoice(nd.id) else openInvoices()
+                        }
+                    }
+                }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Max)) {
+                        val m = Modifier.weight(1f).fillMaxHeight()
+                        com.genusit.prms.ui.common.ActionTile(Icons.AutoMirrored.Filled.ReceiptLong, stringResource(R.string.my_invoices), Palette.Brand, m, openInvoices)
+                        com.genusit.prms.ui.common.ActionTile(Icons.Filled.AccountBalanceWallet, stringResource(R.string.payments), Palette.Gold, m, openPayments)
+                        com.genusit.prms.ui.common.ActionTile(Icons.Filled.QuestionAnswer, stringResource(R.string.complaints), Palette.Purple, m, openComplaints)
+                    }
                 }
                 d.allocation?.let { a ->
                     item {
@@ -177,23 +195,33 @@ fun TenantPaymentsScreen(openReceipt: (String) -> Unit) {
 fun TenantMoreScreen(open: (String) -> Unit) {
     ScreenScaffold(stringResource(R.string.nav_more)) { pad ->
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            MenuRow(Icons.Filled.QuestionAnswer, Palette.Warning, stringResource(R.string.my_queries), stringResource(R.string.my_queries_sub)) { open("ten/queries") }
-            MenuRow(Icons.Filled.Shield, Palette.Success, stringResource(R.string.deposit_and_settlement), stringResource(R.string.deposit_and_settlement_sub)) { open("ten/deposit") }
-            MenuRow(Icons.Filled.Notifications, Palette.Info, stringResource(R.string.notifications)) { open("notifications") }
-            MenuRow(Icons.Filled.Settings, Palette.Muted, stringResource(R.string.settings), stringResource(R.string.settings_sub)) { open("settings") }
+            com.genusit.prms.ui.common.BrandHeader()
+            MenuRow(Icons.Filled.QuestionAnswer, Palette.Danger, stringResource(R.string.my_queries), stringResource(R.string.my_queries_sub)) { open("ten/queries") }
+            MenuRow(Icons.Filled.Shield, Palette.Teal, stringResource(R.string.deposit_and_settlement), stringResource(R.string.deposit_and_settlement_sub)) { open("ten/deposit") }
+            MenuRow(Icons.Filled.Notifications, Palette.NavSelected, stringResource(R.string.notifications)) { open("notifications") }
+            MenuRow(Icons.Filled.Settings, Palette.Brand, stringResource(R.string.settings), stringResource(R.string.settings_sub)) { open("settings") }
         }
     }
 }
 
 @Composable
-fun TenantQueriesScreen(onBack: () -> Unit, newQuery: () -> Unit, openQuery: (Int) -> Unit = {}) {
+fun TenantQueriesScreen(onBack: (() -> Unit)?, newQuery: () -> Unit, openQuery: (Int) -> Unit = {}) {
     val vm = hiltViewModel<TenantQueriesViewModel>().queries
     val state by vm.state.collectAsStateWithLifecycle()
+    // a bottom-bar tab (1.14): reload when coming back from "raise a query"
+    androidx.compose.runtime.LaunchedEffect(Unit) { if (state !is com.genusit.prms.ui.common.UiState.Loading) vm.refresh() }
     ScreenScaffold(stringResource(R.string.my_queries), onBack = onBack, actions = {
         IconButton(onClick = newQuery) { Icon(Icons.Filled.SupportAgent, stringResource(R.string.raise_query)) }
     }) { pad ->
         StateContent(state, vm::refresh, Modifier.padding(pad)) { list ->
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                item {
+                    androidx.compose.material3.Button(onClick = newQuery, modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)) {
+                        Icon(Icons.Filled.SupportAgent, null); Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.raise_query), fontWeight = FontWeight.Bold)
+                    }
+                }
                 if (list.isEmpty()) item { EmptyState(stringResource(R.string.no_queries)) }
                 items(list, key = { it.id }) { q ->
                     AppCard(onClick = { openQuery(q.id) }) {

@@ -108,7 +108,7 @@ private fun handoverColors(status: String): Pair<Color, Color> = when (status) {
     "partially_confirmed", "partial" -> Palette.Info to Palette.InfoSoft
     "submitted" -> Palette.Warning to Palette.WarningSoft
     "rejected", "pending" -> Palette.Danger to Palette.DangerSoft
-    else -> Palette.Muted to Color(0xFFF1F5F9)
+    else -> Palette.Muted to Color(0xFFF0F1F7)
 }
 
 @Composable

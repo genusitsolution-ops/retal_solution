@@ -61,6 +61,14 @@ import com.genusit.prms.ui.common.UiError
 import com.genusit.prms.ui.common.errorText
 import com.genusit.prms.ui.theme.Palette
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 
 @Composable
 fun LoginScreen() {
@@ -87,85 +95,114 @@ fun LoginScreen() {
         return
     }
 
-    Box(Modifier.fillMaxSize().background(Palette.HeaderGradient)) {
+    Box(Modifier.fillMaxSize().background(Color.White)) {
+        // gold and teal sweeps from the logo (decorative)
+        com.genusit.prms.ui.common.BrandWave(Modifier.fillMaxWidth().height(150.dp).align(Alignment.BottomCenter))
+        com.genusit.prms.ui.common.BrandWave(Modifier.fillMaxWidth(.75f).height(120.dp).align(Alignment.TopEnd), fromTop = true, alpha = .35f)
         Column(
-            Modifier.fillMaxSize().statusBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
+            Modifier.fillMaxSize().statusBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                listOf("en" to "EN", "hi" to "हिं", "mr" to "मरा").forEach { (code, label) ->
-                    FilterChip(
-                        selected = lang == code,
-                        onClick = { AppLanguage.set(code) },
-                        label = { Text(label, color = if (lang == code) Palette.BrandDark else Color.White) },
-                        modifier = Modifier.padding(start = 6.dp),
-                    )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                Row(Modifier.clip(RoundedCornerShape(50)).background(Palette.Canvas).border(1.dp, Palette.Line, RoundedCornerShape(50)).padding(3.dp)) {
+                    listOf("en" to "EN", "hi" to "हिंदी", "mr" to "मराठी").forEach { (code, label) ->
+                        val on = lang == code
+                        Text(
+                            label,
+                            color = if (on) Color.White else Palette.Ink,
+                            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) Palette.Brand else Color.Transparent)
+                                .selectable(selected = on, role = androidx.compose.ui.semantics.Role.RadioButton, onClick = { AppLanguage.set(code) })
+                                .padding(horizontal = 16.dp, vertical = 7.dp),
+                        )
+                    }
                 }
             }
-            Spacer(Modifier.height(36.dp))
-            BrandLogo(brand.loginLogo, 72.dp)
-            Spacer(Modifier.height(14.dp))
-            Text(brand.name ?: stringResource(R.string.app_name), color = Color.White, style = MaterialTheme.typography.headlineMedium,
+            Spacer(Modifier.height(26.dp))
+            BrandLogo(brand.loginLogo, 96.dp)
+            Spacer(Modifier.height(10.dp))
+            Text(brand.name ?: stringResource(R.string.app_name), color = Palette.Brand, style = MaterialTheme.typography.headlineMedium,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            if (brand.showTagline) Text(brand.tagline ?: stringResource(R.string.login_tagline), color = Color.White.copy(alpha = .8f),
-                style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            Spacer(Modifier.height(28.dp))
+            if (brand.showTagline) Text(brand.tagline ?: stringResource(R.string.login_tagline), color = Palette.Teal,
+                style = MaterialTheme.typography.labelLarge, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Spacer(Modifier.height(26.dp))
 
-            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(22.dp)) {
-                    Text(stringResource(R.string.login_title), style = MaterialTheme.typography.titleLarge)
-                    Text(stringResource(R.string.login_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.height(18.dp))
-                    OutlinedTextField(
-                        value = username, onValueChange = { username = it },
-                        label = { Text(stringResource(R.string.username_or_email)) },
-                        leadingIcon = { Icon(Icons.Filled.Person, null) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = password, onValueChange = { password = it },
-                        label = { Text(stringResource(R.string.password)) },
-                        leadingIcon = { Icon(Icons.Filled.Lock, null) },
-                        trailingIcon = {
-                            IconButton(onClick = { showPw = !showPw }) {
-                                Icon(if (showPw) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, stringResource(R.string.show_password))
-                            }
-                        },
-                        visualTransformation = if (showPw) VisualTransformation.None else PasswordVisualTransformation(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { submit() }),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    val msg = error ?: if (errorRes != 0) stringResource(errorRes) else null
-                    if (msg != null) {
-                        Spacer(Modifier.height(10.dp))
-                        Text(msg, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-                    }
-                    debugInfo?.let {
-                        Spacer(Modifier.height(6.dp))
-                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    }
-                    Spacer(Modifier.height(18.dp))
-                    Button(onClick = { submit() }, enabled = !busy, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
-                        if (busy) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
-                        else Text(stringResource(R.string.sign_in), fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Text(stringResource(R.string.login_roles_hint), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            Column(Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.login_title), style = MaterialTheme.typography.headlineSmall, color = Palette.Ink, fontWeight = FontWeight.ExtraBold)
+                Text(stringResource(R.string.login_subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(18.dp))
+                val fieldShape = RoundedCornerShape(14.dp)
+                val fieldColors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Palette.Brand, unfocusedBorderColor = Palette.Line,
+                    focusedContainerColor = Color.White, unfocusedContainerColor = Palette.Canvas,
+                    focusedLeadingIconColor = Palette.Brand, unfocusedLeadingIconColor = Palette.Muted,
+                    focusedTextColor = Palette.Ink, unfocusedTextColor = Palette.Ink, cursorColor = Palette.Brand,
+                    focusedLabelColor = Palette.Brand,
+                )
+                OutlinedTextField(
+                    value = username, onValueChange = { username = it },
+                    label = { Text(stringResource(R.string.username_or_email)) },
+                    leadingIcon = { Icon(Icons.Filled.Person, null) },
+                    singleLine = true, shape = fieldShape, colors = fieldColors,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = password, onValueChange = { password = it },
+                    label = { Text(stringResource(R.string.password)) },
+                    leadingIcon = { Icon(Icons.Filled.Lock, null) },
+                    trailingIcon = {
+                        IconButton(onClick = { showPw = !showPw }) {
+                            Icon(if (showPw) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, stringResource(R.string.show_password))
+                        }
+                    },
+                    visualTransformation = if (showPw) VisualTransformation.None else PasswordVisualTransformation(),
+                    singleLine = true, shape = fieldShape, colors = fieldColors,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { submit() }),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                val msg = error ?: if (errorRes != 0) stringResource(errorRes) else null
+                if (msg != null) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(msg, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Palette.DangerSoft).padding(12.dp))
                 }
+                debugInfo?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                }
+                Spacer(Modifier.height(18.dp))
+                Button(
+                    onClick = { submit() }, enabled = !busy, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Palette.Brand, disabledContainerColor = Palette.Brand.copy(alpha = .7f)),
+                ) {
+                    if (busy) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+                    else {
+                        Text(stringResource(R.string.sign_in), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(stringResource(R.string.login_roles_hint), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
             }
             // shown unless the Super Admin turned self-registration off (unknown → shown; the server decides)
             if (brand.signupEnabled != false) {
-                Spacer(Modifier.height(16.dp))
-                androidx.compose.material3.OutlinedButton(onClick = { signingUp = true }, modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = .7f))) {
-                    Text(stringResource(R.string.new_owner_signup), color = Color.White, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(18.dp))
+                androidx.compose.material3.OutlinedButton(onClick = { signingUp = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                    shape = RoundedCornerShape(16.dp), border = androidx.compose.foundation.BorderStroke(1.5.dp, Palette.Gold),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(containerColor = Color.White)) {
+                    Icon(Icons.Filled.PersonAdd, null, tint = Palette.Gold)
+                    Spacer(Modifier.width(10.dp))
+                    Text(stringResource(R.string.new_owner_signup), color = Palette.Brand, fontWeight = FontWeight.SemiBold,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
             }
+            Spacer(Modifier.height(96.dp))
         }
     }
 }

@@ -100,7 +100,7 @@ fun BrandLogo(file: File?, size: Dp, modifier: Modifier = Modifier) {
         value = file?.let { f -> withContext(Dispatchers.IO) { runCatching { android.graphics.BitmapFactory.decodeFile(f.absolutePath) }.getOrNull() } }
     }
     val b = bmp
-    Box(modifier.size(size).clip(RoundedCornerShape(size / 3.2f)).background(if (b != null) Color.White else Color.White.copy(alpha = .15f)),
+    Box(modifier.size(size).clip(RoundedCornerShape(size / 3.2f)).background(if (b != null) Color.White else Palette.Brand),
         contentAlignment = Alignment.Center) {
         if (b != null) Image(b.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.padding(size / 9).fillMaxSize())
         else Icon(Icons.Filled.Apartment, null, tint = Color.White, modifier = Modifier.size(size * 0.53f))
@@ -124,26 +124,28 @@ fun SignupScreen(branding: Branding, onBack: () -> Unit) {
     val problems = model.check(input, confirm)
     fun bad(p: Problem) = tried && p in problems
 
-    Box(Modifier.fillMaxSize().background(Palette.HeaderGradient)) {
+    Box(Modifier.fillMaxSize().background(Palette.Canvas)) {
+        com.genusit.prms.ui.common.BrandWave(Modifier.fillMaxWidth(.8f).height(130.dp).align(Alignment.TopEnd), fromTop = true, alpha = .35f)
         Column(Modifier.fillMaxSize().statusBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), tint = Color.White) }
+                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), tint = Palette.Ink) }
                 Spacer(Modifier.weight(1f))
             }
-            BrandLogo(branding.loginLogo, 60.dp)
+            BrandLogo(branding.loginLogo, 72.dp)
             Spacer(Modifier.height(10.dp))
-            Text(stringResource(R.string.signup_title), color = Color.White, style = MaterialTheme.typography.headlineMedium)
-            Text(stringResource(R.string.signup_subtitle, branding.name ?: stringResource(R.string.app_name)), color = Color.White.copy(alpha = .85f),
-                style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.signup_title), color = Palette.Brand, style = MaterialTheme.typography.headlineMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(stringResource(R.string.signup_subtitle, branding.name ?: stringResource(R.string.app_name)), color = Palette.Teal,
+                style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Spacer(Modifier.height(20.dp))
-            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp)) {
+            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), border = androidx.compose.foundation.BorderStroke(1.dp, Palette.Line),
+                elevation = CardDefaults.cardElevation(2.dp), modifier = Modifier.fillMaxWidth().widthIn(max = 560.dp)) {
                 val done = (act as? ActionState.Done)?.result
                 if (done != null) SignupResult(done, onBack)
                 else Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     // the free trial the new owner gets immediately (configured by the Super Admin)
                     branding.trial?.let { t ->
-                        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Palette.BrandSoft).padding(12.dp)) {
+                        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Palette.GoldSoft).padding(12.dp)) {
                             Text(stringResource(R.string.signup_trial_title, t.packageName, t.days), fontWeight = FontWeight.Bold, color = Palette.Brand)
                             Text(stringResource(R.string.signup_trial_sub, t.maxProperties, t.maxTenants), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -164,7 +166,7 @@ fun SignupScreen(branding: Branding, onBack: () -> Unit) {
                     }
                     ActionError(act)
                     Button(onClick = { tried = true; if (problems.isEmpty()) model.submit(input) }, enabled = act !is ActionState.Running,
-                        modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(14.dp)) {
+                        modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp)) {
                         if (act is ActionState.Running) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
                         else Text(stringResource(R.string.create_account), fontWeight = FontWeight.Bold)
                     }

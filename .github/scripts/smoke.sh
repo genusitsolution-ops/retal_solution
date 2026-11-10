@@ -28,9 +28,9 @@ X=$((W / 2)); Y1=$((H * 25 / 100)); Y2=$((H * 85 / 100))
 top() { hidekb; for i in 1 2 3; do adb shell input swipe $X $Y1 $X $Y2 250; done; sleep 1; }
 bottom() { for i in 1 2 3; do adb shell input swipe $X $Y2 $X $Y1 250; done; sleep 1; }
 top
-python3 .github/scripts/ui.py tap-text "हिं" ; sleep 6; adb exec-out screencap -p > shots/03-hindi.png; python3 .github/scripts/ui.py dump shots/03-hindi.txt
+python3 .github/scripts/ui.py tap-text "हिंदी" ; sleep 6; adb exec-out screencap -p > shots/03-hindi.png; python3 .github/scripts/ui.py dump shots/03-hindi.txt
 top
-python3 .github/scripts/ui.py tap-text "मरा" ; sleep 6; adb exec-out screencap -p > shots/04-marathi.png; python3 .github/scripts/ui.py dump shots/04-marathi.txt
+python3 .github/scripts/ui.py tap-text "मराठी" ; sleep 6; adb exec-out screencap -p > shots/04-marathi.png; python3 .github/scripts/ui.py dump shots/04-marathi.txt
 # owner sign-up form (back to English first). Only the app's own checks run: nothing is submitted to the server.
 top
 python3 .github/scripts/ui.py tap-text "EN" ; sleep 5

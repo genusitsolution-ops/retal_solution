@@ -864,4 +864,13 @@
     <string name="vendor_utr">UTR / संदर्भ</string>
     <string name="vendor_entries">नोंदी</string>
     <string name="vendor_reversed_later">नंतर परत घेतले</string>
+    <!-- 1.14 redesign -->
+    <string name="nav_collect">वसुली करा</string>
+    <string name="nav_history">इतिहास</string>
+    <string name="quick_actions">झटपट कामे</string>
+    <string name="loading">लोड होत आहे…</string>
+    <string name="step_documents">फोटो आणि कागदपत्रे</string>
+    <string name="step_tenant_details">भाडेकरूचा तपशील</string>
+    <string name="step_login">ॲप लॉगिन</string>
+    <string name="step_room_rent">खोली आणि भाडे</string>
 </resources>

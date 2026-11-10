@@ -864,4 +864,13 @@
     <string name="vendor_utr">UTR / संदर्भ</string>
     <string name="vendor_entries">प्रविष्टियाँ</string>
     <string name="vendor_reversed_later">बाद में वापस लिया गया</string>
+    <!-- 1.14 redesign -->
+    <string name="nav_collect">वसूली करें</string>
+    <string name="nav_history">इतिहास</string>
+    <string name="quick_actions">त्वरित कार्य</string>
+    <string name="loading">लोड हो रहा है…</string>
+    <string name="step_documents">फ़ोटो और दस्तावेज़</string>
+    <string name="step_tenant_details">किरायेदार का विवरण</string>
+    <string name="step_login">ऐप लॉगिन</string>
+    <string name="step_room_rent">कमरा और किराया</string>
 </resources>

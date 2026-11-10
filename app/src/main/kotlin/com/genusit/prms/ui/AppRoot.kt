@@ -109,6 +109,17 @@ import com.genusit.prms.ui.tenant.TenantMoreScreen
 import com.genusit.prms.ui.tenant.TenantPaymentsScreen
 import com.genusit.prms.ui.tenant.TenantQueriesScreen
 import com.genusit.prms.ui.theme.Palette
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.animation.animateColorAsState
+import com.genusit.prms.ui.theme.NavIcons
 
 /** Login gate: no session → login; otherwise the shell for the user's role. */
 @Composable
@@ -139,7 +150,7 @@ private object Routes {
     const val EMP_COLLECT = "emp/collect"
     // tenant
     const val TEN_HOME = "ten/home"; const val TEN_INVOICES = "ten/invoices"; const val TEN_PAYMENTS = "ten/payments"
-    const val TEN_MORE = "ten/more"; const val TEN_NEW_QUERY = "ten/query/new"
+    const val TEN_MORE = "ten/more"; const val TEN_NEW_QUERY = "ten/query/new"; const val TEN_QUERIES = "ten/queries"
     // shared
     const val SETTINGS = "settings"; const val NOTIFICATIONS = "notifications"
 }
@@ -177,61 +188,50 @@ private fun RoleShell(role: Role, token: String) {
 private fun RoleShellContent(role: Role, nav: NavHostController, current: String?) {
 
     val tabs: List<Tab>
-    /** Centre floating action (agent: collect rent, tenant: raise a complaint). The owner has a plain 5-item bar. */
-    val fabRoute: String?
-    val fabLabel: Int
     val start: String
     when (role) {
         Role.OWNER -> {
-            // Home | Tenants | Bills | Properties | More — "collect payment" moved to the Bills screen's top bar
+            // Home | Tenants | Bills | Properties | More — "collect payment" is on Home (quick actions) and the Bills screen's top bar
             tabs = listOf(
-                Tab(Routes.OWNER_HOME, Icons.Filled.Home, R.string.nav_home),
-                Tab(Routes.OWNER_TENANTS, Icons.Filled.Groups, R.string.nav_tenants),
-                Tab(Routes.OWNER_INVOICES, Icons.AutoMirrored.Filled.ReceiptLong, R.string.nav_invoices),
-                Tab(Routes.OWNER_PROPERTIES, Icons.Filled.Apartment, R.string.nav_properties),
-                Tab(Routes.OWNER_MORE, Icons.Filled.Menu, R.string.nav_more),
+                Tab(Routes.OWNER_HOME, NavIcons.Home, R.string.nav_home),
+                Tab(Routes.OWNER_TENANTS, NavIcons.Tenants, R.string.nav_tenants),
+                Tab(Routes.OWNER_INVOICES, NavIcons.Bills, R.string.nav_invoices),
+                Tab(Routes.OWNER_PROPERTIES, NavIcons.Properties, R.string.nav_properties),
+                Tab(Routes.OWNER_MORE, NavIcons.More, R.string.nav_more),
             )
-            fabRoute = null; fabLabel = R.string.collect_payment; start = Routes.OWNER_HOME
+            start = Routes.OWNER_HOME
         }
         Role.EMPLOYEE -> {
+            // 1.14: Collect is a tab (was the centre button); Settings is reached as "More"
             tabs = listOf(
-                Tab(Routes.EMP_HOME, Icons.Filled.Home, R.string.nav_home),
-                Tab(Routes.EMP_TENANTS, Icons.Filled.Groups, R.string.nav_tenants),
-                Tab(Routes.EMP_COLLECTIONS, Icons.Filled.History, R.string.nav_collections),
-                Tab(Routes.SETTINGS, Icons.Filled.Person, R.string.nav_profile),
+                Tab(Routes.EMP_HOME, NavIcons.Home, R.string.nav_home),
+                Tab(Routes.EMP_COLLECT, NavIcons.Collect, R.string.nav_collect),
+                Tab(Routes.EMP_TENANTS, NavIcons.Tenants, R.string.nav_tenants),
+                Tab(Routes.EMP_COLLECTIONS, NavIcons.History, R.string.nav_history),
+                Tab(Routes.SETTINGS, NavIcons.More, R.string.nav_more),
             )
-            fabRoute = Routes.EMP_COLLECT; fabLabel = R.string.collect_payment; start = Routes.EMP_HOME
+            start = Routes.EMP_HOME
         }
         else -> {
+            // 1.14: Complaints is a tab (was the centre button); "Raise a query" is on that screen
             tabs = listOf(
-                Tab(Routes.TEN_HOME, Icons.Filled.Home, R.string.nav_home),
-                Tab(Routes.TEN_INVOICES, Icons.AutoMirrored.Filled.ReceiptLong, R.string.nav_invoices),
-                Tab(Routes.TEN_PAYMENTS, Icons.Filled.CurrencyRupee, R.string.nav_payments),
-                Tab(Routes.TEN_MORE, Icons.Filled.Menu, R.string.nav_more),
+                Tab(Routes.TEN_HOME, NavIcons.Home, R.string.nav_home),
+                Tab(Routes.TEN_INVOICES, NavIcons.Bills, R.string.nav_invoices),
+                Tab(Routes.TEN_PAYMENTS, NavIcons.Payments, R.string.nav_payments),
+                Tab(Routes.TEN_QUERIES, NavIcons.Complaints, R.string.complaints),
+                Tab(Routes.TEN_MORE, NavIcons.More, R.string.nav_more),
             )
-            fabRoute = Routes.TEN_NEW_QUERY; fabLabel = R.string.raise_query; start = Routes.TEN_HOME
+            start = Routes.TEN_HOME
         }
     }
-    val showBar = tabs.any { it.route == current }
+    // routes with optional arguments ("emp/collect?tenant=…") count as their tab
+    val currentBase = current?.substringBefore('?')
+    val showBar = tabs.any { it.route == currentBase }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets.navigationBars,
-        bottomBar = { if (showBar) BottomBar(tabs, current, nav, centreGap = fabRoute != null) },
-        floatingActionButton = {
-            if (showBar && fabRoute != null) {
-                // centre action docked into the bottom bar, as in the design reference
-                FloatingActionButton(
-                    onClick = { nav.navigate(fabRoute) },
-                    shape = CircleShape,
-                    containerColor = Palette.Brand,
-                    contentColor = Color.White,
-                    elevation = FloatingActionButtonDefaults.elevation(6.dp),
-                    modifier = Modifier.offset(y = 44.dp).size(60.dp),
-                ) { Icon(if (role == Role.TENANT) Icons.Filled.SupportAgent else Icons.Filled.Add, contentDescription = stringResource(fabLabel)) }
-            }
-        },
-        floatingActionButtonPosition = FabPosition.Center,
+        bottomBar = { if (showBar) BottomBar(tabs, currentBase, nav) },
     ) { inner ->
         NavHost(
             // consumeWindowInsets + imePadding: with edge-to-edge the window is not resized for the keyboard,
@@ -409,6 +409,7 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     openTenants = { nav.navigateTab(Routes.EMP_TENANTS) },
                     openCollections = { nav.navigateTab(Routes.EMP_COLLECTIONS) },
                     openHandover = { nav.navigate("emp/handover") },
+                    openCollect = { nav.navigateTab(Routes.EMP_COLLECT) },
                 )
             }
             composable("emp/handover") {
@@ -429,10 +430,13 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     navArgument("invoice") { type = NavType.IntType; defaultValue = 0 },
                 ),
             ) {
+                val preTenant = it.arguments?.getInt("tenant") ?: 0
+                val preInvoice = it.arguments?.getInt("invoice") ?: 0
                 EmployeeCollectScreen(
-                    preTenant = it.arguments?.getInt("tenant") ?: 0,
-                    preInvoice = it.arguments?.getInt("invoice") ?: 0,
-                    onBack = back,
+                    preTenant = preTenant,
+                    preInvoice = preInvoice,
+                    // opened from the Collect tab: no back arrow; opened for a chosen tenant: back to where it came from
+                    onBack = if (preTenant == 0 && preInvoice == 0) null else back,
                     onDone = { rc -> nav.popBackStack(); openReceipt(rc) },
                 )
             }
@@ -444,6 +448,7 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     openNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
                     openInvoices = { nav.navigateTab(Routes.TEN_INVOICES) },
                     openPayments = { nav.navigateTab(Routes.TEN_PAYMENTS) },
+                    openComplaints = { nav.navigateTab(Routes.TEN_QUERIES) },
                 )
             }
             composable(Routes.TEN_INVOICES) { TenantInvoicesScreen(openInvoice = { nav.navigate("ten/invoice/$it") }) }
@@ -451,13 +456,13 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                 TenantInvoiceDetailScreen(it.arguments?.getInt("id") ?: 0, onBack = back, openReceipt = openReceipt)
             }
             composable(Routes.TEN_PAYMENTS) { TenantPaymentsScreen(openReceipt = openReceipt) }
-            composable(Routes.TEN_MORE) { TenantMoreScreen(open = { route -> nav.navigate(route) }) }
+            composable(Routes.TEN_MORE) { TenantMoreScreen(open = { route -> if (route == Routes.TEN_QUERIES) nav.navigateTab(route) else nav.navigate(route) }) }
             composable("ten/deposit") { com.genusit.prms.ui.tenant.TenantDepositScreen(onBack = back) }
-            composable("ten/queries") { TenantQueriesScreen(onBack = back, newQuery = { nav.navigate(Routes.TEN_NEW_QUERY) }, openQuery = { id -> nav.navigate("ten/query/$id") }) }
+            composable(Routes.TEN_QUERIES) { TenantQueriesScreen(onBack = null, newQuery = { nav.navigate(Routes.TEN_NEW_QUERY) }, openQuery = { id -> nav.navigate("ten/query/$id") }) }
             composable("ten/query/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 QueryDetailScreen(it.arguments?.getInt("id") ?: 0, Role.TENANT, onBack = back)
             }
-            composable(Routes.TEN_NEW_QUERY) { RaiseQueryScreen(onBack = back, onDone = { nav.popBackStack(); nav.navigate("ten/queries") }) }
+            composable(Routes.TEN_NEW_QUERY) { RaiseQueryScreen(onBack = back, onDone = { nav.popBackStack(); nav.navigateTab(Routes.TEN_QUERIES) }) }
         }
     }
 }
@@ -470,41 +475,60 @@ private fun NavHostController.navigateTab(route: String) {
     }
 }
 
+/** Floating rounded bar: two-tone icons, the current tab on a lavender pill (1.14). */
 @Composable
-private fun BottomBar(tabs: List<Tab>, current: String?, nav: NavHostController, centreGap: Boolean) {
-    NavigationBar(containerColor = Color.White, tonalElevation = 6.dp) {
-        tabs.forEachIndexed { index, tab ->
-            if (centreGap && index == 2) {
-                // gap for the centre floating action button
-                NavigationBarItem(selected = false, onClick = {}, enabled = false, icon = { Spacer(Modifier.size(24.dp)) }, label = { Text("") })
+private fun BottomBar(tabs: List<Tab>, current: String?, nav: NavHostController) {
+    val shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
+    Box(
+        Modifier.fillMaxWidth().shadow(18.dp, shape, ambientColor = Palette.Shadow, spotColor = Palette.Shadow)
+            .clip(shape).background(Color.White).selectableGroup(),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            tabs.forEach { tab ->
+                val selected = current == tab.route
+                val label = stringResource(tab.label)
+                val bg by animateColorAsState(if (selected) Palette.BrandSoft else Color.Transparent, tween(200), label = "tab")
+                Column(
+                    Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(bg)
+                        .selectable(selected = selected, role = androidx.compose.ui.semantics.Role.Tab, onClick = { nav.navigateTab(tab.route) })
+                        .padding(vertical = 7.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(tab.icon, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(if (selected) 27.dp else 25.dp))
+                    Spacer(Modifier.height(3.dp))
+                    Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (selected) Palette.NavSelected else Palette.Muted)
+                }
             }
-            NavigationBarItem(
-                selected = current == tab.route,
-                onClick = { nav.navigateTab(tab.route) },
-                icon = { Icon(tab.icon, contentDescription = null) },
-                label = { Text(stringResource(tab.label), maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Medium) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Palette.Brand, selectedTextColor = Palette.Brand,
-                    indicatorColor = Palette.BrandSoft, unselectedIconColor = Palette.Muted, unselectedTextColor = Palette.Muted,
-                ),
-            )
         }
     }
 }
 
-/** App splash (1.11): the published logo and name on the brand gradient. */
+/** App splash: the published logo, name and tagline on navy with the gold and teal sweep (1.14). */
 @Composable
 private fun BrandedSplash(brand: com.genusit.prms.platform.Branding) {
+    com.genusit.prms.ui.common.LightStatusBarIcons()
     Box(Modifier.fillMaxSize().background(Palette.HeaderGradient), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            com.genusit.prms.ui.auth.BrandLogo(brand.loginLogo ?: brand.logo, 112.dp, Modifier.testTag("splash_logo"))
-            Spacer(Modifier.height(18.dp))
-            Text(brand.name ?: stringResource(R.string.app_name), color = Color.White, fontWeight = FontWeight.Bold,
-                style = androidx.compose.material3.MaterialTheme.typography.headlineSmall)
-            if (brand.showTagline) Text(brand.tagline ?: stringResource(R.string.login_tagline), color = Color.White.copy(alpha = .85f),
-                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(28.dp))
-            CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+        com.genusit.prms.ui.common.BrandWave(Modifier.fillMaxWidth().fillMaxHeight(.42f).align(Alignment.TopCenter), fromTop = true, alpha = .55f)
+        com.genusit.prms.ui.common.BrandWave(Modifier.fillMaxWidth().fillMaxHeight(.38f).align(Alignment.BottomCenter))
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 28.dp)) {
+            Box(Modifier.size(150.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Brush.radialGradient(
+                listOf(Palette.GoldBright.copy(alpha = .35f), Color.Transparent))), contentAlignment = Alignment.Center) {
+                com.genusit.prms.ui.auth.BrandLogo(brand.loginLogo ?: brand.logo, 112.dp, Modifier.testTag("splash_logo"))
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(brand.name ?: stringResource(R.string.app_name), color = Color.White, fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.headlineMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            if (brand.showTagline) Text(brand.tagline ?: stringResource(R.string.login_tagline), color = Palette.GoldBright,
+                style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Spacer(Modifier.height(10.dp))
+            Box(Modifier.width(120.dp).height(1.dp).background(androidx.compose.ui.graphics.Brush.horizontalGradient(
+                listOf(Color.Transparent, Palette.Gold, Color.Transparent))))
+            Spacer(Modifier.height(30.dp))
+            CircularProgressIndicator(color = Palette.GoldBright, trackColor = Color.White.copy(alpha = .15f), strokeWidth = 2.5.dp, modifier = Modifier.size(30.dp))
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.loading), color = Color.White.copy(alpha = .85f), style = MaterialTheme.typography.labelMedium)
         }
     }
 }
