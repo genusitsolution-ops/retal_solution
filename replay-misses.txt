@@ -1,0 +1,6 @@
+GET tenant/dashboard.php
+GET employee/dashboard.php
+GET employee/dashboard.php
+GET owner/dashboard.php
+GET tenant/dashboard.php
+GET owner/dashboard.php
