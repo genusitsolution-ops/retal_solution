@@ -120,6 +120,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.animation.animateColorAsState
 import com.genusit.prms.ui.theme.NavIcons
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 /** Login gate: no session → login; otherwise the shell for the user's role. */
 @Composable
@@ -483,7 +484,8 @@ private fun BottomBar(tabs: List<Tab>, current: String?, nav: NavHostController)
         Modifier.fillMaxWidth().shadow(18.dp, shape, ambientColor = Palette.Shadow, spotColor = Palette.Shadow)
             .clip(shape).background(Color.White).selectableGroup(),
     ) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        // the white bar extends under the system navigation (gesture handle / buttons); the items stay above it
+        Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             tabs.forEach { tab ->
                 val selected = current == tab.route
                 val label = stringResource(tab.label)
