@@ -8,6 +8,9 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -93,12 +96,21 @@ class StoreScreenshotsTest {
         rule.onNode(hasText(str(R.string.sign_in, lang)) and hasClickAction()).performClick()
     }
 
-    /** Settings → Log out → confirm (the dialog's button is the last "Log out"). */
+    /** Settings → Log out → confirm in the dialog. */
     private fun logOut(lang: String) {
         val label = str(R.string.logout, lang)
-        scrollTo(label); first(label).performClick(); rule.waitForIdle()
-        rule.onAllNodes(hasText(label) and hasClickAction()).onLast().performClick()
-        waitText(str(R.string.username_or_email, lang), 20_000)
+        openByText(label)
+        val inDialog = hasText(label) and hasClickAction() and hasAnyAncestor(isDialog())
+        rule.waitUntil(10_000) { rule.onAllNodes(inDialog).fetchSemanticsNodes().isNotEmpty() }
+        rule.onAllNodes(inDialog).onFirst().performClick()
+        waitText(str(R.string.username_or_email, lang), 30_000)
+    }
+
+    /** Scrolls the clickable item with this text into view (inside its scrolling column) and taps it. */
+    private fun openByText(label: String) {
+        val m = hasText(label) and hasClickAction()
+        rule.waitUntil(15_000) { rule.onAllNodes(m).fetchSemanticsNodes().isNotEmpty() }
+        rule.onAllNodes(m).onFirst().performScrollTo().performClick(); rule.waitForIdle()
     }
 
     @Test fun captureStoreScreens() {
@@ -135,7 +147,7 @@ class StoreScreenshotsTest {
         tab("Tenants"); waitText("Amit Verma")
         rule.onNode(hasContentDescription("Add tenant")).performClick(); waitText("Tenant details"); shot("09-add-tenant")
         back()
-        tab("More"); waitText("More", 10_000); scrollTo("Settings"); first("Settings").performClick(); waitText("Log out")
+        tab("More"); waitText("More", 10_000); openByText("Settings"); waitText("Log out")
         logOut("en")
 
         // tenant (Hindi)
@@ -146,7 +158,7 @@ class StoreScreenshotsTest {
         tab(str(R.string.nav_payments, "hi")); shot("13-tenant-payments-hi")
         tab(str(R.string.complaints, "hi")); waitText("Water leakage"); shot("14-tenant-complaints-hi")
         tab(str(R.string.nav_more, "hi")); shot("15-tenant-more-hi")
-        first(str(R.string.settings, "hi")).performClick(); waitText(str(R.string.logout, "hi"))
+        openByText(str(R.string.settings, "hi")); waitText(str(R.string.logout, "hi"))
         logOut("hi")
 
         // collection agent (Marathi)

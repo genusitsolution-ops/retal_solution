@@ -212,7 +212,7 @@ fun WalletCard(label: String, amount: Double, footer: String? = null, modifier: 
     Box(if (onClick != null) base.clickable(onClick = onClick, role = Role.Button) else base) {
         // decorative only: soft circle + gold / teal sweeps along the bottom edge
         Box(Modifier.align(Alignment.TopEnd).offset(x = 46.dp, y = (-56).dp).size(170.dp).clip(CircleShape).background(Color.White.copy(alpha = .06f)))
-        BrandWave(Modifier.matchParentSize(), alpha = .55f)
+        BrandWave(Modifier.matchParentSize(), alpha = .4f)
         Box(Modifier.align(Alignment.TopEnd).padding(16.dp)) {
             Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(Palette.GoldGradient), contentAlignment = Alignment.Center) {
                 Icon(if (onClick != null) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.Filled.CurrencyRupee, null,
@@ -236,7 +236,7 @@ fun WalletCard(label: String, amount: Double, footer: String? = null, modifier: 
 @Composable
 fun WalletFigures(vararg figures: Pair<String, String>) {
     Spacer(Modifier.height(12.dp))
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = .10f)).padding(horizontal = 12.dp, vertical = 9.dp),
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Palette.BrandDark.copy(alpha = .45f)).padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically) {
         figures.forEachIndexed { i, (label, value) ->
             if (i > 0) Box(Modifier.padding(horizontal = 10.dp).width(1.dp).height(30.dp).background(Color.White.copy(alpha = .25f)))
