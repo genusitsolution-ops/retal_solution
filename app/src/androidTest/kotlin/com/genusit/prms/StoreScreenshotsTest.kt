@@ -8,7 +8,7 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.hasContentDescriptionExact
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -133,7 +133,7 @@ class StoreScreenshotsTest {
 
         // 1.14: the redesigned Add Tenant form and the employee / tenant screens, in Hindi and Marathi too
         tab("Tenants"); waitText("Amit Verma")
-        rule.onNode(hasContentDescriptionExact("Add tenant")).performClick(); waitText("Tenant details"); shot("09-add-tenant")
+        rule.onNode(hasContentDescription("Add tenant")).performClick(); waitText("Tenant details"); shot("09-add-tenant")
         back()
         tab("More"); waitText("More", 10_000); scrollTo("Settings"); first("Settings").performClick(); waitText("Log out")
         logOut("en")
