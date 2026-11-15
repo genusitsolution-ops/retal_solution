@@ -162,7 +162,8 @@ class StoreScreenshotsTest {
         rule.waitForIdle(); rate[0].performScrollTo(); Thread.sleep(800); shot("21-bill-meter-rate")
         curr[1].performScrollTo(); Thread.sleep(500); shot("22-bill-meter-slabs")
         back(); back()   // bill screen → room list → Home
-        tab("Bills"); waitText("Neha Gupta"); shot("23a-bills-list"); first("Neha Gupta").performClick(); waitText("Total"); shot("23b-opened")
+        // Home → "Dues by tenant" → Neha Gupta opens her latest bill (made with electricity at ₹15 for this bill)
+        tab("Home"); waitText("Hello"); scrollTo("Neha Gupta"); first("Neha Gupta").performClick()
         waitText("Previous Reading", 20_000)
         scrollTo("Previous Reading"); Thread.sleep(500); shot("23-bill-readings")
         back()
