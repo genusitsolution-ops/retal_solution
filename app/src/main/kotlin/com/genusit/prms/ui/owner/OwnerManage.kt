@@ -870,7 +870,7 @@ private fun MeterFields(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         MeterRow(stringResource(R.string.units_used), units?.let { "${trimNum(Math.round(it * 1000) / 1000.0)} $unitWord" } ?: "—")
-        MeterRow(stringResource(R.string.rate_per_unit), stringResource(R.string.per_unit_x, Money.format(typed ?: defaultRate), unitWord))
+        MeterRow(stringResource(R.string.rate_per_unit), stringResource(R.string.per_unit_x, Money.format(defaultRate), unitWord))  // Charge Master rate
         MeterRow(stringResource(R.string.total_amount), m?.let { Money.format(it.amount) } ?: "—", bold = true)
     }
     Row(
