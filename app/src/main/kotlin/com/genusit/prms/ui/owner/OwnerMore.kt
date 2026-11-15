@@ -150,7 +150,7 @@ fun PropertiesScreen(onBack: (() -> Unit)?, addProperty: () -> Unit, editPropert
                                 Spacer(Modifier.width(12.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(p.propertyCode, fontWeight = FontWeight.SemiBold)
-                                    Text(listOfNotNull(p.typeName, p.city, p.activeTenantName).joinToString(" · "),
+                                    Text(listOfNotNull(p.typeLabel ?: p.typeName, p.city, p.activeTenantName).joinToString(" · "),
                                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
@@ -178,6 +178,8 @@ fun AddPropertyScreen(onBack: () -> Unit, onSaved: () -> Unit) {
     var pincode by rememberSaveable { mutableStateOf("") }
     var rent by rememberSaveable { mutableStateOf("") }
     var deposit by rememberSaveable { mutableStateOf("0") }
+    var typeId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val types by model.types.state.collectAsStateWithLifecycle()
     var tried by rememberSaveable { mutableStateOf(false) }
     val rentV = Money.parse(rent)
     val depV = Money.parse(deposit)
@@ -192,6 +194,7 @@ fun AddPropertyScreen(onBack: () -> Unit, onSaved: () -> Unit) {
                 isError = tried && !ok, keyboardOptions = KeyboardOptions(keyboardType = kb), modifier = Modifier.fillMaxWidth(),
             )
             field(code, { code = it.take(50) }, R.string.property_code, code.isNotBlank())
+            PropertyTypeField(types, typeId) { typeId = it }
             field(address, { address = it.take(255) }, R.string.address, address.isNotBlank())
             field(city, { city = it.take(100) }, R.string.city, city.isNotBlank())
             field(stateName, { stateName = it.take(100) }, R.string.state, stateName.isNotBlank())
@@ -202,7 +205,7 @@ fun AddPropertyScreen(onBack: () -> Unit, onSaved: () -> Unit) {
             Button(
                 onClick = {
                     tried = true
-                    if (valid) model.save(NewProperty(code.trim(), address.trim(), city.trim(), stateName.trim(), pincode, rentV!!, depV!!))
+                    if (valid) model.save(NewProperty(code.trim(), address.trim(), city.trim(), stateName.trim(), pincode, rentV!!, depV!!, typeId))
                 },
                 enabled = act !is ActionState.Running, modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
@@ -247,4 +250,20 @@ fun OwnerPaymentsScreen(onBack: () -> Unit, openReceipt: (String) -> Unit) {
             }
         }
     }
+}
+
+/**
+ * 1.15: "Property type" dropdown filled from the Super Admin's Property Type Master (no fixed list in the app).
+ * Shows nothing while the list loads or when the Super Admin has no types.
+ */
+@Composable
+fun PropertyTypeField(state: com.genusit.prms.ui.common.UiState<List<com.genusit.prms.domain.model.PropertyType>>, selected: Int?, onSelect: (Int?) -> Unit) {
+    val list = (state as? com.genusit.prms.ui.common.UiState.Data)?.value ?: return
+    if (list.isEmpty()) return
+    val none = stringResource(R.string.select_option)
+    com.genusit.prms.ui.common.ChoiceField(
+        stringResource(R.string.property_type),
+        listOf<Pair<Int?, String>>(null to none) + list.map { it.id to it.label.ifBlank { it.name } },
+        selected, onSelect,
+    )
 }

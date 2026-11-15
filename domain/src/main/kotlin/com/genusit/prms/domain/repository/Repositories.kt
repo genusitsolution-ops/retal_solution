@@ -49,6 +49,8 @@ interface CommonRepository {
 interface PropertyRepository {
     suspend fun properties(): List<Property>
     suspend fun property(id: Int): Property
+    /** 1.15: active property types (+ [includeId], a type the property already has even when inactive). */
+    suspend fun types(includeId: Int? = null): List<com.genusit.prms.domain.model.PropertyType>
     suspend fun add(p: NewProperty): CreatedId
     /** [status] may be "available" or "maintenance"; null keeps the current status. */
     suspend fun update(id: Int, p: NewProperty, status: String?)
@@ -102,6 +104,8 @@ interface BillingRepository {
     suspend fun cancelInvoice(invoiceId: Int, reason: String)
     suspend fun charges(includeInactive: Boolean = false): List<Charge>
     suspend fun setChargeStatus(id: Int, active: Boolean)
+    /** 1.15: change a per-unit charge's rate or slabs (only bills generated afterwards use it). */
+    suspend fun updateChargeRates(id: Int, u: com.genusit.prms.domain.model.ChargeRateUpdate)
     suspend fun addCharge(c: NewCharge): CreatedId
     /** Deactivates the charge (history stays on old invoices). */
     suspend fun deactivateCharge(id: Int)

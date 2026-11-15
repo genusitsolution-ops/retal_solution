@@ -70,9 +70,30 @@ data class Charge(
     @SerialName("rate_per_unit") @Serializable(with = FlexDoubleOrNull::class) val ratePerUnit: Double? = null,
     @SerialName("unit_label") val unitLabel: String? = null,
     val status: String = "active",
+    /** 1.15: flat | slab_single | slab_progressive (flat when the server has no slabs for it). */
+    @SerialName("rate_mode") val rateMode: String = "flat",
+    val slabs: List<Slab> = emptyList(),
+    @SerialName("slabs_text") val slabsText: String? = null,
+    @SerialName("rate_mode_label") val rateModeLabel: String? = null,
 ) {
     val isVariable: Boolean get() = chargeType == "variable"
+    val hasSlabs: Boolean get() = isVariable && rateMode != "flat" && slabs.size >= 2
 }
+
+/** 1.15: one slab of a per-unit charge — up to [upto] units at [rate]; [upto] = null for "above that". */
+@Serializable
+data class Slab(
+    @Serializable(with = FlexDoubleOrNull::class) val upto: Double? = null,
+    val rate: Double = 0.0,
+)
+
+/** 1.15: PUT owner/charges.php?id — change how a per-unit charge is worked out (future bills only). */
+@Serializable
+data class ChargeRateUpdate(
+    @SerialName("rate_per_unit") val ratePerUnit: Double? = null,
+    @SerialName("rate_mode") val rateMode: String = "flat",
+    val slabs: List<Slab> = emptyList(),
+)
 
 @Serializable
 data class NewCharge(
@@ -82,6 +103,9 @@ data class NewCharge(
     @SerialName("rate_per_unit") val ratePerUnit: Double? = null,
     @SerialName("unit_label") val unitLabel: String? = null,
     val description: String? = null,
+    /** 1.15: optional slab rates (flat when not sent). */
+    @SerialName("rate_mode") val rateMode: String? = null,
+    val slabs: List<Slab>? = null,
 )
 
 /* ───────── allocations ───────── */
@@ -176,6 +200,10 @@ data class VariableChargeLine(
     val rate: Double = 0.0,
     @SerialName("unit_label") val unitLabel: String? = null,
     @SerialName("last_reading") @Serializable(with = FlexDoubleOrNull::class) val lastReading: Double? = null,
+    /** 1.15: how the amount is worked out, and the month of the last reading ("October 2026"). */
+    @SerialName("rate_mode") val rateMode: String = "flat",
+    val slabs: List<Slab> = emptyList(),
+    @SerialName("last_reading_label") val lastReadingLabel: String? = null,
 )
 
 @Serializable
@@ -205,6 +233,8 @@ data class AvailableCharge(
     val rate: Double = 0.0,
     @SerialName("unit_label") val unitLabel: String? = null,
     @SerialName("last_reading") @Serializable(with = FlexDoubleOrNull::class) val lastReading: Double? = null,
+    @SerialName("rate_mode") val rateMode: String = "flat",
+    val slabs: List<Slab> = emptyList(),
 ) {
     val isMeter: Boolean get() = type == "variable"
 }
@@ -213,10 +243,13 @@ data class AvailableCharge(
  * A not-yet-added charge put on this bill. [everyMonth] also adds it to the tenancy's monthly
  * charges; a meter charge carries its readings.
  */
-data class ExtraCharge(val chargeId: Int, val everyMonth: Boolean, val previous: Double? = null, val current: Double? = null)
+data class ExtraCharge(val chargeId: Int, val everyMonth: Boolean, val previous: Double? = null, val current: Double? = null, val rate: Double? = null)
 
-/** One meter reading for a variable charge (units = curr − prev, server re-checks). */
-data class MeterReading(val tcId: Int, val previous: Double, val current: Double)
+/**
+ * One meter reading for a variable charge (units = curr − prev, server re-checks).
+ * [rate] (1.15): rate per unit for this bill only; null = Charge Master (rate or slabs).
+ */
+data class MeterReading(val tcId: Int, val previous: Double, val current: Double, val rate: Double? = null)
 
 @Serializable
 data class GeneratedInvoice(
@@ -488,6 +521,18 @@ data class AppConfig(
     val trial: TrialOffer? = null,
     /** 1.11: public Firebase client values for push; null = push off on the server. */
     val push: PushClientConfig? = null,
+    /** 1.15: "Need help?" on the login screen (numbers from the Super Admin's settings); null = not set up. */
+    @SerialName("login_help") val loginHelp: LoginHelp? = null,
+)
+
+@Serializable
+data class LoginHelp(
+    val title: String = "",
+    val message: String = "",
+    val phone: String? = null,
+    val whatsapp: String? = null,
+    @SerialName("tel_url") val telUrl: String? = null,
+    @SerialName("whatsapp_url") val whatsappUrl: String? = null,
 )
 
 @Serializable

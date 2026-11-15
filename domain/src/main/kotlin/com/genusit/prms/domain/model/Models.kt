@@ -131,7 +131,26 @@ data class InvoiceItem(
     val quantity: Double = 0.0,
     @SerialName("unit_price") val unitPrice: Double = 0.0,
     val amount: Double = 0.0,
+    /** 1.15: how a meter charge was worked out (bills made before 1.15 have none). */
+    val meter: MeterInfo? = null,
 )
+
+@Serializable
+data class MeterInfo(
+    @SerialName("prev_reading") val prevReading: Double = 0.0,
+    @SerialName("curr_reading") val currReading: Double = 0.0,
+    val units: Double = 0.0,
+    val rate: Double = 0.0,
+    @SerialName("rate_mode") val rateMode: String = "flat",
+    @SerialName("rate_changed") val rateChanged: Boolean = false,
+    @SerialName("default_rate") @Serializable(with = FlexDoubleOrNull::class) val defaultRate: Double? = null,
+    val slabs: List<MeterSlabLine> = emptyList(),
+    /** Ready-made lines in the app language ("Previous Reading: 1000", …, "Amount: ₹300.00"). */
+    val lines: List<String> = emptyList(),
+)
+
+@Serializable
+data class MeterSlabLine(val label: String = "", val units: Double = 0.0, val rate: Double = 0.0, val amount: Double = 0.0)
 
 @Serializable
 data class InvoicePayment(
@@ -312,6 +331,9 @@ data class Property(
     val id: Int = 0,
     @SerialName("property_code") val propertyCode: String = "",
     @SerialName("property_type_name") val typeName: String? = null,
+    /** 1.15: property type from the Super Admin's list (id and name in the app language). */
+    @SerialName("property_type_id") @Serializable(with = FlexIntOrNullSerializer::class) val typeId: Int? = null,
+    @SerialName("property_type_label") val typeLabel: String? = null,
     val address: String = "",
     val city: String = "",
     val state: String = "",
@@ -342,7 +364,13 @@ data class NewProperty(
     val pincode: String,
     @SerialName("base_rent") val baseRent: Double,
     @SerialName("deposit_amount") val depositAmount: Double,
+    /** 1.15: property type (null = none chosen). */
+    @SerialName("property_type_id") val propertyTypeId: Int? = null,
 )
+
+/** 1.15: a property type from the Super Admin's Property Type Master. */
+@Serializable
+data class PropertyType(val id: Int = 0, val name: String = "", val label: String = "", val active: Boolean = true)
 
 @Serializable
 data class CreatedId(

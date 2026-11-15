@@ -873,4 +873,35 @@
     <string name="step_tenant_details">Tenant details</string>
     <string name="step_login">App login</string>
     <string name="step_room_rent">Room &amp; rent</string>
+    <!-- 1.15 login help, property type, meter rates -->
+    <string name="login_help_title">Need Help with Rental Solution?</string>
+    <string name="login_help_message">Need assistance getting started? We are here to help!</string>
+    <string name="call_now">Call Now</string>
+    <string name="whatsapp_support">WhatsApp Support</string>
+    <string name="property_type">Property type</string>
+    <string name="select_option">— Select —</string>
+    <string name="rate_per_unit_required">Enter the rate per unit.</string>
+    <string name="slab_fill_all">Fill in the units and rate of each slab. The last slab is for all units above.</string>
+    <string name="slab_too_few">Add at least two slabs, or choose \"One rate for all units\".</string>
+    <string name="slab_too_many">You can add up to 8 slabs.</string>
+    <string name="slab_increasing">Each slab must cover more units than the one above it.</string>
+    <string name="rate_mode_flat">One rate for all units</string>
+    <string name="rate_mode_single">Same rate for all units (by slab)</string>
+    <string name="rate_mode_progressive">Each slab at its own rate</string>
+    <string name="rate_mode_question">How is the amount worked out?</string>
+    <string name="slab_help_single">The total units used decide the rate, and that rate applies to all units.</string>
+    <string name="slab_help_progressive">Units are charged slab by slab: the first slab at its rate, the next slab at its rate, and so on.</string>
+    <string name="slab_above_that">Above that</string>
+    <string name="slab_units_up_to">Units up to</string>
+    <string name="rate_rs">Rate (₹)</string>
+    <string name="slab_add">Add slab</string>
+    <string name="slab_check_x">Check: %1$s</string>
+    <string name="rate_change_future_only">Bills already generated keep the rate they were made with.</string>
+    <string name="change_rate">Change rate</string>
+    <string name="rate_changed_short">changed for this bill</string>
+    <string name="no_previous_reading_hint">No earlier reading found. Enter the previous meter reading (for example, the reading when the tenant moved in).</string>
+    <string name="as_per_slabs">As per slabs</string>
+    <string name="units_used">Units Used</string>
+    <string name="slab_rate_all_units">Slab rate %1$s applied to all units</string>
+    <string name="rate_changed_bill_only">Rate changed for this bill only. Charge Master is not changed.</string>
 </resources>

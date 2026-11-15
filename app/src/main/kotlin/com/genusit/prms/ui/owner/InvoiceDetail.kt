@@ -107,6 +107,11 @@ fun InvoiceBody(inv: InvoiceDetail, showTenant: Boolean, openReceipt: (String) -
                             else -> it2.description
                         }
                         LabelValue(label, Money.format(it2.amount))
+                        // 1.15: how a meter charge was worked out (readings, units, rate or slabs) — bills made before have none
+                        it2.meter?.lines?.forEach { line ->
+                            Text(line, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 10.dp, bottom = 1.dp))
+                        }
                     }
                     HorizontalDivider(Modifier.padding(vertical = 6.dp))
                     LabelValue(stringResource(R.string.total), Money.format(inv.totalAmount), bold = true)

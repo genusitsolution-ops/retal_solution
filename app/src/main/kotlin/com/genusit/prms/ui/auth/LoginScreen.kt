@@ -69,6 +69,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.automirrored.filled.Chat
 
 @Composable
 fun LoginScreen() {
@@ -202,7 +205,50 @@ fun LoginScreen() {
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
             }
+            // 1.15: help before signing in — Call / WhatsApp the support number set by the Super Admin
+            brand.loginHelp?.let { help ->
+                Spacer(Modifier.height(18.dp))
+                LoginHelpCard(help)
+            }
             Spacer(Modifier.height(96.dp))
+        }
+    }
+}
+
+/** "Need Help with Rental Solution?" with Call Now and WhatsApp Support (opened only when tapped). */
+@Composable
+private fun LoginHelpCard(help: com.genusit.prms.domain.model.LoginHelp) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.GoldSoft)
+            .border(1.dp, Palette.Gold.copy(alpha = .45f), RoundedCornerShape(18.dp)).padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.SupportAgent, null, tint = Palette.Gold, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.login_help_title), color = Palette.Brand, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(stringResource(R.string.login_help_message), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            help.telUrl?.let { tel ->
+                Button(onClick = { com.genusit.prms.ui.owner.dialSupport(ctx, tel) }, modifier = Modifier.weight(1f).heightIn(min = 50.dp),
+                    shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.Brand)) {
+                    Icon(Icons.Filled.Call, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.call_now), fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+            }
+            help.whatsappUrl?.let { wa ->
+                Button(onClick = { com.genusit.prms.ui.owner.openWhatsAppSupport(ctx, wa) }, modifier = Modifier.weight(1f).heightIn(min = 50.dp),
+                    shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.Success)) {
+                    Icon(Icons.AutoMirrored.Filled.Chat, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.whatsapp_support), fontWeight = FontWeight.Bold, maxLines = 1)
+                }
+            }
         }
     }
 }

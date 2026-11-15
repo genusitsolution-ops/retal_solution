@@ -18,10 +18,17 @@ data class BillSelection(
     val extraOn: Set<Int> = emptySet(),
     val extraEveryMonth: Set<Int> = emptySet(),
     val extraReadings: Map<Int, Pair<Double?, Double?>> = emptyMap(),
+    /** 1.15: rate per unit typed for this bill (tenant_charges id / charge id → rate); missing or null = Charge Master. */
+    val rates: Map<Int, Double?> = emptyMap(),
+    val extraRates: Map<Int, Double?> = emptyMap(),
 )
 
 /** One line of the bill preview; meter lines carry units and rate for the "10 units × ₹13" text. */
-data class BillLine(val name: String, val amount: Double, val units: Double? = null, val rate: Double? = null, val unitLabel: String? = null)
+data class BillLine(
+    val name: String, val amount: Double, val units: Double? = null, val rate: Double? = null, val unitLabel: String? = null,
+    /** 1.15: the rate was changed for this bill only; [parts] = slab-by-slab amounts. */
+    val rateChanged: Boolean = false, val parts: List<SlabPart> = emptyList(),
+)
 
 sealed interface BillProblem {
     val charge: String
@@ -47,13 +54,25 @@ object BillCalculator {
         ctx.variableCharges.filter { it.tcId !in sel.meterSkipped }.forEach { v ->
             val (p, c) = sel.readings[v.tcId] ?: (v.lastReading to null)
             val prev = p ?: 0.0
-            if (c != null && c >= prev) { val u = r3(c - prev); add(BillLine(v.name, r2(u * v.rate), u, v.rate, v.unitLabel)) }
+            if (c != null && c >= prev) add(meterLine(v.name, r3(c - prev), v.rateMode, v.slabs, v.rate, sel.rates[v.tcId], v.unitLabel))
         }
         ctx.availableCharges.filter { it.id in sel.extraOn && it.isMeter }.forEach { a ->
             val (p, c) = sel.extraReadings[a.id] ?: (a.lastReading to null)
             val prev = p ?: 0.0
-            if (c != null && c >= prev) { val u = r3(c - prev); add(BillLine(a.name, r2(u * a.rate), u, a.rate, a.unitLabel)) }
+            if (c != null && c >= prev) add(meterLine(a.name, r3(c - prev), a.rateMode, a.slabs, a.rate, sel.extraRates[a.id], a.unitLabel))
         }
+    }
+
+    private fun meterLine(name: String, units: Double, mode: String, slabs: List<com.genusit.prms.domain.model.Slab>, rate: Double, typed: Double?, unitLabel: String?): BillLine {
+        val m = MeterCalc.calc(units, mode, slabs, rate, typed)
+        return BillLine(name, m.amount, units, m.rate, unitLabel, m.changed, m.parts)
+    }
+
+    /** Live amount of one meter charge while the owner types (null until the current reading is valid). */
+    fun meterAmount(prev: Double?, curr: Double?, mode: String, slabs: List<com.genusit.prms.domain.model.Slab>, rate: Double, typed: Double?): MeterAmount? {
+        val p = prev ?: 0.0
+        if (curr == null || curr < p || p < 0) return null
+        return MeterCalc.calc(r3(curr - p), mode, slabs, rate, typed)
     }
 
     fun total(lines: List<BillLine>): Double = r2(lines.sumOf { it.amount })
@@ -76,7 +95,7 @@ object BillCalculator {
     fun readings(ctx: InvoiceContext, sel: BillSelection): List<MeterReading> =
         ctx.variableCharges.filter { it.tcId !in sel.meterSkipped }.mapNotNull { v ->
             val (p, c) = sel.readings[v.tcId] ?: (v.lastReading to null)
-            if (c != null) MeterReading(v.tcId, p ?: 0.0, c) else null
+            if (c != null) MeterReading(v.tcId, p ?: 0.0, c, sel.rates[v.tcId]) else null
         }
 
     fun skipped(ctx: InvoiceContext, sel: BillSelection): List<Int> = ctx.variableCharges.map { it.tcId }.filter { it in sel.meterSkipped }
@@ -84,7 +103,7 @@ object BillCalculator {
     fun extras(ctx: InvoiceContext, sel: BillSelection): List<ExtraCharge> =
         ctx.availableCharges.filter { it.id in sel.extraOn }.map { a ->
             if (!a.isMeter) ExtraCharge(a.id, a.id in sel.extraEveryMonth)
-            else { val (p, c) = sel.extraReadings[a.id] ?: (a.lastReading to null); ExtraCharge(a.id, a.id in sel.extraEveryMonth, p ?: 0.0, c) }
+            else { val (p, c) = sel.extraReadings[a.id] ?: (a.lastReading to null); ExtraCharge(a.id, a.id in sel.extraEveryMonth, p ?: 0.0, c, sel.extraRates[a.id]) }
         }
 
     /** Starting choices: every charge on the tenancy and every enabled not-yet-added charge is on the bill. */

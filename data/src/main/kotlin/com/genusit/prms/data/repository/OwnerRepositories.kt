@@ -52,11 +52,15 @@ class PropertyRepositoryImpl @Inject constructor(
 ) : PropertyRepository {
     override suspend fun properties(): List<Property> = caller.get(ListSerializer(Property.serializer())) { api.ownerProperties(null) }
     override suspend fun property(id: Int): Property = caller.get(Property.serializer()) { api.ownerProperties(id) }
+    override suspend fun types(includeId: Int?): List<com.genusit.prms.domain.model.PropertyType> =
+        caller.get(ListSerializer(com.genusit.prms.domain.model.PropertyType.serializer())) { api.propertyTypes(1, includeId) }
     override suspend fun add(p: NewProperty): CreatedId = caller.get(CreatedId.serializer()) { api.addProperty(caller.body(NewProperty.serializer(), p)) }
     override suspend fun update(id: Int, p: NewProperty, status: String?) {
         val body = buildJsonObject {
             put("address", p.address); put("city", p.city); put("state", p.state); put("pincode", p.pincode)
             put("base_rent", p.baseRent); put("deposit_amount", p.depositAmount)
+            // 1.15: only sent when a type is chosen, so a type set on the website is never cleared by mistake
+            p.propertyTypeId?.let { put("property_type_id", it) }
             status?.let { put("status", it) }
         }
         caller.run { api.updateProperty(id, body) }
@@ -137,14 +141,15 @@ class BillingRepositoryImpl @Inject constructor(
             put("action", "generate"); put("allocation_id", allocationId); put("billing_month", month); put("billing_year", year)
             put("fixed_charge_ids", buildJsonArray { fixedChargeIds.forEach { add(it) } })
             putJsonObject("var") {
-                readings.forEach { r -> putJsonObject(r.tcId.toString()) { put("prev", r.previous); put("curr", r.current) } }
+                // rate (1.15) only when the owner typed one for this bill; otherwise the server uses Charge Master
+                readings.forEach { r -> putJsonObject(r.tcId.toString()) { put("prev", r.previous); put("curr", r.current); r.rate?.let { put("rate", it) } } }
             }
             put("skip_var_ids", buildJsonArray { skipVarIds.forEach { add(it) } })
             // charges not yet on the tenancy: "every month" ones are attached; meter ones carry their reading
             put("attach_ids", buildJsonArray { extras.filter { it.everyMonth }.forEach { add(it.chargeId) } })
             put("adhoc_fixed_ids", buildJsonArray { extras.filter { it.current == null && !it.everyMonth }.forEach { add(it.chargeId) } })
             putJsonObject("adhoc_var") {
-                extras.filter { it.current != null }.forEach { e -> putJsonObject(e.chargeId.toString()) { put("prev", e.previous ?: 0.0); put("curr", e.current) } }
+                extras.filter { it.current != null }.forEach { e -> putJsonObject(e.chargeId.toString()) { put("prev", e.previous ?: 0.0); put("curr", e.current); e.rate?.let { put("rate", it) } } }
             }
         }
         return caller.get(GeneratedInvoice.serializer()) { api.ownerInvoiceAction(body, null) }
@@ -159,6 +164,10 @@ class BillingRepositoryImpl @Inject constructor(
 
     override suspend fun setChargeStatus(id: Int, active: Boolean) {
         caller.run { api.updateCharge(id, buildJsonObject { put("status", if (active) "active" else "inactive") }) }
+    }
+
+    override suspend fun updateChargeRates(id: Int, u: com.genusit.prms.domain.model.ChargeRateUpdate) {
+        caller.run { api.updateCharge(id, caller.body(com.genusit.prms.domain.model.ChargeRateUpdate.serializer(), u)) }
     }
 
     override suspend fun addCharge(c: NewCharge): CreatedId =

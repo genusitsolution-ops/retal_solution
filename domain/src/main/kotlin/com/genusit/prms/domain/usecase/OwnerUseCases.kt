@@ -305,3 +305,13 @@ class ConfirmVacateUseCase @Inject constructor(private val repo: AllocationRepos
 class RecordRefundPaidUseCase @Inject constructor(private val repo: AllocationRepository) {
     suspend operator fun invoke(id: Int, method: String, reference: String, date: String) = repo.refundPaid(id, method, reference, date)
 }
+
+/** 1.15: property types from the Super Admin's list ([includeId] = a property's own type, even when inactive). */
+class GetPropertyTypesUseCase @Inject constructor(private val repo: PropertyRepository) {
+    suspend operator fun invoke(includeId: Int? = null): List<com.genusit.prms.domain.model.PropertyType> = repo.types(includeId)
+}
+
+/** 1.15: change a per-unit charge's rate or slabs in Charge Master (bills already generated keep their rate). */
+class UpdateChargeRatesUseCase @Inject constructor(private val repo: BillingRepository) {
+    suspend operator fun invoke(id: Int, u: com.genusit.prms.domain.model.ChargeRateUpdate) = repo.updateChargeRates(id, u)
+}

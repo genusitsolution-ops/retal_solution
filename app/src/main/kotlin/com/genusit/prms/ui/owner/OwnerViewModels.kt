@@ -440,9 +440,12 @@ class PropertiesViewModel @Inject constructor(
 @HiltViewModel
 class AddPropertyViewModel @Inject constructor(
     private val addProperty: AddPropertyUseCase,
+    getTypes: com.genusit.prms.domain.usecase.GetPropertyTypesUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val saveAction = action<com.genusit.prms.domain.model.CreatedId>()
+    /** 1.15: the Super Admin's property types (active ones only for a new room). */
+    val types = loadable { getTypes(null) }
 
     fun save(p: NewProperty) = saveAction.run(onSuccess = { sendEvent(ScreenEvent.Saved) }) { addProperty(p) }
 }
@@ -453,10 +456,13 @@ class EditPropertyViewModel @Inject constructor(
     getProperty: GetPropertyUseCase,
     private val updateProperty: UpdatePropertyUseCase,
     private val deleteProperty: DeletePropertyUseCase,
+    private val getTypes: com.genusit.prms.domain.usecase.GetPropertyTypesUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val id = handle.intArg()
     val property = loadable(live = true) { getProperty(id) }
+    /** 1.15: active types plus the room's own type (kept even if the Super Admin made it inactive). */
+    val types = paramLoadable<Int?, List<com.genusit.prms.domain.model.PropertyType>> { include -> getTypes(include) }
     val saveAction = action<Unit>()
     val deleteAction = action<Unit>()
 
@@ -472,11 +478,17 @@ class ChargesViewModel @Inject constructor(
     getCharges: GetChargesUseCase,
     private val setChargeStatus: SetChargeStatusUseCase,
     private val addCharge: AddChargeUseCase,
+    private val updateRates: com.genusit.prms.domain.usecase.UpdateChargeRatesUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val charges = loadable { getCharges(includeInactive = true) }
     val toggle = action<Unit>()
     val addAction = action<com.genusit.prms.domain.model.CreatedId>()
+    val rateAction = action<Unit>()
+
+    /** 1.15: change the rate / slabs of a per-unit charge (future bills only). */
+    fun changeRates(id: Int, u: com.genusit.prms.domain.model.ChargeRateUpdate) =
+        rateAction.run(onSuccess = { rateAction.reset(); charges.refresh(); sendEvent(ScreenEvent.Saved) }) { updateRates(id, u) }
 
     fun setActive(id: Int, active: Boolean) =
         toggle.run(onSuccess = { charges.refresh(); toggle.reset() }) { setChargeStatus(id, active) }

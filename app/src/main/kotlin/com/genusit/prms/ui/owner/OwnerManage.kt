@@ -90,6 +90,11 @@ import com.genusit.prms.ui.common.UiState
 import com.genusit.prms.ui.common.amountInput
 import com.genusit.prms.ui.common.dateText
 import com.genusit.prms.ui.theme.Palette
+import com.genusit.prms.domain.usecase.MeterCalc
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardOptions
 
 /* ═════════════════════════ tenants: add / edit / delete ═════════════════════════ */
 
@@ -338,6 +343,9 @@ fun EditPropertyScreen(id: Int, onBack: () -> Unit, onDone: () -> Unit) {
             var rent by rememberSaveable { mutableStateOf(Money.format(p.baseRent, withSymbol = false).replace(",", "")) }
             var deposit by rememberSaveable { mutableStateOf(Money.format(p.depositAmount, withSymbol = false).replace(",", "")) }
             var status by rememberSaveable { mutableStateOf(p.status) }
+            var typeId by rememberSaveable { mutableStateOf(p.typeId) }
+            LaunchedEffect(p.typeId) { model.types.load(p.typeId) }
+            val types by model.types.state.collectAsStateWithLifecycle()
             var tried by rememberSaveable { mutableStateOf(false) }
             val rentV = Money.parse(rent); val depV = Money.parse(deposit)
             val valid = address.isNotBlank() && city.isNotBlank() && st.isNotBlank() && pincode.matches(Regex("\\d{6}")) &&
@@ -345,6 +353,7 @@ fun EditPropertyScreen(id: Int, onBack: () -> Unit, onDone: () -> Unit) {
             val occupied = p.status == "occupied"
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(p.propertyCode, style = MaterialTheme.typography.titleLarge)
+                PropertyTypeField(types, typeId) { typeId = it }
                 FormField(address, { address = it.take(255) }, stringResource(R.string.address), tried && address.isBlank())
                 FormField(city, { city = it.take(100) }, stringResource(R.string.city), tried && city.isBlank())
                 FormField(st, { st = it.take(100) }, stringResource(R.string.state), tried && st.isBlank())
@@ -361,7 +370,7 @@ fun EditPropertyScreen(id: Int, onBack: () -> Unit, onDone: () -> Unit) {
                 SubmitButton(stringResource(R.string.save), saveState) {
                     tried = true
                     if (valid) model.save(
-                        NewProperty(p.propertyCode, address.trim(), city.trim(), st.trim(), pincode, rentV!!, depV!!), if (occupied) null else status,
+                        NewProperty(p.propertyCode, address.trim(), city.trim(), st.trim(), pincode, rentV!!, depV!!, typeId), if (occupied) null else status,
                     )
                 }
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
@@ -406,7 +415,9 @@ fun ChargesScreen(onBack: () -> Unit) {
     val tState by model.toggle.state.collectAsStateWithLifecycle()
     val addState by model.addAction.state.collectAsStateWithLifecycle()
     var adding by rememberSaveable { mutableStateOf(false) }
-    EventEffect(model) { if (it == ScreenEvent.ChargeAdded) adding = false }
+    var rateFor by rememberSaveable { mutableStateOf<Int?>(null) }
+    val rateState by model.rateAction.state.collectAsStateWithLifecycle()
+    EventEffect(model) { if (it == ScreenEvent.ChargeAdded) adding = false; if (it == ScreenEvent.Saved) rateFor = null }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -420,27 +431,38 @@ fun ChargesScreen(onBack: () -> Unit) {
                     item { ActionError(tState) }
                     if (list.isEmpty()) item { EmptyState(stringResource(R.string.no_charges), Icons.Filled.Bolt) }
                     items(list, key = { it.id }) { c ->
-                        AppCard {
+                        AppCard { Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconBadge(Icons.Filled.Bolt, if (c.isVariable) Palette.Info else Palette.Brand)
                                 Spacer(Modifier.width(12.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(c.name, fontWeight = FontWeight.SemiBold)
                                     Text(
-                                        if (c.isVariable) stringResource(R.string.per_unit_x, Money.format(c.ratePerUnit ?: 0.0), c.unitLabel ?: "unit")
+                                        if (c.hasSlabs) modeLabel(c.rateMode)
+                                        else if (c.isVariable) stringResource(R.string.per_unit_x, Money.format(c.ratePerUnit ?: 0.0), c.unitLabel ?: "unit")
                                         else stringResource(R.string.fixed_per_month_x, Money.format(c.fixedAmount ?: 0.0)),
                                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
+                                    if (c.hasSlabs) c.slabsText?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Palette.Teal) }
                                 }
                                 Switch(checked = c.status == "active", onCheckedChange = { on -> model.setActive(c.id, on) })
                             }
-                        }
+                            // 1.15: per-unit charges: change the rate or slabs (bills already made keep their rate)
+                            if (c.isVariable) TextButton(onClick = { model.rateAction.reset(); rateFor = c.id }) {
+                                Icon(Icons.Filled.Edit, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+                                Text(stringResource(R.string.change_rate))
+                            }
+                        } }
                     }
                 }
             }
         }
     }
     if (adding) AddChargeDialog(addState, onDismiss = { adding = false; model.addAction.reset() }, onSave = model::add)
+    val list = (state as? com.genusit.prms.ui.common.UiState.Data)?.value
+    list?.firstOrNull { it.id == rateFor }?.let { c ->
+        ChangeRateDialog(c, rateState, onDismiss = { rateFor = null; model.rateAction.reset() }, onSave = { model.changeRates(c.id, it) })
+    }
 }
 
 @Composable
@@ -450,20 +472,27 @@ private fun AddChargeDialog(act: ActionState<*>, onDismiss: () -> Unit, onSave: 
     var amount by rememberSaveable { mutableStateOf("") }
     var unit by rememberSaveable { mutableStateOf("unit") }
     var tried by rememberSaveable { mutableStateOf(false) }
+    var mode by rememberSaveable { mutableStateOf(com.genusit.prms.domain.usecase.MeterCalc.FLAT) }
+    val rows = remember { slabRowsOf(null) }
     val v = Money.parse(amount)
-    val valid = name.isNotBlank() && v != null && v >= 0
+    val (rule, ruleProblem) = rateRule(mode, amount, rows)
+    val valid = name.isNotBlank() && if (variable) rule != null else (v != null && v >= 0)
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.add_charge)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FormField(name, { name = it.take(150) }, stringResource(R.string.charge_name), tried && name.isBlank())
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = !variable, onClick = { variable = false }, label = { Text(stringResource(R.string.fixed_monthly)) })
                     FilterChip(selected = variable, onClick = { variable = true }, label = { Text(stringResource(R.string.meter_based)) })
                 }
-                FormField(amount, { amount = amountInput(it) }, stringResource(if (variable) R.string.rate_per_unit else R.string.amount), tried && (v == null || v < 0), KeyboardType.Decimal)
-                if (variable) FormField(unit, { unit = it.take(50) }, stringResource(R.string.unit_label))
+                if (!variable) FormField(amount, { amount = amountInput(it) }, stringResource(R.string.amount), tried && (v == null || v < 0), KeyboardType.Decimal)
+                if (variable) {
+                    FormField(unit, { unit = it.take(50) }, stringResource(R.string.unit_label))
+                    RateRuleEditor(mode, { mode = it }, amount, { amount = it }, rows, tried)
+                    if (tried && ruleProblem != null) Text(stringResource(ruleProblem), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
                 ActionError(act)
             }
         },
@@ -471,7 +500,8 @@ private fun AddChargeDialog(act: ActionState<*>, onDismiss: () -> Unit, onSave: 
             TextButton(onClick = {
                 tried = true
                 if (valid) onSave(
-                    if (variable) NewCharge(name.trim(), "variable", ratePerUnit = v, unitLabel = unit.ifBlank { "unit" })
+                    if (variable) NewCharge(name.trim(), "variable", ratePerUnit = rule!!.ratePerUnit, unitLabel = unit.ifBlank { "unit" },
+                        rateMode = rule.rateMode.takeIf { it != com.genusit.prms.domain.usecase.MeterCalc.FLAT }, slabs = rule.slabs.takeIf { it.isNotEmpty() })
                     else NewCharge(name.trim(), "fixed", fixedAmount = v),
                 )
             }, enabled = act !is ActionState.Running) { Text(stringResource(R.string.save), fontWeight = FontWeight.Bold) }
@@ -682,6 +712,10 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                 val extraMonthly = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.availableCharges.forEach { put(it.id, true) } } }
                 val xPrev = remember(ctx) { mutableStateMapOf<Int, String>().apply { ctx.availableCharges.forEach { put(it.id, it.lastReading?.let { r -> trimNum(r) } ?: "") } } }
                 val xCurr = remember(ctx) { mutableStateMapOf<Int, String>() }
+                // 1.15: rate per unit — Charge Master's rate filled in (empty for slab charges = "as per slabs"); a changed
+                // rate applies to this bill only
+                val rate = remember(ctx) { mutableStateMapOf<Int, String>().apply { ctx.variableCharges.forEach { put(it.tcId, if (MeterCalc.effectiveMode(it.rateMode, it.slabs) == MeterCalc.FLAT) trimNum(it.rate) else "") } } }
+                val xRate = remember(ctx) { mutableStateMapOf<Int, String>().apply { ctx.availableCharges.filter { it.isMeter }.forEach { put(it.id, if (MeterCalc.effectiveMode(it.rateMode, it.slabs) == MeterCalc.FLAT) trimNum(it.rate) else "") } } }
                 var tried by rememberSaveable { mutableStateOf(false) }
                 var previewing by rememberSaveable { mutableStateOf(false) }
                 val sel = com.genusit.prms.domain.usecase.BillSelection(
@@ -691,6 +725,8 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                     extraOn = extraOn.filterValues { it }.keys,
                     extraEveryMonth = extraMonthly.filterValues { it }.keys,
                     extraReadings = ctx.availableCharges.filter { it.isMeter }.associate { it.id to (Money.parse(xPrev[it.id] ?: "") to Money.parse(xCurr[it.id] ?: "")) },
+                    rates = ctx.variableCharges.associate { it.tcId to Money.parse(rate[it.tcId] ?: "") },
+                    extraRates = ctx.availableCharges.filter { it.isMeter }.associate { it.id to Money.parse(xRate[it.id] ?: "") },
                 )
                 val baseLabel = stringResource(R.string.base_rent)
                 val lines = calc.lines(ctx, sel, baseLabel)
@@ -721,13 +757,14 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                     ctx.variableCharges.forEach { v ->
                         val on = meterOn[v.tcId] == true
                         MeterCard(
-                            title = v.name + " · " + stringResource(R.string.per_unit_x, Money.format(v.rate), v.unitLabel ?: "unit"),
+                            title = v.name + " · " + ruleText(v.rateMode, v.slabs, v.rate, v.unitLabel),
                             checked = on, onChecked = { meterOn[v.tcId] = it },
-                            prev = prev[v.tcId] ?: "", onPrev = { prev[v.tcId] = amountInput(it) },
-                            curr = curr[v.tcId] ?: "", onCurr = { curr[v.tcId] = amountInput(it) },
-                            error = tried && on && v.name in bad,
                             footer = if (!on) stringResource(R.string.bill_meter_skipped) else null,
-                        )
+                        ) {
+                            MeterFields(prev[v.tcId] ?: "", { prev[v.tcId] = amountInput(it) }, curr[v.tcId] ?: "", { curr[v.tcId] = amountInput(it) },
+                                rate[v.tcId] ?: "", { rate[v.tcId] = amountInput(it) }, v.rateMode, v.slabs, v.rate, v.unitLabel,
+                                known = v.lastReading != null, knownLabel = v.lastReadingLabel, error = tried && on && v.name in bad)
+                        }
                     }
                     if (ctx.availableCharges.isNotEmpty()) {
                         Text(stringResource(R.string.bill_other_charges), style = MaterialTheme.typography.titleSmall)
@@ -740,7 +777,7 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(checked = on, onCheckedChange = { extraOn[a.id] = it })
                                     Text(a.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                                    Text(if (a.isMeter) stringResource(R.string.per_unit_x, Money.format(a.rate), a.unitLabel ?: "unit") else Money.format(a.amount),
+                                    Text(if (a.isMeter) ruleText(a.rateMode, a.slabs, a.rate, a.unitLabel) else Money.format(a.amount),
                                         fontWeight = FontWeight.SemiBold)
                                 }
                                 if (on) {
@@ -748,13 +785,9 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                                         Checkbox(checked = extraMonthly[a.id] == true, onCheckedChange = { extraMonthly[a.id] = it })
                                         Text(stringResource(R.string.bill_every_month), style = MaterialTheme.typography.bodyMedium)
                                     }
-                                    if (a.isMeter) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Column(Modifier.weight(1f)) { FormField(xPrev[a.id] ?: "", { xPrev[a.id] = amountInput(it) }, stringResource(R.string.previous_reading), keyboard = KeyboardType.Decimal) }
-                                        Column(Modifier.weight(1f)) {
-                                            FormField(xCurr[a.id] ?: "", { xCurr[a.id] = amountInput(it) }, stringResource(R.string.current_reading),
-                                                isError = tried && a.name in bad, keyboard = KeyboardType.Decimal)
-                                        }
-                                    }
+                                    if (a.isMeter) MeterFields(xPrev[a.id] ?: "", { xPrev[a.id] = amountInput(it) }, xCurr[a.id] ?: "", { xCurr[a.id] = amountInput(it) },
+                                        xRate[a.id] ?: "", { xRate[a.id] = amountInput(it) }, a.rateMode, a.slabs, a.rate, a.unitLabel,
+                                        known = a.lastReading != null, knownLabel = null, error = tried && a.name in bad)
                                 }
                             }
                         }
@@ -775,9 +808,13 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                     }
                     if (previewing) {
                         val unitWord = stringResource(R.string.units)
+                        val changedWord = stringResource(R.string.rate_changed_short)
                         BillPreviewDialog(
                             tenant = ctx.tenantName, room = ctx.propertyName, period = ctx.periodLabel,
-                            lines = lines.map { l -> PreviewLine(l.name, l.units?.let { u -> "${trimNum(u)} ${l.unitLabel ?: unitWord} × ${Money.format(l.rate ?: 0.0)}" }, l.amount) },
+                            lines = lines.map { l -> PreviewLine(l.name, l.units?.let { u ->
+                                if (l.parts.isNotEmpty()) "${trimNum(u)} ${l.unitLabel ?: unitWord}: " + l.parts.joinToString(" + ") { "${trimNum(it.units)} × ${Money.format(it.rate)}" }
+                                else "${trimNum(u)} ${l.unitLabel ?: unitWord} × ${Money.format(l.rate ?: 0.0)}" + if (l.rateChanged) " ($changedWord)" else ""
+                            }, l.amount) },
                             otherOutstanding = ctx.otherOutstanding,
                             saving = act is ActionState.Running,
                             onConfirm = { model.generate(ctx, sel) },
@@ -792,25 +829,66 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
     }
 }
 
-/** A meter (per-unit) charge on the bill: on/off, previous and current reading. */
+/** A meter (per-unit) charge on the bill: on/off, then [content] (readings, rate, amount). */
 @Composable
-private fun MeterCard(
-    title: String, checked: Boolean, onChecked: (Boolean) -> Unit,
-    prev: String, onPrev: (String) -> Unit, curr: String, onCurr: (String) -> Unit, error: Boolean, footer: String?,
-) {
+private fun MeterCard(title: String, checked: Boolean, onChecked: (Boolean) -> Unit, footer: String?, content: @Composable () -> Unit) {
     AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = checked, onCheckedChange = onChecked)
                 Text(title, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
             }
-            if (checked) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Column(Modifier.weight(1f)) { FormField(prev, onPrev, stringResource(R.string.previous_reading), keyboard = KeyboardType.Decimal) }
-                Column(Modifier.weight(1f)) { FormField(curr, onCurr, stringResource(R.string.current_reading), isError = error, keyboard = KeyboardType.Decimal) }
-            }
+            if (checked) content()
             if (footer != null) Text(footer, color = Palette.Warning, style = MaterialTheme.typography.labelMedium)
         }
     }
+}
+
+/** "₹13/unit" or "Each slab at its own rate" for a charge's title. */
+@Composable
+private fun ruleText(mode: String, slabs: List<com.genusit.prms.domain.model.Slab>, rate: Double, unitLabel: String?): String =
+    if (MeterCalc.effectiveMode(mode, slabs) == MeterCalc.FLAT) stringResource(R.string.per_unit_x, Money.format(rate), unitLabel ?: "unit") else modeLabel(mode)
+
+/**
+ * 1.15: Previous Reading (filled from the last bill), Current Reading, Rate Per Unit (changeable for this bill only),
+ * then Units Used and the Amount, worked out while the owner types. The server works the amount out again on save.
+ */
+@Composable
+private fun MeterFields(
+    prev: String, onPrev: (String) -> Unit, curr: String, onCurr: (String) -> Unit, rate: String, onRate: (String) -> Unit,
+    mode: String, slabs: List<com.genusit.prms.domain.model.Slab>, defaultRate: Double, unitLabel: String?,
+    known: Boolean, knownLabel: String?, error: Boolean,
+) {
+    val unitWord = unitLabel ?: stringResource(R.string.units)
+    val flat = MeterCalc.effectiveMode(mode, slabs) == MeterCalc.FLAT
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.weight(1f)) {
+            FormField(prev, onPrev, stringResource(R.string.previous_reading) + (knownLabel?.let { " ($it)" } ?: ""), keyboard = KeyboardType.Decimal)
+        }
+        Column(Modifier.weight(1f)) { FormField(curr, onCurr, stringResource(R.string.current_reading), isError = error, keyboard = KeyboardType.Decimal) }
+    }
+    if (!known) Text(stringResource(R.string.no_previous_reading_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val typed = Money.parse(rate)
+    val m = com.genusit.prms.domain.usecase.BillCalculator.meterAmount(Money.parse(prev), Money.parse(curr), mode, slabs, defaultRate, typed)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            OutlinedTextField(rate, onRate, label = { Text(stringResource(R.string.rate_per_unit)) }, singleLine = true,
+                placeholder = { if (!flat) Text(stringResource(R.string.as_per_slabs)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+        }
+        Column(Modifier.weight(1f).clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)).background(Palette.TealSoft).padding(10.dp)) {
+            val units = m?.let { Money.parse(curr)!! - (Money.parse(prev) ?: 0.0) }
+            Text(stringResource(R.string.units_used) + ": " + (units?.let { "${trimNum(Math.round(it * 1000) / 1000.0)} $unitWord" } ?: "—"),
+                style = MaterialTheme.typography.labelMedium, color = Palette.Teal)
+            Text(m?.let { Money.format(it.amount) } ?: "—", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Palette.Ink)
+        }
+    }
+    if (m != null && m.parts.isNotEmpty()) Text(m.parts.joinToString(" + ") { "${trimNum(it.units)} × ${Money.format(it.rate)}" },
+        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (m != null && !flat && typed == null && m.parts.isEmpty() && m.amount > 0)
+        Text(stringResource(R.string.slab_rate_all_units, Money.format(m.rate)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (m?.changed == true) Text(stringResource(R.string.rate_changed_bill_only), style = MaterialTheme.typography.labelMedium, color = Palette.Warning, fontWeight = FontWeight.SemiBold)
 }
 
 private fun trimNum(v: Double): String = if (v == Math.floor(v)) v.toLong().toString() else v.toString()

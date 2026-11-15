@@ -86,6 +86,10 @@ interface PrmsApiService {
     @GET("owner/properties.php")
     suspend fun ownerProperties(@Query("id") id: Int?): Response<ResponseBody>
 
+    /** 1.15: property types from the Super Admin's list (+ [include] = a property's own inactive type). */
+    @GET("owner/properties.php")
+    suspend fun propertyTypes(@Query("types") types: Int = 1, @Query("include") include: Int?): Response<ResponseBody>
+
     @POST("owner/properties.php")
     suspend fun addProperty(@Body body: JsonObject): Response<ResponseBody>
 

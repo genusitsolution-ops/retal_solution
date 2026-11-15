@@ -28,6 +28,8 @@ data class Branding(
     val signupEnabled: Boolean?,
     val referralEnabled: Boolean,
     val trial: com.genusit.prms.domain.model.TrialOffer? = null,
+    /** 1.15: Call / WhatsApp links for "Need help?" on the login screen; null = not set up by the Super Admin. */
+    val loginHelp: com.genusit.prms.domain.model.LoginHelp? = null,
 )
 
 /**
@@ -66,6 +68,7 @@ class BrandingStore @Inject constructor(
         signupEnabled = cfg.signup.enabled,
         referralEnabled = cfg.referral.enabled,
         trial = cfg.trial?.takeIf { it.enabled },
+        loginHelp = cfg.loginHelp?.takeIf { it.telUrl != null || it.whatsappUrl != null },
     )
 
     suspend fun refresh() = lock.withLock {

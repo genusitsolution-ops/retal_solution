@@ -268,7 +268,11 @@ fun billText(inv: InvoiceDetail, l: BillLabels, months: List<String>): String = 
     inv.periodLabel?.let { appendLine("${l.period}: $it") }
     inv.dueDate?.let { appendLine("${l.due}: ${dateOf(it, months)}") }
     appendLine()
-    inv.items.forEach { appendLine("${it.description}: ${Money.format(it.amount)}") }
+    inv.items.forEach { item ->
+        appendLine("${item.description}: ${Money.format(item.amount)}")
+        // 1.15: readings, units and rate so the tenant sees how the amount was worked out
+        item.meter?.lines?.forEach { appendLine("   $it") }
+    }
     appendLine()
     appendLine("${l.total}: ${Money.format(inv.totalAmount)}")
     if (inv.paidAmount > 0) appendLine("${l.paid}: ${Money.format(inv.paidAmount)}")
@@ -284,7 +288,10 @@ private var printing: WebView? = null
 
 /** Renders the bill as simple HTML and hands it to Android printing (printer or "Save as PDF"). */
 private fun printBill(ctx: Context, inv: InvoiceDetail, l: BillLabels, months: List<String>) {
-    val rows = inv.items.joinToString("") { "<tr><td>${esc(it.description)}</td><td class=r>${esc(Money.format(it.amount))}</td></tr>" }
+    val rows = inv.items.joinToString("") { item ->
+        val meter = item.meter?.lines.orEmpty().joinToString("") { "<div style='font-size:11px;color:#555'>${esc(it)}</div>" }
+        "<tr><td>${esc(item.description)}$meter</td><td class=r>${esc(Money.format(item.amount))}</td></tr>"
+    }
     val html = """<html><head><meta charset="utf-8"><style>
         body{font-family:sans-serif;color:#0f172a;padding:24px} h1{color:#4f46e5;font-size:22px;margin:0}
         table{width:100%;border-collapse:collapse;margin-top:16px} td{padding:8px;border-bottom:1px solid #e2e8f0} .r{text-align:right}
