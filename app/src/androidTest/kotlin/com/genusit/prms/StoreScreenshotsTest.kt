@@ -153,6 +153,8 @@ class StoreScreenshotsTest {
         tab("Home"); waitText("Hello")
         openByText("Generate bill"); waitText("Rahul Verma", 20_000); first("Rahul Verma").performClick()
         waitText("Current reading", 20_000)
+        // 1.15: only the charges assigned at room allocation — Water bill is active for this owner but not assigned to Rahul
+        check(!has("Water bill") && !has("Other active charges")) { "unassigned charge shown on Generate bill" }
         val curr = rule.onAllNodes(hasSetTextAction() and hasText("Current reading", substring = true))
         curr[0].performScrollTo().performTextInput("1020")
         curr[1].performScrollTo().performTextInput("75")
@@ -173,6 +175,7 @@ class StoreScreenshotsTest {
         tab("More"); waitText("More", 10_000); openByText("Charges"); waitText("Water meter", 20_000); shot("24-charges")
         back()
         tab("More"); waitText("More", 10_000); openByText("Settings"); waitText("Log out")
+        scrollTo("WhatsApp app for messages"); Thread.sleep(500); shot("26-settings-whatsapp")
         logOut("en")
         scrollTo("Call Now"); Thread.sleep(500); shot("25-login-help")
         toTop()

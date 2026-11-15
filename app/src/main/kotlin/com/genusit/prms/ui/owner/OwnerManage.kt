@@ -698,31 +698,21 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                 val meterOn = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.variableCharges.forEach { put(it.tcId, true) } } }
                 val prev = remember(ctx) { mutableStateMapOf<Int, String>().apply { ctx.variableCharges.forEach { put(it.tcId, it.lastReading?.let { r -> trimNum(r) } ?: "") } } }
                 val curr = remember(ctx) { mutableStateMapOf<Int, String>() }
-                // charges of the owner not yet on this tenancy: on the bill and "every month" by default
-                val extraOn = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.availableCharges.forEach { put(it.id, true) } } }
-                val extraMonthly = remember(ctx) { mutableStateMapOf<Int, Boolean>().apply { ctx.availableCharges.forEach { put(it.id, true) } } }
-                val xPrev = remember(ctx) { mutableStateMapOf<Int, String>().apply { ctx.availableCharges.forEach { put(it.id, it.lastReading?.let { r -> trimNum(r) } ?: "") } } }
-                val xCurr = remember(ctx) { mutableStateMapOf<Int, String>() }
+                // 1.15: only the charges assigned to this tenant at room allocation are shown and billed;
+                // other active charges of the owner (ctx.availableCharges) are not shown, ticked or sent.
                 // "Change rate for this bill?" — unticked: the Charge Master rate; ticked: the new rate typed applies to this bill only
                 val chg = remember(ctx) { mutableStateMapOf<Int, Boolean>() }
                 val rate = remember(ctx) { mutableStateMapOf<Int, String>() }
-                val xChg = remember(ctx) { mutableStateMapOf<Int, Boolean>() }
-                val xRate = remember(ctx) { mutableStateMapOf<Int, String>() }
                 var tried by rememberSaveable { mutableStateOf(false) }
                 var previewing by rememberSaveable { mutableStateOf(false) }
                 val sel = com.genusit.prms.domain.usecase.BillSelection(
                     fixedOn = fixedOn.filterValues { it }.keys,
                     meterSkipped = meterOn.filterValues { !it }.keys,
                     readings = ctx.variableCharges.associate { it.tcId to (Money.parse(prev[it.tcId] ?: "") to Money.parse(curr[it.tcId] ?: "")) },
-                    extraOn = extraOn.filterValues { it }.keys,
-                    extraEveryMonth = extraMonthly.filterValues { it }.keys,
-                    extraReadings = ctx.availableCharges.filter { it.isMeter }.associate { it.id to (Money.parse(xPrev[it.id] ?: "") to Money.parse(xCurr[it.id] ?: "")) },
                     rates = ctx.variableCharges.associate { it.tcId to if (chg[it.tcId] == true) Money.parse(rate[it.tcId] ?: "") else null },
-                    extraRates = ctx.availableCharges.filter { it.isMeter }.associate { it.id to if (xChg[it.id] == true) Money.parse(xRate[it.id] ?: "") else null },
                 )
                 fun badRate(on: Boolean, t: String?) = on && (Money.parse(t ?: "")?.let { it < 0 } ?: true)
-                val rateMissing = ctx.variableCharges.filter { meterOn[it.tcId] == true && badRate(chg[it.tcId] == true, rate[it.tcId]) }.map { it.name } +
-                    ctx.availableCharges.filter { it.isMeter && extraOn[it.id] == true && badRate(xChg[it.id] == true, xRate[it.id]) }.map { it.name }
+                val rateMissing = ctx.variableCharges.filter { meterOn[it.tcId] == true && badRate(chg[it.tcId] == true, rate[it.tcId]) }.map { it.name }
                 val baseLabel = stringResource(R.string.base_rent)
                 val lines = calc.lines(ctx, sel, baseLabel)
                 val problems = calc.problems(ctx, sel)
@@ -739,7 +729,7 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                         }
                     }
                     if (ctx.alreadyExists) Text(stringResource(R.string.bill_exists_for_month), color = Palette.Danger, fontWeight = FontWeight.SemiBold)
-                    if (ctx.fixedCharges.isEmpty() && ctx.variableCharges.isEmpty() && ctx.availableCharges.isEmpty()) {
+                    if (ctx.fixedCharges.isEmpty() && ctx.variableCharges.isEmpty() && ctx.availableCharges.isEmpty()) {   // the owner has no charges at all
                         Text(stringResource(R.string.bill_no_charges_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if (ctx.fixedCharges.isNotEmpty() || ctx.variableCharges.isNotEmpty()) Text(stringResource(R.string.bill_monthly_charges), style = MaterialTheme.typography.titleSmall)
@@ -761,32 +751,6 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                                 known = v.lastReading != null, knownLabel = v.lastReadingLabel, error = tried && on && v.name in bad, rateError = tried && v.name in rateMissing)
                         }
                     }
-                    if (ctx.availableCharges.isNotEmpty()) {
-                        Text(stringResource(R.string.bill_other_charges), style = MaterialTheme.typography.titleSmall)
-                        Text(stringResource(R.string.bill_other_charges_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    ctx.availableCharges.forEach { a ->
-                        val on = extraOn[a.id] == true
-                        AppCard {
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(checked = on, onCheckedChange = { extraOn[a.id] = it })
-                                    Text(a.name, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                                    Text(if (a.isMeter) ruleText(a.rate, a.unitLabel) else Money.format(a.amount),
-                                        fontWeight = FontWeight.SemiBold)
-                                }
-                                if (on) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(checked = extraMonthly[a.id] == true, onCheckedChange = { extraMonthly[a.id] = it })
-                                        Text(stringResource(R.string.bill_every_month), style = MaterialTheme.typography.bodyMedium)
-                                    }
-                                    if (a.isMeter) MeterFields(xPrev[a.id] ?: "", { xPrev[a.id] = amountInput(it) }, xCurr[a.id] ?: "", { xCurr[a.id] = amountInput(it) },
-                                        xChg[a.id] == true, { xChg[a.id] = it }, xRate[a.id] ?: "", { xRate[a.id] = amountInput(it) }, a.rate, a.unitLabel,
-                                        known = a.lastReading != null, knownLabel = null, error = tried && a.name in bad, rateError = tried && a.name in rateMissing)
-                                }
-                            }
-                        }
-                    }
                     if (tried) problems.forEach { pr ->
                         Text(when (pr) {
                             is com.genusit.prms.domain.usecase.BillProblem.MissingReading -> stringResource(R.string.bill_reading_missing, pr.charge)
@@ -794,7 +758,7 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                         }, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                     }
                     if (tried) rateMissing.forEach { n -> Text(stringResource(R.string.bill_rate_missing, n), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-                    if (ctx.variableCharges.isNotEmpty() || ctx.availableCharges.any { it.isMeter }) Text(stringResource(R.string.reading_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (ctx.variableCharges.isNotEmpty()) Text(stringResource(R.string.reading_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     LabelValue(stringResource(R.string.estimated_total), Money.format(calc.total(lines)), bold = true)
                     ActionError(act)
                     // step 3: preview, then save (the server calculates the final amounts and the bill number)

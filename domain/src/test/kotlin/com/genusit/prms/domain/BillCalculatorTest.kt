@@ -19,17 +19,28 @@ class BillCalculatorTest {
         AvailableCharge(2, "water", "fixed", amount = 100.0),
     ))
 
-    @Test fun chargesNotYetOnTheTenancyAreIncludedByDefault() {
-        var sel = BillCalculator.defaults(firstBill)
-        // the meter charge needs a reading — never silently left out
-        assertEquals(listOf<BillProblem>(BillProblem.MissingReading("light bill")), BillCalculator.problems(firstBill, sel))
-        sel = sel.copy(extraReadings = mapOf(1 to (0.0 to 10.0)))
-        val lines = BillCalculator.lines(firstBill, sel, "Base rent")
-        assertEquals(listOf(4000.0, 100.0, 130.0), lines.map { it.amount })
-        assertEquals(4230.0, BillCalculator.total(lines))
+    @Test fun chargesNotOnTheTenancyAreNotAddedByDefault() {
+        // 1.15: active charges of the owner that were not assigned at room allocation are not on the bill
+        val sel = BillCalculator.defaults(firstBill)
+        assertTrue(sel.extraOn.isEmpty() && sel.extraEveryMonth.isEmpty())
         assertTrue(BillCalculator.problems(firstBill, sel).isEmpty())
-        val extras = BillCalculator.extras(firstBill, sel)
-        assertTrue(extras.all { it.everyMonth }); assertEquals(10.0, extras.first { it.chargeId == 1 }.current)
+        assertEquals(listOf(4000.0), BillCalculator.lines(firstBill, sel, "Base rent").map { it.amount })
+        assertTrue(BillCalculator.extras(firstBill, sel).isEmpty())
+    }
+
+    @Test fun onlyAllocatedChargesAreBilled() {
+        // allocated: Room Rent + Light Bill (₹13/unit); Water Bill (₹50) is active but not assigned to this tenant
+        val ctx = InvoiceContext(baseRent = 3500.0,
+            variableCharges = listOf(VariableChargeLine(21, "Light bill", 13.0, "unit", lastReading = 100.0)),
+            availableCharges = listOf(AvailableCharge(9, "Water bill", "fixed", amount = 50.0)))
+        val sel = BillCalculator.defaults(ctx).copy(readings = mapOf(21 to (100.0 to 120.0)))
+        val lines = BillCalculator.lines(ctx, sel, "Base rent")
+        assertEquals(listOf("Base rent", "Light bill"), lines.map { it.name })
+        assertEquals(3760.0, BillCalculator.total(lines))                       // 3500 + 20 × 13
+        assertTrue(BillCalculator.extras(ctx, sel).isEmpty())                  // nothing extra is sent to the server
+        // "Change rate for this bill?" still works the same: 20 × 15
+        val changed = sel.copy(rates = mapOf(21 to 15.0))
+        assertEquals(3800.0, BillCalculator.total(BillCalculator.lines(ctx, changed, "Base rent")))
     }
 
     @Test fun attachedChargesNextMonth() {

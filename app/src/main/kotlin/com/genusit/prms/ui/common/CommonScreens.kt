@@ -194,6 +194,8 @@ fun SettingsScreen(role: Role, onBack: (() -> Unit)?) {
             }
             // 1.11: push notification categories
             NotificationPrefsCard()
+            // 1.15: WhatsApp or WhatsApp Business for messages sent from the app (saved on this phone)
+            if (role != Role.TENANT) WhatsAppAppCard()
             if (role == Role.OWNER) {
                 val me = (model.me.state.collectAsStateWithLifecycle().value as? UiState.Data)?.value
                 if (me != null) ProfilePhotoCard(com.genusit.prms.domain.model.PhotoSubject.OWNER, null, me.photoVersion, me.fullName,

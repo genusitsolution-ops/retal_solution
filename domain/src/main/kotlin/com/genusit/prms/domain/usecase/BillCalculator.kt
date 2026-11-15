@@ -106,12 +106,12 @@ object BillCalculator {
             else { val (p, c) = sel.extraReadings[a.id] ?: (a.lastReading to null); ExtraCharge(a.id, a.id in sel.extraEveryMonth, p ?: 0.0, c, sel.extraRates[a.id]) }
         }
 
-    /** Starting choices: every charge on the tenancy and every enabled not-yet-added charge is on the bill. */
+    /**
+     * Starting choices (1.15): only the charges assigned to the tenant at room allocation are on the bill.
+     * Other active charges of the owner are never added automatically.
+     */
     fun defaults(ctx: InvoiceContext): BillSelection = BillSelection(
         fixedOn = ctx.fixedCharges.map { it.tcId }.toSet(),
         readings = ctx.variableCharges.associate { it.tcId to (it.lastReading to null) },
-        extraOn = ctx.availableCharges.map { it.id }.toSet(),
-        extraEveryMonth = ctx.availableCharges.map { it.id }.toSet(),
-        extraReadings = ctx.availableCharges.filter { it.isMeter }.associate { it.id to (it.lastReading to null) },
     )
 }

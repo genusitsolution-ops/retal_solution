@@ -17,7 +17,10 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) com.genusit.prms.platform.PendingRoute.offer(intent)
         enableEdgeToEdge()
         setContent {
-            PrmsTheme { AppRoot() }
+            PrmsTheme {
+                AppRoot()
+                com.genusit.prms.ui.common.WhatsAppChooserHost()   // 1.15: "Send with WhatsApp / WhatsApp Business", asked once
+            }
         }
     }
 

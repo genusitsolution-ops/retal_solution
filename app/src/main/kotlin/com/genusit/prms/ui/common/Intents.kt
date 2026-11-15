@@ -1,6 +1,5 @@
 package com.genusit.prms.ui.common
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -22,18 +21,11 @@ fun shareText(ctx: Context, text: String, chooserTitle: String) {
 }
 
 /**
- * Opens the chat in WhatsApp (or WhatsApp Business) with the message filled in; the user still taps Send.
+ * Opens the chat in WhatsApp or WhatsApp Business with the message filled in; the user still taps Send.
+ * 1.15: uses the app the owner chose (saved on this phone, see [WhatsAppApps]); asks once when both are installed.
  * Returns false when neither app is installed — then nothing was opened (1.10: no browser detour).
  */
-fun openInWhatsApp(ctx: Context, waMeUrl: String): Boolean {
-    for (pkg in listOf("com.whatsapp", "com.whatsapp.w4b")) {
-        try {
-            ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(waMeUrl)).setPackage(pkg))
-            return true
-        } catch (_: ActivityNotFoundException) { /* try the next app */ }
-    }
-    return false
-}
+fun openInWhatsApp(ctx: Context, waMeUrl: String): Boolean = WhatsAppApps.open(ctx, waMeUrl)
 
 private var printingView: android.webkit.WebView? = null
 

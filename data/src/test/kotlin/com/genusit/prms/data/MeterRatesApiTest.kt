@@ -12,6 +12,7 @@ import com.genusit.prms.domain.model.NewCharge
 import com.genusit.prms.domain.model.NewProperty
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.mockwebserver.MockResponse
@@ -67,6 +68,21 @@ class MeterRatesApiTest {
         assertEquals("15.0", b["var"]!!.jsonObject["3"]!!.jsonObject["rate"]!!.jsonPrimitive.content)
         assertFalse("rate" in b["var"]!!.jsonObject["4"]!!.jsonObject, "checkbox not ticked → no rate sent, server uses Charge Master")
         assertEquals("9.5", b["adhoc_var"]!!.jsonObject["8"]!!.jsonObject["rate"]!!.jsonPrimitive.content)
+    }
+
+    @Test fun onlyAllocatedChargesAreSent() = runTest {
+        // 1.15: the server lists Water bill as an active charge not assigned to this tenant; the bill must not include it
+        val ctx = com.genusit.prms.domain.model.InvoiceContext(baseRent = 3500.0,
+            variableCharges = listOf(com.genusit.prms.domain.model.VariableChargeLine(21, "Light bill", 13.0, "unit", lastReading = 100.0)),
+            availableCharges = listOf(com.genusit.prms.domain.model.AvailableCharge(9, "Water bill", "fixed", amount = 50.0)))
+        val calc = com.genusit.prms.domain.usecase.BillCalculator
+        val sel = calc.defaults(ctx).copy(readings = mapOf(21 to (100.0 to 120.0)))
+        enqueue(201, """{"status":"success","message":"OK","data":{"id":10,"number":"INV-10","total":3760,"period":"November 2026"}}""")
+        billing.generateInvoice(5, 11, 2026, calc.fixedIds(ctx, sel), calc.readings(ctx, sel), calc.skipped(ctx, sel), calc.extras(ctx, sel))
+        val b = sentBody()
+        assertEquals(setOf("21"), b["var"]!!.jsonObject.keys)
+        assertTrue(b["attach_ids"]!!.jsonArray.isEmpty() && b["adhoc_fixed_ids"]!!.jsonArray.isEmpty() && b["adhoc_var"]!!.jsonObject.isEmpty(),
+            "no unassigned charge is added to the bill or to the tenant")
     }
 
     @Test fun chargeAndChargeMasterRateChange() = runTest {

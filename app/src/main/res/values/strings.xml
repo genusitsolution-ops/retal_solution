@@ -414,9 +414,6 @@
     <string name="alloc_search_count">%1$d of %2$d shown</string>
     <string name="alloc_no_match">Nothing matches “%1$s”.</string>
     <string name="bill_monthly_charges">Monthly charges of this tenant</string>
-    <string name="bill_other_charges">Other active charges</string>
-    <string name="bill_other_charges_hint">These charges are switched on but not yet added for this tenant. Ticked ones go on this bill; keep “Every month” to add them to the tenant\'s monthly charges.</string>
-    <string name="bill_every_month">Every month</string>
     <string name="bill_meter_skipped">Not billed this month</string>
     <string name="bill_no_charges_hint">No charges are set up. Add water, electricity and other charges under More → Charges.</string>
     <string name="bill_reading_missing">Enter the current reading for %1$s, or untick it to skip this month.</string>
@@ -895,4 +892,15 @@
     <string name="eg_rate">e.g. 15</string>
     <string name="total_amount">Total Amount</string>
     <string name="bill_rate_missing">Enter a valid rate per unit for %1$s.</string>
+    <!-- 1.15: WhatsApp / WhatsApp Business choice -->
+    <string name="wa_app_title">WhatsApp app for messages</string>
+    <string name="wa_app_hint">Bills, receipts and tenant messages open in this app.</string>
+    <string name="wa_app_not_installed">Not installed on this phone</string>
+    <string name="wa_app_not_set">Not chosen yet. You will be asked once, the first time you send a message.</string>
+    <string name="wa_choose_title">Send with</string>
+    <string name="wa_choose_msg">Choose the app for WhatsApp messages. Your choice is saved; you can change it in Settings.</string>
+    <string name="wa_pref_missing">%1$s is not installed on this phone. Send with:</string>
+    <string name="wa_open_failed">Could not open WhatsApp. Please try again.</string>
+    <string name="wa_app_whatsapp" translatable="false">WhatsApp</string>
+    <string name="wa_app_business" translatable="false">WhatsApp Business</string>
 </resources>

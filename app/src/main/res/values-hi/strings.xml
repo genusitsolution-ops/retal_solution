@@ -414,9 +414,6 @@
     <string name="alloc_search_count">%2$d में से %1$d दिख रहे हैं</string>
     <string name="alloc_no_match">“%1$s” से कुछ नहीं मिला।</string>
     <string name="bill_monthly_charges">इस किरायेदार के मासिक शुल्क</string>
-    <string name="bill_other_charges">अन्य सक्रिय शुल्क</string>
-    <string name="bill_other_charges_hint">ये शुल्क चालू हैं पर इस किरायेदार के लिए अभी जोड़े नहीं गए। चुने गए शुल्क इस बिल में जुड़ेंगे; “हर महीने” चुना रहने दें ताकि वे मासिक शुल्क में जुड़ जाएँ।</string>
-    <string name="bill_every_month">हर महीने</string>
     <string name="bill_meter_skipped">इस महीने बिल नहीं होगा</string>
     <string name="bill_no_charges_hint">कोई शुल्क सेट नहीं है। पानी, बिजली आदि शुल्क More → Charges में जोड़ें।</string>
     <string name="bill_reading_missing">%1$s की वर्तमान रीडिंग डालें, या इस महीने छोड़ने के लिए इसे हटाएँ।</string>
@@ -895,4 +892,13 @@
     <string name="eg_rate">जैसे 15</string>
     <string name="total_amount">कुल राशि</string>
     <string name="bill_rate_missing">%1$s के लिए सही प्रति यूनिट दर डालें।</string>
+    <!-- 1.15: WhatsApp / WhatsApp Business choice -->
+    <string name="wa_app_title">संदेशों के लिए WhatsApp ऐप</string>
+    <string name="wa_app_hint">बिल, रसीद और किरायेदारों के संदेश इसी ऐप में खुलेंगे।</string>
+    <string name="wa_app_not_installed">इस फ़ोन में इंस्टॉल नहीं है</string>
+    <string name="wa_app_not_set">अभी चुना नहीं गया। पहला संदेश भेजते समय एक बार पूछा जाएगा।</string>
+    <string name="wa_choose_title">इससे भेजें</string>
+    <string name="wa_choose_msg">WhatsApp संदेशों के लिए ऐप चुनें। आपकी पसंद सेव हो जाएगी; इसे सेटिंग्स में बदल सकते हैं।</string>
+    <string name="wa_pref_missing">%1$s इस फ़ोन में इंस्टॉल नहीं है। इससे भेजें:</string>
+    <string name="wa_open_failed">WhatsApp नहीं खुल सका। कृपया फिर से कोशिश करें।</string>
 </resources>
