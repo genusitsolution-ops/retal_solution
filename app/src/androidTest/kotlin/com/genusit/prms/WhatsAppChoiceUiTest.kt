@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.Intent
 import android.net.Uri
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
@@ -43,7 +42,6 @@ import java.io.File
  */
 @RunWith(AndroidJUnit4::class)
 @SdkSuppress(minSdkVersion = 26)
-@RequiresApi(26)
 class WhatsAppChoiceUiTest {
     @get:Rule val rule = createComposeRule()
 
