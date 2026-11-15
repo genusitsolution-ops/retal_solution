@@ -161,7 +161,8 @@ class StoreScreenshotsTest {
         back()   // hides the keyboard
         rule.waitForIdle(); rate[0].performScrollTo(); Thread.sleep(800); shot("21-bill-meter-rate")
         curr[1].performScrollTo(); Thread.sleep(500); shot("22-bill-meter-slabs")
-        back(); back()   // bill screen → room list → Home
+        // back to Home with the screens' own back arrows (a system Back could leave the app)
+        repeat(3) { if (!has("Hello")) { rule.onAllNodes(hasContentDescription("Back")).onFirst().performClick(); rule.waitForIdle(); Thread.sleep(800) } }
         // Home → "Dues by tenant" → Neha Gupta opens her latest bill (made with electricity at ₹15 for this bill)
         tab("Home"); waitText("Hello"); scrollTo("Neha Gupta"); first("Neha Gupta").performClick()
         waitText("Previous Reading", 20_000)
