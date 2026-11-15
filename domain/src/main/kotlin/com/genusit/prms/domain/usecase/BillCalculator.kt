@@ -18,7 +18,7 @@ data class BillSelection(
     val extraOn: Set<Int> = emptySet(),
     val extraEveryMonth: Set<Int> = emptySet(),
     val extraReadings: Map<Int, Pair<Double?, Double?>> = emptyMap(),
-    /** 1.15: rate per unit typed for this bill (tenant_charges id / charge id → rate); missing or null = Charge Master. */
+    /** "Change rate for this bill?" ticked: new rate per unit (tenant_charges id / charge id → rate); missing or null = Charge Master. */
     val rates: Map<Int, Double?> = emptyMap(),
     val extraRates: Map<Int, Double?> = emptyMap(),
 )
@@ -26,8 +26,8 @@ data class BillSelection(
 /** One line of the bill preview; meter lines carry units and rate for the "10 units × ₹13" text. */
 data class BillLine(
     val name: String, val amount: Double, val units: Double? = null, val rate: Double? = null, val unitLabel: String? = null,
-    /** 1.15: the rate was changed for this bill only; [parts] = slab-by-slab amounts. */
-    val rateChanged: Boolean = false, val parts: List<SlabPart> = emptyList(),
+    /** The rate was changed for this bill only. */
+    val rateChanged: Boolean = false,
 )
 
 sealed interface BillProblem {
@@ -54,25 +54,25 @@ object BillCalculator {
         ctx.variableCharges.filter { it.tcId !in sel.meterSkipped }.forEach { v ->
             val (p, c) = sel.readings[v.tcId] ?: (v.lastReading to null)
             val prev = p ?: 0.0
-            if (c != null && c >= prev) add(meterLine(v.name, r3(c - prev), v.rateMode, v.slabs, v.rate, sel.rates[v.tcId], v.unitLabel))
+            if (c != null && c >= prev) add(meterLine(v.name, r3(c - prev), v.rate, sel.rates[v.tcId], v.unitLabel))
         }
         ctx.availableCharges.filter { it.id in sel.extraOn && it.isMeter }.forEach { a ->
             val (p, c) = sel.extraReadings[a.id] ?: (a.lastReading to null)
             val prev = p ?: 0.0
-            if (c != null && c >= prev) add(meterLine(a.name, r3(c - prev), a.rateMode, a.slabs, a.rate, sel.extraRates[a.id], a.unitLabel))
+            if (c != null && c >= prev) add(meterLine(a.name, r3(c - prev), a.rate, sel.extraRates[a.id], a.unitLabel))
         }
     }
 
-    private fun meterLine(name: String, units: Double, mode: String, slabs: List<com.genusit.prms.domain.model.Slab>, rate: Double, typed: Double?, unitLabel: String?): BillLine {
-        val m = MeterCalc.calc(units, mode, slabs, rate, typed)
-        return BillLine(name, m.amount, units, m.rate, unitLabel, m.changed, m.parts)
+    private fun meterLine(name: String, units: Double, rate: Double, newRate: Double?, unitLabel: String?): BillLine {
+        val m = MeterCalc.calc(units, rate, newRate)
+        return BillLine(name, m.amount, units, m.rate, unitLabel, m.changed)
     }
 
     /** Live amount of one meter charge while the owner types (null until the current reading is valid). */
-    fun meterAmount(prev: Double?, curr: Double?, mode: String, slabs: List<com.genusit.prms.domain.model.Slab>, rate: Double, typed: Double?): MeterAmount? {
+    fun meterAmount(prev: Double?, curr: Double?, rate: Double, newRate: Double?): MeterAmount? {
         val p = prev ?: 0.0
         if (curr == null || curr < p || p < 0) return null
-        return MeterCalc.calc(r3(curr - p), mode, slabs, rate, typed)
+        return MeterCalc.calc(r3(curr - p), rate, newRate)
     }
 
     fun total(lines: List<BillLine>): Double = r2(lines.sumOf { it.amount })

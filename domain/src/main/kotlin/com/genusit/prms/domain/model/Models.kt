@@ -141,16 +141,11 @@ data class MeterInfo(
     @SerialName("curr_reading") val currReading: Double = 0.0,
     val units: Double = 0.0,
     val rate: Double = 0.0,
-    @SerialName("rate_mode") val rateMode: String = "flat",
     @SerialName("rate_changed") val rateChanged: Boolean = false,
     @SerialName("default_rate") @Serializable(with = FlexDoubleOrNull::class) val defaultRate: Double? = null,
-    val slabs: List<MeterSlabLine> = emptyList(),
     /** Ready-made lines in the app language ("Previous Reading: 1000", …, "Amount: ₹300.00"). */
     val lines: List<String> = emptyList(),
 )
-
-@Serializable
-data class MeterSlabLine(val label: String = "", val units: Double = 0.0, val rate: Double = 0.0, val amount: Double = 0.0)
 
 @Serializable
 data class InvoicePayment(

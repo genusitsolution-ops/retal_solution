@@ -873,35 +873,26 @@
     <string name="step_tenant_details">किरायेदार का विवरण</string>
     <string name="step_login">ऐप लॉगिन</string>
     <string name="step_room_rent">कमरा और किराया</string>
-    <!-- 1.15 login help, property type, meter rates -->
-    <string name="login_help_title">Rental Solution में मदद चाहिए?</string>
-    <string name="login_help_message">शुरुआत करने में मदद चाहिए? हम मदद के लिए यहाँ हैं!</string>
+    <!-- 1.15 property type, meter readings -->
     <string name="call_now">अभी कॉल करें</string>
-    <string name="whatsapp_support">WhatsApp सहायता</string>
     <string name="property_type">संपत्ति का प्रकार</string>
     <string name="select_option">— चुनें —</string>
     <string name="rate_per_unit_required">प्रति यूनिट दर डालें।</string>
-    <string name="slab_fill_all">हर स्लैब के यूनिट और दर भरें। आख़िरी स्लैब उससे ऊपर के सभी यूनिट के लिए है।</string>
-    <string name="slab_too_few">कम से कम दो स्लैब जोड़ें, या \"सभी यूनिट के लिए एक दर\" चुनें।</string>
-    <string name="slab_too_many">आप ज़्यादा से ज़्यादा 8 स्लैब जोड़ सकते हैं।</string>
-    <string name="slab_increasing">हर स्लैब में ऊपर वाले स्लैब से ज़्यादा यूनिट होने चाहिए।</string>
-    <string name="rate_mode_flat">सभी यूनिट के लिए एक दर</string>
-    <string name="rate_mode_single">सभी यूनिट पर एक ही दर (स्लैब के अनुसार)</string>
-    <string name="rate_mode_progressive">हर स्लैब अपनी दर से</string>
-    <string name="rate_mode_question">राशि कैसे निकाली जाए?</string>
-    <string name="slab_help_single">कुल इस्तेमाल हुए यूनिट से दर तय होती है, और वही दर सभी यूनिट पर लगती है।</string>
-    <string name="slab_help_progressive">यूनिट स्लैब के हिसाब से लगते हैं: पहला स्लैब उसकी दर से, अगला स्लैब उसकी दर से, आदि।</string>
-    <string name="slab_above_that">उससे ऊपर</string>
-    <string name="slab_units_up_to">यूनिट तक</string>
-    <string name="rate_rs">दर (₹)</string>
-    <string name="slab_add">स्लैब जोड़ें</string>
-    <string name="slab_check_x">जाँच: %1$s</string>
     <string name="rate_change_future_only">पहले बने बिल अपनी पुरानी दर ही रखेंगे।</string>
     <string name="change_rate">दर बदलें</string>
     <string name="rate_changed_short">इस बिल के लिए बदली गई</string>
     <string name="no_previous_reading_hint">पहले की कोई रीडिंग नहीं मिली। पिछली मीटर रीडिंग डालें (जैसे किरायेदार के आने के समय की रीडिंग)।</string>
-    <string name="as_per_slabs">स्लैब के अनुसार</string>
     <string name="units_used">इस्तेमाल हुए यूनिट</string>
-    <string name="slab_rate_all_units">स्लैब दर %1$s सभी यूनिट पर लगी</string>
     <string name="rate_changed_bill_only">दर सिर्फ़ इस बिल के लिए बदली गई है। चार्ज मास्टर नहीं बदला।</string>
+    <!-- 1.15.1 login help card, change rate for this bill -->
+    <string name="need_help">मदद चाहिए?</string>
+    <string name="support_of_x">%1$s सहायता</string>
+    <string name="support_badge">सहायता</string>
+    <string name="help_message">शुरुआत करने में दिक्कत आ रही है? हमारी टीम आपकी मदद के लिए यहाँ है।</string>
+    <string name="whatsapp">WhatsApp</string>
+    <string name="change_rate_for_bill">इस बिल के लिए दर बदलें?</string>
+    <string name="new_rate_per_unit">नई प्रति यूनिट दर</string>
+    <string name="eg_rate">जैसे 15</string>
+    <string name="total_amount">कुल राशि</string>
+    <string name="bill_rate_missing">%1$s के लिए सही प्रति यूनिट दर डालें।</string>
 </resources>

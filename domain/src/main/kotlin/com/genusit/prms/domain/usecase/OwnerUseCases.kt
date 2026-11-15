@@ -311,7 +311,7 @@ class GetPropertyTypesUseCase @Inject constructor(private val repo: PropertyRepo
     suspend operator fun invoke(includeId: Int? = null): List<com.genusit.prms.domain.model.PropertyType> = repo.types(includeId)
 }
 
-/** 1.15: change a per-unit charge's rate or slabs in Charge Master (bills already generated keep their rate). */
+/** Change a per-unit charge's rate per unit in Charge Master (bills already generated keep their rate). */
 class UpdateChargeRatesUseCase @Inject constructor(private val repo: BillingRepository) {
     suspend operator fun invoke(id: Int, u: com.genusit.prms.domain.model.ChargeRateUpdate) = repo.updateChargeRates(id, u)
 }

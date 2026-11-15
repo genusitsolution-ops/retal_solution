@@ -486,7 +486,7 @@ class ChargesViewModel @Inject constructor(
     val addAction = action<com.genusit.prms.domain.model.CreatedId>()
     val rateAction = action<Unit>()
 
-    /** 1.15: change the rate / slabs of a per-unit charge (future bills only). */
+    /** Change the Charge Master rate per unit of a per-unit charge (future bills only). */
     fun changeRates(id: Int, u: com.genusit.prms.domain.model.ChargeRateUpdate) =
         rateAction.run(onSuccess = { rateAction.reset(); charges.refresh(); sendEvent(ScreenEvent.Saved) }) { updateRates(id, u) }
 

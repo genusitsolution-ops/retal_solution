@@ -149,18 +149,20 @@ class StoreScreenshotsTest {
         rule.onNode(hasContentDescription("Add tenant")).performClick(); waitText("Tenant details"); shot("09-add-tenant")
         back()
 
-        // 1.15: meter charges — rate per unit changed for this bill, slab-wise water meter, readings on the bill
+        // 1.15.1: meter charges — Charge Master rate, "Change rate for this bill?" ticked with a new rate, readings on the bill
         tab("Home"); waitText("Hello")
         openByText("Generate bill"); waitText("Rahul Verma", 20_000); first("Rahul Verma").performClick()
         waitText("Current reading", 20_000)
         val curr = rule.onAllNodes(hasSetTextAction() and hasText("Current reading", substring = true))
         curr[0].performScrollTo().performTextInput("1020")
         curr[1].performScrollTo().performTextInput("75")
-        val rate = rule.onAllNodes(hasSetTextAction() and hasText("Rate per unit", substring = true))
-        rate[0].performScrollTo().performTextClearance(); rate[0].performTextInput("15")
         back()   // hides the keyboard
-        rule.waitForIdle(); rate[0].performScrollTo(); Thread.sleep(800); shot("21-bill-meter-rate")
-        curr[1].performScrollTo(); Thread.sleep(500); shot("22-bill-meter-slabs")
+        rule.waitForIdle(); curr[1].performScrollTo(); Thread.sleep(500); shot("22-bill-meter-charge-master-rate")
+        rule.onAllNodesWithText("Change rate for this bill?").onFirst().performScrollTo().performClick(); rule.waitForIdle()
+        val rate = rule.onAllNodes(hasSetTextAction() and hasText("New Rate Per Unit", substring = true))
+        rate[0].performScrollTo().performTextInput("15")
+        back()   // hides the keyboard
+        rule.waitForIdle(); rate[0].performScrollTo(); Thread.sleep(800); shot("21-bill-change-rate")
         // back to Home with the screens' own back arrows (a system Back could leave the app)
         repeat(3) { if (!has("Hello")) { rule.onAllNodes(hasContentDescription("Back")).onFirst().performClick(); rule.waitForIdle(); Thread.sleep(800) } }
         // Home → "Dues by tenant" → Neha Gupta opens her latest bill (made with electricity at ₹15 for this bill)

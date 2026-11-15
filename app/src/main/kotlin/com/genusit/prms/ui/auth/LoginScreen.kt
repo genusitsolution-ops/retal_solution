@@ -71,7 +71,7 @@ import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.ui.draw.shadow
 
 @Composable
 fun LoginScreen() {
@@ -123,7 +123,7 @@ fun LoginScreen() {
                 }
             }
             Spacer(Modifier.height(26.dp))
-            BrandLogo(brand.loginLogo, 96.dp)
+            BrandLogo(brand.loginLogo, 110.dp)
             Spacer(Modifier.height(10.dp))
             Text(brand.name ?: stringResource(R.string.app_name), color = Palette.Brand, style = MaterialTheme.typography.headlineMedium,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -205,48 +205,57 @@ fun LoginScreen() {
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
             }
-            // 1.15: help before signing in — Call / WhatsApp the support number set by the Super Admin
+            // help before signing in — Call / WhatsApp the support numbers set by the Super Admin
             brand.loginHelp?.let { help ->
                 Spacer(Modifier.height(18.dp))
-                LoginHelpCard(help)
+                LoginHelpCard(help, brand.name ?: stringResource(R.string.app_name))
             }
             Spacer(Modifier.height(96.dp))
         }
     }
 }
 
-/** "Need Help with Rental Solution?" with Call Now and WhatsApp Support (opened only when tapped). */
+/**
+ * Help before signing in (same card as the web login): headset, "Need Help?" / "<brand> Support", a "Support" pill,
+ * a short message, then Call Now and WhatsApp (opened only when tapped; numbers come from the Super Admin settings).
+ */
 @Composable
-private fun LoginHelpCard(help: com.genusit.prms.domain.model.LoginHelp) {
+private fun LoginHelpCard(help: com.genusit.prms.domain.model.LoginHelp, brandName: String) {
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    val shape = RoundedCornerShape(18.dp)
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Palette.GoldSoft)
-            .border(1.dp, Palette.Gold.copy(alpha = .45f), RoundedCornerShape(18.dp)).padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        Modifier.fillMaxWidth().shadow(6.dp, shape, ambientColor = Palette.Shadow, spotColor = Palette.Shadow).clip(shape).background(Color.White)
+            .border(1.dp, Palette.Line, shape).padding(16.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.SupportAgent, null, tint = Palette.Gold, modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.login_help_title), color = Palette.Brand, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleMedium,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Palette.GoldSoft), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.SupportAgent, null, tint = Palette.Gold, modifier = Modifier.size(26.dp))
+            }
+            Box(Modifier.padding(horizontal = 12.dp).width(1.dp).height(36.dp).background(Palette.Line))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.need_help), color = Palette.Brand, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.support_of_x, brandName), color = Palette.Muted, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+            }
+            Text(stringResource(R.string.support_badge), color = Palette.Success, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(Palette.SuccessSoft).padding(horizontal = 12.dp, vertical = 5.dp))
         }
-        Spacer(Modifier.height(4.dp))
-        Text(stringResource(R.string.login_help_message), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Box(Modifier.padding(vertical = 12.dp).fillMaxWidth().height(1.dp).background(Palette.Line))
+        Text(stringResource(R.string.help_message), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             help.telUrl?.let { tel ->
                 Button(onClick = { com.genusit.prms.ui.owner.dialSupport(ctx, tel) }, modifier = Modifier.weight(1f).heightIn(min = 50.dp),
                     shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.Brand)) {
-                    Icon(Icons.Filled.Call, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+                    Icon(Icons.Filled.Call, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.call_now), fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
             help.whatsappUrl?.let { wa ->
                 Button(onClick = { com.genusit.prms.ui.owner.openWhatsAppSupport(ctx, wa) }, modifier = Modifier.weight(1f).heightIn(min = 50.dp),
                     shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.Success)) {
-                    Icon(Icons.AutoMirrored.Filled.Chat, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.whatsapp_support), fontWeight = FontWeight.Bold, maxLines = 1)
+                    Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_whatsapp), null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.whatsapp), fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
         }
