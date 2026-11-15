@@ -438,7 +438,7 @@ fun ChargesScreen(onBack: () -> Unit) {
                                 Column(Modifier.weight(1f)) {
                                     Text(c.name, fontWeight = FontWeight.SemiBold)
                                     Text(
-                                        if (c.hasSlabs) modeLabel(c.rateMode)
+                                        if (c.hasSlabs) rateModeLabel(c.rateMode)
                                         else if (c.isVariable) stringResource(R.string.per_unit_x, Money.format(c.ratePerUnit ?: 0.0), c.unitLabel ?: "unit")
                                         else stringResource(R.string.fixed_per_month_x, Money.format(c.fixedAmount ?: 0.0)),
                                         style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -847,7 +847,7 @@ private fun MeterCard(title: String, checked: Boolean, onChecked: (Boolean) -> U
 /** "₹13/unit" or "Each slab at its own rate" for a charge's title. */
 @Composable
 private fun ruleText(mode: String, slabs: List<com.genusit.prms.domain.model.Slab>, rate: Double, unitLabel: String?): String =
-    if (MeterCalc.effectiveMode(mode, slabs) == MeterCalc.FLAT) stringResource(R.string.per_unit_x, Money.format(rate), unitLabel ?: "unit") else modeLabel(mode)
+    if (MeterCalc.effectiveMode(mode, slabs) == MeterCalc.FLAT) stringResource(R.string.per_unit_x, Money.format(rate), unitLabel ?: "unit") else rateModeLabel(mode)
 
 /**
  * 1.15: Previous Reading (filled from the last bill), Current Reading, Rate Per Unit (changeable for this bill only),

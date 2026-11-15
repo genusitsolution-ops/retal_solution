@@ -92,7 +92,7 @@ fun rateRule(mode: String, rateText: String, rows: List<SlabInput>): Pair<Charge
 }
 
 @Composable
-fun modeLabel(mode: String): String = stringResource(
+fun rateModeLabel(mode: String): String = stringResource(
     when (mode) { MeterCalc.SINGLE -> R.string.rate_mode_single; MeterCalc.PROGRESSIVE -> R.string.rate_mode_progressive; else -> R.string.rate_mode_flat },
 )
 
@@ -108,7 +108,7 @@ fun RateRuleEditor(mode: String, onMode: (String) -> Unit, rateText: String, onR
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RadioButton(selected = mode == m, onClick = null, modifier = Modifier.padding(8.dp))
-                Text(modeLabel(m), style = MaterialTheme.typography.bodyMedium, fontWeight = if (mode == m) FontWeight.SemiBold else FontWeight.Normal)
+                Text(rateModeLabel(m), style = MaterialTheme.typography.bodyMedium, fontWeight = if (mode == m) FontWeight.SemiBold else FontWeight.Normal)
             }
         }
         if (mode == MeterCalc.FLAT) {
@@ -138,8 +138,9 @@ fun RateRuleEditor(mode: String, onMode: (String) -> Unit, rateText: String, onR
         }
         // worked example so the owner can check the slabs (same maths as the bill)
         val slabs = toSlabs(rows)
+        val unitsWord = stringResource(R.string.units)
         val example = if (slabs != null && MeterCalc.slabProblem(slabs) == null) listOf(10.0, 20.0, 60.0).joinToString(" · ") { u ->
-            "${MeterCalc.num(u)} ${stringResource(R.string.units)} = ${Money.format(MeterCalc.calc(u, mode, slabs, 0.0).amount)}"
+            "${MeterCalc.num(u)} $unitsWord = ${Money.format(MeterCalc.calc(u, mode, slabs, 0.0).amount)}"
         } else null
         Text(if (example != null) stringResource(R.string.slab_check_x, example) else stringResource(R.string.slab_fill_all),
             style = MaterialTheme.typography.labelMedium, color = if (example != null) Palette.Teal else MaterialTheme.colorScheme.onSurfaceVariant,

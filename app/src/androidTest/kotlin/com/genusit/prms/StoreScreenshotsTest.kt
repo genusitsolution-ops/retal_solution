@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.performScrollTo
@@ -147,8 +148,28 @@ class StoreScreenshotsTest {
         tab("Tenants"); waitText("Amit Verma")
         rule.onNode(hasContentDescription("Add tenant")).performClick(); waitText("Tenant details"); shot("09-add-tenant")
         back()
+
+        // 1.15: meter charges — rate per unit changed for this bill, slab-wise water meter, readings on the bill
+        tab("Home"); waitText("Hello")
+        openByText("Generate bill"); waitText("Rahul Verma", 20_000); first("Rahul Verma").performClick()
+        waitText("Current reading", 20_000)
+        val curr = rule.onAllNodes(hasSetTextAction() and hasText("Current reading", substring = true))
+        curr[0].performScrollTo().performTextInput("1020")
+        curr[1].performScrollTo().performTextInput("75")
+        val rate = rule.onAllNodes(hasSetTextAction() and hasText("Rate per unit", substring = true))
+        rate[0].performScrollTo().performTextClearance(); rate[0].performTextInput("15")
+        rule.waitForIdle(); rate[0].performScrollTo(); Thread.sleep(800); shot("21-bill-meter-rate")
+        curr[1].performScrollTo(); Thread.sleep(500); shot("22-bill-meter-slabs")
+        back(); back()
+        tab("Bills"); waitText("Neha Gupta"); first("Neha Gupta").performClick(); waitText("Previous Reading", 20_000)
+        scrollTo("Previous Reading"); Thread.sleep(500); shot("23-bill-readings")
+        back()
+        tab("More"); waitText("More", 10_000); openByText("Charges"); waitText("Water meter", 20_000); shot("24-charges")
+        back()
         tab("More"); waitText("More", 10_000); openByText("Settings"); waitText("Log out")
         logOut("en")
+        scrollTo("Call Now"); Thread.sleep(500); shot("25-login-help")
+        toTop()
 
         // tenant (Hindi)
         rule.onAllNodesWithText("हिंदी").onFirst().performClick(); rule.waitForIdle(); waitText(str(R.string.sign_in, "hi")); shot("10-login-hi")
