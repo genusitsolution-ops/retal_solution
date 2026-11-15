@@ -158,9 +158,10 @@ class StoreScreenshotsTest {
         curr[1].performScrollTo().performTextInput("75")
         val rate = rule.onAllNodes(hasSetTextAction() and hasText("Rate per unit", substring = true))
         rate[0].performScrollTo().performTextClearance(); rate[0].performTextInput("15")
+        back()   // hides the keyboard
         rule.waitForIdle(); rate[0].performScrollTo(); Thread.sleep(800); shot("21-bill-meter-rate")
         curr[1].performScrollTo(); Thread.sleep(500); shot("22-bill-meter-slabs")
-        back(); back()
+        back(); back()   // bill screen → room list → Home
         tab("Bills"); waitText("Neha Gupta"); first("Neha Gupta").performClick(); waitText("Previous Reading", 20_000)
         scrollTo("Previous Reading"); Thread.sleep(500); shot("23-bill-readings")
         back()
