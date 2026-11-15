@@ -4,6 +4,9 @@ name: Android WhatsApp choice test (emulator)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ app-1.15 ]
+    paths: [ ".github/workflows/android-whatsapp.yml", "app/src/main/kotlin/com/genusit/prms/ui/common/WhatsAppApps.kt", "app/src/androidTest/kotlin/com/genusit/prms/WhatsAppChoiceUiTest.kt" ]
 
 permissions:
   contents: write   # draft (team-only) release with the results
