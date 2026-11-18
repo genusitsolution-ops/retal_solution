@@ -173,7 +173,12 @@ data class FixedChargeLine(
     @SerialName("tc_id") val tcId: Int = 0,
     val name: String = "",
     val amount: Double = 0.0,
-)
+    /** 1.16: monthly | one_time (a one-time room charge is billed once). Older servers: always monthly. */
+    val frequency: String = "monthly",
+    val remarks: String? = null,
+) {
+    val isOneTime: Boolean get() = frequency == "one_time"
+}
 
 @Serializable
 data class VariableChargeLine(
@@ -184,6 +189,8 @@ data class VariableChargeLine(
     @SerialName("last_reading") @Serializable(with = FlexDoubleOrNull::class) val lastReading: Double? = null,
     /** 1.15: the month of the last reading ("October 2026"). */
     @SerialName("last_reading_label") val lastReadingLabel: String? = null,
+    /** 1.16: the room charge's remarks. */
+    val remarks: String? = null,
 )
 
 @Serializable

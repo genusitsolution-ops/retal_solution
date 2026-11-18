@@ -12894,5 +12894,188 @@
 "whatsapp_url": "https://wa.me/919800000203?text=%2ARent%20Payment%20Receipt%20%E2%80%94%20Rajesh%20Sharma%2A%0A%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%0AReceipt%20No.%3A%20EC-20261115191057-C1BA%0ADate%3A%2015%20Nov%202026%0ATenant%3A%20Sandeep%20Yadav%0AProperty%3A%20A-201%2C%20Indore%0A%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%0AAmount%20Paid%3A%20%2A%E2%82%B93%2C000.00%2A%0APayment%20Mode%3A%20Cash%0A%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%0AInvoice%3A%20INV-202611-0001-E5F42%20%28November%202026%29%0ABalance%20Due%3A%20%E2%82%B94%2C500.00%0A%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%E2%94%80%0ACollected%20by%3A%20Employee%3A%20Ramesh%20Kumar%0AThank%20you%20for%20your%20payment%21"
 }
 }
+},
+"owner/room_charges.php?allocation_id=8": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"ready": true,
+"allocation": {
+"id": 8,
+"status": "active",
+"allocation_date": "2026-10-01",
+"tenant_name": "Rahul Verma",
+"property_code": "B-102",
+"city": "Indore",
+"base_rent": 5500
+},
+"charges": [
+{
+"id": 14,
+"charge_id": 1,
+"name": "Water",
+"charge_type": "fixed",
+"amount": 300,
+"master_amount": 300,
+"own_amount": false,
+"rate_per_unit": null,
+"unit_label": "unit",
+"frequency": "monthly",
+"start_date": null,
+"end_date": null,
+"remarks": null,
+"state": "active",
+"state_label": "Active",
+"billed_invoice_number": null,
+"master_active": true,
+"editable": true,
+"can_restart": false
+},
+{
+"id": 15,
+"charge_id": 2,
+"name": "Maintenance",
+"charge_type": "fixed",
+"amount": 500,
+"master_amount": 500,
+"own_amount": false,
+"rate_per_unit": null,
+"unit_label": "unit",
+"frequency": "monthly",
+"start_date": null,
+"end_date": null,
+"remarks": null,
+"state": "active",
+"state_label": "Active",
+"billed_invoice_number": null,
+"master_active": true,
+"editable": true,
+"can_restart": false
+},
+{
+"id": 18,
+"charge_id": 6,
+"name": "Parking",
+"charge_type": "fixed",
+"amount": 200,
+"master_amount": 200,
+"own_amount": false,
+"rate_per_unit": null,
+"unit_label": "unit",
+"frequency": "monthly",
+"start_date": "2026-12-01",
+"end_date": null,
+"remarks": "Car parking from December",
+"state": "scheduled",
+"state_label": "Starts 01 Dec 2026",
+"billed_invoice_number": null,
+"master_active": true,
+"editable": true,
+"can_restart": false
+},
+{
+"id": 16,
+"charge_id": 3,
+"name": "Electricity",
+"charge_type": "variable",
+"amount": null,
+"master_amount": null,
+"own_amount": false,
+"rate_per_unit": 13,
+"unit_label": "unit",
+"frequency": "monthly",
+"start_date": null,
+"end_date": null,
+"remarks": null,
+"state": "active",
+"state_label": "Active",
+"billed_invoice_number": null,
+"master_active": true,
+"editable": true,
+"can_restart": false
+},
+{
+"id": 17,
+"charge_id": 4,
+"name": "Water meter",
+"charge_type": "variable",
+"amount": null,
+"master_amount": null,
+"own_amount": false,
+"rate_per_unit": 20,
+"unit_label": "kL",
+"frequency": "monthly",
+"start_date": null,
+"end_date": null,
+"remarks": null,
+"state": "active",
+"state_label": "Active",
+"billed_invoice_number": null,
+"master_active": true,
+"editable": true,
+"can_restart": false
+}
+],
+"available": [
+{
+"id": 3,
+"name": "Electricity",
+"charge_type": "variable",
+"fixed_amount": null,
+"rate_per_unit": 13,
+"unit_label": "unit",
+"on_room": true
+},
+{
+"id": 2,
+"name": "Maintenance",
+"charge_type": "fixed",
+"fixed_amount": 500,
+"rate_per_unit": null,
+"unit_label": "unit",
+"on_room": true
+},
+{
+"id": 6,
+"name": "Parking",
+"charge_type": "fixed",
+"fixed_amount": 200,
+"rate_per_unit": null,
+"unit_label": "unit",
+"on_room": true
+},
+{
+"id": 1,
+"name": "Water",
+"charge_type": "fixed",
+"fixed_amount": 300,
+"rate_per_unit": null,
+"unit_label": "unit",
+"on_room": true
+},
+{
+"id": 5,
+"name": "Water bill",
+"charge_type": "fixed",
+"fixed_amount": 50,
+"rate_per_unit": null,
+"unit_label": "unit",
+"on_room": false
+},
+{
+"id": 4,
+"name": "Water meter",
+"charge_type": "variable",
+"fixed_amount": null,
+"rate_per_unit": 20,
+"unit_label": "kL",
+"on_room": true
+}
+],
+"today": "2026-11-18"
+}
+}
 }
 }

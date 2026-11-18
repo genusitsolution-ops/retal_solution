@@ -223,6 +223,21 @@ interface PrmsApiService {
     @GET("owner/allocations.php")
     suspend fun ownerAllocation(@Query("id") id: Int): Response<ResponseBody>
 
+    /* ───────── owner: 1.16 Manage Charges of an allocated room ───────── */
+
+    @GET("owner/room_charges.php")
+    suspend fun roomCharges(@Query("allocation_id") allocationId: Int): Response<ResponseBody>
+
+    @POST("owner/room_charges.php")
+    suspend fun addRoomCharge(@Body body: JsonObject): Response<ResponseBody>
+
+    @PUT("owner/room_charges.php")
+    suspend fun updateRoomCharge(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    /** `{"action":"stop","end_date":…}` · `{"action":"restart","start_date":…}` */
+    @POST("owner/room_charges.php")
+    suspend fun roomChargeAction(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
     /* ───────── owner: collection agents ───────── */
 
     @GET("owner/employees.php")

@@ -111,6 +111,17 @@ interface BillingRepository {
     suspend fun deactivateCharge(id: Int)
 }
 
+/** 1.16 — Manage Charges of one allocated room (no re-allocation needed). */
+interface RoomChargesRepository {
+    suspend fun roomCharges(allocationId: Int): com.genusit.prms.domain.model.RoomChargesData
+    suspend fun addRoomCharge(allocationId: Int, i: com.genusit.prms.domain.model.RoomChargeInput): CreatedId
+    suspend fun updateRoomCharge(id: Int, c: com.genusit.prms.domain.model.RoomChargeChange)
+    /** Not billed for months after [endDate]. */
+    suspend fun stopRoomCharge(id: Int, endDate: String)
+    /** [startDate] is ignored by the server for a charge that is still billed (stop removed, no gap). */
+    suspend fun restartRoomCharge(id: Int, startDate: String)
+}
+
 /** Owner: room allocations (move-in / move-out). */
 interface AllocationRepository {
     suspend fun allocations(status: String? = null): List<Allocation>

@@ -293,7 +293,8 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     openDocument = { type -> nav.navigate("owner/tenant/$tid/document/${type.apiValue}") },
                     openAllocation = { aid -> nav.navigate("owner/allocation/$aid") },
                     openOpening = { oid -> nav.navigate("owner/opening/$oid?allocationId=0") },
-                    recordOpening = { aid -> nav.navigate("owner/opening/0?allocationId=$aid") })
+                    recordOpening = { aid -> nav.navigate("owner/opening/0?allocationId=$aid") },
+                    manageCharges = { aid -> nav.navigate("owner/allocation/$aid/charges") })
             }
             // 1.12: opening balance of an existing (migrated) tenant — record (id 0 + allocationId) or view / edit
             composable("owner/opening/{id}?allocationId={allocationId}", listOf(navArgument("id") { type = NavType.IntType },
@@ -342,12 +343,14 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
             composable("owner/support") { com.genusit.prms.ui.owner.ContactSupportScreen(onBack = back) }
             composable("owner/allocations") {
                 AllocationsScreen(onBack = back, newAllocation = { nav.navigate("owner/allocation/new") }, generateInvoice = { id -> nav.navigate("owner/generate/$id") },
-                    openDetail = { id -> nav.navigate("owner/allocation/$id") }, vacate = { id -> nav.navigate("owner/vacate/$id") })
+                    openDetail = { id -> nav.navigate("owner/allocation/$id") }, vacate = { id -> nav.navigate("owner/vacate/$id") },
+                    manageCharges = { id -> nav.navigate("owner/allocation/$id/charges") })
             }
             composable("owner/allocation/new") { NewAllocationScreen(onBack = back, onDone = back) }
             // 1.11: allocation details (deposit history, settlement statement) and vacate with settlement
             composable("owner/allocation/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
-                com.genusit.prms.ui.owner.AllocationDetailScreen(onBack = back, vacate = { id -> nav.navigate("owner/vacate/$id") })
+                com.genusit.prms.ui.owner.AllocationDetailScreen(onBack = back, vacate = { id -> nav.navigate("owner/vacate/$id") },
+                    manageCharges = { id -> nav.navigate("owner/allocation/$id/charges") })
             }
             composable("owner/vacate/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 com.genusit.prms.ui.owner.VacateScreen(onBack = back, onDone = { id ->
@@ -364,6 +367,13 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     // the saved bill replaces the generate steps (room picker included) in the back stack
                     val fromPicker = nav.previousBackStackEntry?.destination?.route == "owner/generate"
                     nav.navigate("owner/invoice/$invId") { popUpTo(if (fromPicker) "owner/generate" else "owner/generate/{id}") { inclusive = true } }
+                }, manageCharges = { aid -> nav.navigate("owner/allocation/$aid/charges") })
+            }
+            // 1.16: Manage Charges of an allocated room (add a forgotten charge without re-allocating)
+            composable("owner/allocation/{id}/charges", listOf(navArgument("id") { type = NavType.IntType })) {
+                com.genusit.prms.ui.owner.ManageChargesScreen(onBack = back, generateBill = { aid ->
+                    // coming from Generate Bill: go back to it (it reloads); otherwise open it
+                    if (nav.previousBackStackEntry?.destination?.route == "owner/generate/{id}") nav.popBackStack() else nav.navigate("owner/generate/$aid")
                 })
             }
             composable("owner/employees") {

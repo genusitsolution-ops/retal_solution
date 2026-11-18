@@ -303,3 +303,39 @@ class SubscriptionRepositoryImpl @Inject constructor(
 
     override suspend fun staticQr(): ByteArray = caller.download { api.paymentQrImage() }.first
 }
+
+/** 1.16 — Manage Charges of one allocated room (owner/room_charges.php). */
+class RoomChargesRepositoryImpl @Inject constructor(
+    private val api: PrmsApiService,
+    private val caller: ApiCaller,
+) : com.genusit.prms.domain.repository.RoomChargesRepository {
+    override suspend fun roomCharges(allocationId: Int): RoomChargesData =
+        caller.get(RoomChargesData.serializer()) { api.roomCharges(allocationId) }
+
+    override suspend fun addRoomCharge(allocationId: Int, i: RoomChargeInput): CreatedId =
+        caller.get(CreatedId.serializer()) {
+            api.addRoomCharge(buildJsonObject {
+                put("allocation_id", allocationId)
+                if (i.newCharge != null) put("new_charge", caller.body(NewCharge.serializer(), i.newCharge)) else put("charge_id", i.chargeId ?: 0)
+                i.amount?.let { put("amount", it) }
+                put("frequency", i.frequency); put("start_date", i.startDate); put("remarks", i.remarks)
+            })
+        }
+
+    override suspend fun updateRoomCharge(id: Int, c: RoomChargeChange) {
+        caller.run {
+            api.updateRoomCharge(id, buildJsonObject {
+                c.amount?.let { put("amount", it) }
+                put("frequency", c.frequency); put("start_date", c.startDate); put("remarks", c.remarks)
+            })
+        }
+    }
+
+    override suspend fun stopRoomCharge(id: Int, endDate: String) {
+        caller.run { api.roomChargeAction(id, buildJsonObject { put("action", "stop"); put("end_date", endDate) }) }
+    }
+
+    override suspend fun restartRoomCharge(id: Int, startDate: String) {
+        caller.run { api.roomChargeAction(id, buildJsonObject { put("action", "restart"); put("start_date", startDate) }) }
+    }
+}

@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Delete
@@ -93,6 +94,7 @@ import com.genusit.prms.ui.theme.Palette
 import com.genusit.prms.domain.usecase.MeterCalc
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.selection.toggleable
@@ -504,7 +506,8 @@ private fun AddChargeDialog(act: ActionState<*>, onDismiss: () -> Unit, onSave: 
 /* ═════════════════════════ allocations ═════════════════════════ */
 
 @Composable
-fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInvoice: (Int) -> Unit, openDetail: (Int) -> Unit = {}, vacate: (Int) -> Unit = {}) {
+fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInvoice: (Int) -> Unit, openDetail: (Int) -> Unit = {}, vacate: (Int) -> Unit = {},
+                      manageCharges: (Int) -> Unit = {}) {
     val model: AllocationsViewModel = hiltViewModel()
     var filter by rememberSaveable { mutableStateOf("active") }
     val vm = model.allocations
@@ -568,7 +571,7 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
                                 }
                                 // 1.11: Vacate opens the settlement preview (nothing changes until the owner confirms)
                                 if (a.isActive) AllocationActions(a.depositBalance > 0, onBill = { generateInvoice(a.id) },
-                                    onDeposit = { deposit.reset(); depositFor = a.id }, onVacate = { vacate(a.id) })
+                                    onDeposit = { deposit.reset(); depositFor = a.id }, onVacate = { vacate(a.id) }, onCharges = { manageCharges(a.id) })
                             }
                         }
                     }
@@ -586,7 +589,7 @@ fun AllocationsScreen(onBack: () -> Unit, newAllocation: () -> Unit, generateInv
 /** Generate bill / Collect deposit / Vacate: whole buttons wrap to a new line on narrow screens, labels never break. */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun AllocationActions(depositPending: Boolean, onBill: () -> Unit, onDeposit: () -> Unit, onVacate: () -> Unit) {
+fun AllocationActions(depositPending: Boolean, onBill: () -> Unit, onDeposit: () -> Unit, onVacate: () -> Unit, onCharges: (() -> Unit)? = null) {
     androidx.compose.foundation.layout.FlowRow(
         Modifier.fillMaxWidth().padding(top = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -595,6 +598,11 @@ fun AllocationActions(depositPending: Boolean, onBill: () -> Unit, onDeposit: ()
         OutlinedButton(onClick = onBill) {
             Icon(Icons.Filled.Receipt, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp))
             Text(stringResource(R.string.generate_bill), maxLines = 1, softWrap = false)
+        }
+        // 1.16: Manage Charges of this room
+        if (onCharges != null) OutlinedButton(onClick = onCharges) {
+            Icon(Icons.Filled.Tune, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp))
+            Text(stringResource(R.string.charges_short), maxLines = 1, softWrap = false)
         }
         if (depositPending) OutlinedButton(onClick = onDeposit) { Text(stringResource(R.string.collect_deposit), maxLines = 1, softWrap = false) }
         OutlinedButton(onClick = onVacate, border = androidx.compose.foundation.BorderStroke(1.dp, Palette.Danger.copy(alpha = .5f))) {
@@ -674,7 +682,7 @@ fun NewAllocationScreen(onBack: () -> Unit, onDone: () -> Unit) {
 /* ═════════════════════════ generate & cancel invoices ═════════════════════════ */
 
 @Composable
-fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -> Unit) {
+fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -> Unit, manageCharges: (Int) -> Unit = {}) {
     val model: GenerateInvoiceViewModel = hiltViewModel()
     val today = Dates.today()
     val month by model.month.collectAsStateWithLifecycle()
@@ -684,6 +692,12 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
     val act by model.generateAction.state.collectAsStateWithLifecycle()
     EventEffect(model) { if (it is ScreenEvent.InvoiceCreated) onDone(it.invoiceId) }
     val months = stringArrayResource(R.array.months).toList()
+    // 1.16: back from Manage Charges → load the bill again so a charge added there is on it
+    var toCharges by rememberSaveable { mutableStateOf(false) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(toCharges) {
+        if (toCharges) { toCharges = false; vm.refresh() }
+        onPauseOrDispose { }
+    }
 
     ScreenScaffold(stringResource(R.string.generate_bill), onBack = onBack) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
@@ -736,7 +750,15 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                     ctx.fixedCharges.forEach { f ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = fixedOn[f.tcId] == true, onCheckedChange = { fixedOn[f.tcId] = it })
-                            Text(f.name, Modifier.weight(1f)); Text(Money.format(f.amount), fontWeight = FontWeight.SemiBold)
+                            Column(Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(f.name)
+                                    // 1.16: a one-time room charge is billed once, on this bill
+                                    if (f.isOneTime) { Spacer(Modifier.width(6.dp)); StatusChip("in_progress", stringResource(R.string.rc_one_time)) }
+                                }
+                                if (!f.remarks.isNullOrBlank()) Text(f.remarks!!, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Text(Money.format(f.amount), fontWeight = FontWeight.SemiBold)
                         }
                     }
                     ctx.variableCharges.forEach { v ->
@@ -759,7 +781,22 @@ fun GenerateInvoiceScreen(allocationId: Int, onBack: () -> Unit, onDone: (Int) -
                     }
                     if (tried) rateMissing.forEach { n -> Text(stringResource(R.string.bill_rate_missing, n), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
                     if (ctx.variableCharges.isNotEmpty()) Text(stringResource(R.string.reading_hint), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    LabelValue(stringResource(R.string.estimated_total), Money.format(calc.total(lines)), bold = true)
+                    // 1.16: a charge missing for this room is added in Manage Charges (no re-allocation)
+                    OutlinedButton(onClick = { toCharges = true; manageCharges(ctx.allocationId.takeIf { it > 0 } ?: model.allocationId) },
+                        modifier = Modifier.fillMaxWidth().testTag("bill_manage_charges")) {
+                        Icon(Icons.Filled.Tune, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.bill_add_room_charge))
+                    }
+                    // 1.16: estimated total in a clear box; the server works the final amounts out again when saving
+                    Column(
+                        Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)).background(Palette.BrandSoft).padding(16.dp, 12.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.estimated_total), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, color = Palette.Brand)
+                            Text(Money.format(calc.total(lines)), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Palette.Brand,
+                                modifier = Modifier.testTag("bill_estimated_total"))
+                        }
+                        Text(stringResource(R.string.bill_total_note), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     ActionError(act)
                     // step 3: preview, then save (the server calculates the final amounts and the bill number)
                     SubmitButton(stringResource(R.string.bill_preview), act) {
@@ -829,13 +866,20 @@ private fun MeterFields(
     val typed = if (changeRate) Money.parse(newRate)?.takeIf { it >= 0 } else null
     val m = com.genusit.prms.domain.usecase.BillCalculator.meterAmount(Money.parse(prev), Money.parse(curr), defaultRate, typed)
     val units = m?.let { Money.parse(curr)!! - (Money.parse(prev) ?: 0.0) }
+    // 1.16: the rate shown is the rate used for THIS bill — the new rate as soon as it is typed, the Charge Master rate when unticked
+    val applied = m?.rate ?: typed ?: defaultRate
+    val changed = changeRate && typed != null && kotlin.math.abs(typed - defaultRate) >= 0.00005
     Column(
         Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)).background(Palette.TealSoft).padding(12.dp, 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        MeterRow(stringResource(R.string.units_used), units?.let { "${trimNum(Math.round(it * 1000) / 1000.0)} $unitWord" } ?: "—")
-        MeterRow(stringResource(R.string.rate_per_unit), stringResource(R.string.per_unit_x, Money.format(defaultRate), unitWord))  // Charge Master rate
-        MeterRow(stringResource(R.string.total_amount), m?.let { Money.format(it.amount) } ?: "—", bold = true)
+        MeterRow(stringResource(R.string.units_used), units?.let { "${trimNum(Math.round(it * 1000) / 1000.0)} $unitWord" } ?: "—", tag = "meter_units")
+        MeterRow(stringResource(R.string.rate_per_unit), stringResource(R.string.per_unit_x, Money.format(applied), unitWord), tag = "meter_rate",
+            badge = if (changed) stringResource(R.string.bill_this_bill_only) else null)
+        HorizontalDivider(color = Palette.Teal.copy(alpha = .25f))
+        MeterRow(stringResource(R.string.total_amount), m?.let { Money.format(it.amount) } ?: "—", bold = true, tag = "meter_total")
+        if (m != null && units != null) Text("${trimNum(Math.round(units * 1000) / 1000.0)} × ${Money.format(applied)} = ${Money.format(m.amount)}",
+            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.End))
     }
     Row(
         Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
@@ -851,16 +895,18 @@ private fun MeterFields(
             prefix = { Text("₹") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
-        if (m?.changed == true) Text(stringResource(R.string.rate_changed_bill_only), style = MaterialTheme.typography.labelMedium, color = Palette.Warning, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.bill_rate_only_this, Money.format(defaultRate)), style = MaterialTheme.typography.labelMedium, color = Palette.Warning, fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
-private fun MeterRow(label: String, value: String, bold: Boolean = false) {
+private fun MeterRow(label: String, value: String, bold: Boolean = false, tag: String? = null, badge: String? = null) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = Palette.Teal)
+        if (badge != null) { StatusChip("pending", badge); Spacer(Modifier.width(6.dp)) }
         Text(value, style = if (bold) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
-            fontWeight = if (bold) FontWeight.Bold else FontWeight.SemiBold, color = Palette.Ink)
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.SemiBold, color = Palette.Ink,
+            modifier = if (tag != null) Modifier.testTag(tag) else Modifier)
     }
 }
 

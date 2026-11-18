@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -234,7 +236,7 @@ class AllocationDetailViewModel @Inject constructor(
 }
 
 @Composable
-fun AllocationDetailScreen(onBack: () -> Unit, vacate: (Int) -> Unit) {
+fun AllocationDetailScreen(onBack: () -> Unit, vacate: (Int) -> Unit, manageCharges: (Int) -> Unit = {}) {
     val model: AllocationDetailViewModel = hiltViewModel()
     val state by model.detail.state.collectAsStateWithLifecycle()
     val refundState by model.refund.state.collectAsStateWithLifecycle()
@@ -256,6 +258,11 @@ fun AllocationDetailScreen(onBack: () -> Unit, vacate: (Int) -> Unit) {
                             Text(stringResource(R.string.security_deposit), style = MaterialTheme.typography.titleSmall)
                             DepositFigures(d.deposit, showUsage = true)
                             if (a.isActive) {
+                                Spacer(Modifier.height(8.dp))
+                                // 1.16: add / change this room's charges without re-allocating
+                                Button(onClick = { manageCharges(a.id) }, modifier = Modifier.fillMaxWidth().testTag("manage_charges")) {
+                                    Icon(Icons.Filled.Tune, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.manage_charges))
+                                }
                                 Spacer(Modifier.height(8.dp))
                                 OutlinedButton(onClick = { vacate(a.id) }, border = androidx.compose.foundation.BorderStroke(1.dp, Palette.Danger.copy(alpha = .5f))) {
                                     Text(stringResource(R.string.vacate), color = Palette.Danger)

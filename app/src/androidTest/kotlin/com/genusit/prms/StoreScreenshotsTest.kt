@@ -19,6 +19,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.test.swipeDown
@@ -165,6 +166,17 @@ class StoreScreenshotsTest {
         rate[0].performScrollTo().performTextInput("15")
         back()   // hides the keyboard
         rule.waitForIdle(); rate[0].performScrollTo(); Thread.sleep(800); shot("21-bill-change-rate")
+        // 1.16: the summary shows the rate used for this bill at once: electricity 1000 → 1020 = 20 units × ₹15 = ₹300
+        check(has("₹15.00 per unit") && has("20 × ₹15.00 = ₹300.00")) { "the changed rate is not shown in the summary" }
+        // 1.16: Manage Charges from the bill screen — the room's charges, then the Add form with a Charge Master charge chosen
+        scrollTo("Add a charge to this room"); first("Add a charge to this room").performScrollTo().performClick()
+        waitText("Charges here apply only", 20_000); shot("27-manage-charges")
+        openByText("Add a charge"); waitText("Effective from", 10_000)
+        rule.onAllNodesWithText("Charge").onFirst().performClick(); waitText("Water bill", 10_000)
+        first("Water bill").performClick(); rule.waitForIdle()
+        rule.onNodeWithTag("rc_one_time").performScrollTo().performClick(); rule.waitForIdle()
+        toTop(); shot("28-manage-charges-add")
+        rule.onAllNodes(hasContentDescription("Back")).onFirst().performClick(); rule.waitForIdle(); Thread.sleep(800)   // form → list
         // back to Home with the screens' own back arrows (a system Back could leave the app)
         repeat(3) { if (!has("Hello")) { rule.onAllNodes(hasContentDescription("Back")).onFirst().performClick(); rule.waitForIdle(); Thread.sleep(800) } }
         // Home → "Dues by tenant" → Neha Gupta opens her latest bill (made with electricity at ₹15 for this bill)

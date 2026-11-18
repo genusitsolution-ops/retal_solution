@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
@@ -130,6 +131,7 @@ fun OwnerTenantDetailScreen(
     openHistory: () -> Unit = {}, openDocument: (com.genusit.prms.domain.model.TenantDocType) -> Unit = {},
     openAllocation: (Int) -> Unit = {},
     openOpening: (Int) -> Unit = {}, recordOpening: (Int) -> Unit = {},
+    manageCharges: (Int) -> Unit = {},
 ) {
     val model: OwnerTenantDetailViewModel = hiltViewModel()
     val vm = model.tenant
@@ -172,6 +174,13 @@ fun OwnerTenantDetailScreen(
                                 androidx.compose.material3.Button(onClick = { com.genusit.prms.ui.common.sendWhatsAppMessage(ctx, msg) },
                                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF075E54), contentColor = androidx.compose.ui.graphics.Color.White)) {
                                     Icon(Icons.Filled.Share, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.wa_send_details))
+                                }
+                            }
+                            // 1.16: the charges of the tenant's current room
+                            t.deposits.firstOrNull { it.isActive }?.allocationId?.let { aid ->
+                                Spacer(Modifier.height(8.dp))
+                                androidx.compose.material3.OutlinedButton(onClick = { manageCharges(aid) }) {
+                                    Icon(Icons.Filled.Tune, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.manage_charges))
                                 }
                             }
                             Spacer(Modifier.height(8.dp))

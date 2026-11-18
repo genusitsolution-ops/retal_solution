@@ -174,6 +174,19 @@ class AddChargeUseCase @Inject constructor(private val repo: BillingRepository) 
     suspend operator fun invoke(c: NewCharge): CreatedId = repo.addCharge(c)
 }
 
+/* ───────── 1.16: Manage Charges of an allocated room ───────── */
+
+class GetRoomChargesUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.RoomChargesRepository) {
+    suspend operator fun invoke(allocationId: Int) = repo.roomCharges(allocationId)
+}
+
+class SaveRoomChargeUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.RoomChargesRepository) {
+    suspend fun add(allocationId: Int, i: com.genusit.prms.domain.model.RoomChargeInput) = repo.addRoomCharge(allocationId, i)
+    suspend fun update(id: Int, c: com.genusit.prms.domain.model.RoomChargeChange) = repo.updateRoomCharge(id, c)
+    suspend fun stop(id: Int, endDate: String) = repo.stopRoomCharge(id, endDate)
+    suspend fun restart(id: Int, startDate: String) = repo.restartRoomCharge(id, startDate)
+}
+
 /* ───────── allocations ───────── */
 
 class GetAllocationsUseCase @Inject constructor(private val repo: AllocationRepository) {

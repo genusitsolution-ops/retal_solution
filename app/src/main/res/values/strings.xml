@@ -903,4 +903,49 @@
     <string name="wa_open_failed">Could not open WhatsApp. Please try again.</string>
     <string name="wa_app_whatsapp" translatable="false">WhatsApp</string>
     <string name="wa_app_business" translatable="false">WhatsApp Business</string>
+    <!-- 1.16 Manage Charges / Generate Bill -->
+    <string name="manage_charges">Manage Charges</string>
+    <string name="charges_short">Charges</string>
+    <string name="rc_saved">Saved. The room\'s next bill uses it.</string>
+    <string name="rc_allocated_on">Allocated on %1$s</string>
+    <string name="rc_info">Charges here apply only to this room and tenant. Bills already generated are not changed.</string>
+    <string name="rc_not_ready">The server is not updated for this yet. Please ask the administrator to update the database.</string>
+    <string name="rc_add">Add a charge</string>
+    <string name="rc_vacated">This room was vacated. Its charges can no longer be changed.</string>
+    <string name="rc_every_month">Every month</string>
+    <string name="rc_none">No charges added to this room yet.</string>
+    <string name="rc_type_meter">Per unit (meter)</string>
+    <string name="rc_type_fixed">Fixed amount</string>
+    <string name="rc_one_time">One time</string>
+    <string name="rc_from_date">From %1$s</string>
+    <string name="rc_master_off">Switched off in Charge Master</string>
+    <string name="rc_stop">Stop</string>
+    <string name="rc_start_again">Start again</string>
+    <string name="rc_last_date">Last date</string>
+    <string name="rc_stop_hint">Bills for later months will not include this charge. The bill for the month of this date still includes it.</string>
+    <string name="rc_stop_charge">Stop charge</string>
+    <string name="rc_again_no_gap">The stop is removed. The charge continues every month without a gap.</string>
+    <string name="rc_effective_from">Effective from</string>
+    <string name="rc_edit_title">Edit charge: %1$s</string>
+    <string name="rc_add_title">Add a charge to this room</string>
+    <string name="rc_new_charge">+ New charge</string>
+    <string name="rc_charge">Charge</string>
+    <string name="rc_charge_name">Charge name</string>
+    <string name="rc_new_note">Also added to Charge Master. Other rooms are not changed.</string>
+    <string name="rc_unit">Unit</string>
+    <string name="rc_master_amount">Charge Master amount: %1$s</string>
+    <string name="rc_how_often">How often</string>
+    <string name="rc_one_time_hint">Added to the next bill only.</string>
+    <string name="rc_monthly_hint">Added to every bill from the date below.</string>
+    <string name="rc_meter_note">From Charge Master. Meter readings are entered on each bill.</string>
+    <string name="rc_start_hint">Bills for this month and later include it</string>
+    <string name="rc_date_before_alloc">The date cannot be before the room was allocated (%1$s).</string>
+    <string name="rc_remarks_optional">Remarks (optional)</string>
+    <string name="rc_fix_fields">Please fill in the fields marked in red.</string>
+    <string name="rc_add_button">Add charge</string>
+    <string name="rc_pick_date">Pick a date</string>
+    <string name="bill_add_room_charge">Add a charge to this room</string>
+    <string name="bill_total_note">Base rent + charges ticked above. Final amounts are checked again when the bill is saved.</string>
+    <string name="bill_this_bill_only">This bill only</string>
+    <string name="bill_rate_only_this">Applied to this bill only. Charge Master and future bills keep %1$s.</string>
 </resources>
