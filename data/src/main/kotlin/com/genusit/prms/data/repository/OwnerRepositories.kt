@@ -316,7 +316,8 @@ class RoomChargesRepositoryImpl @Inject constructor(
         caller.get(CreatedId.serializer()) {
             api.addRoomCharge(buildJsonObject {
                 put("allocation_id", allocationId)
-                if (i.newCharge != null) put("new_charge", caller.body(NewCharge.serializer(), i.newCharge)) else put("charge_id", i.chargeId ?: 0)
+                val nc = i.newCharge
+                if (nc != null) put("new_charge", caller.body(NewCharge.serializer(), nc)) else put("charge_id", i.chargeId ?: 0)
                 i.amount?.let { put("amount", it) }
                 put("frequency", i.frequency); put("start_date", i.startDate); put("remarks", i.remarks)
             })
