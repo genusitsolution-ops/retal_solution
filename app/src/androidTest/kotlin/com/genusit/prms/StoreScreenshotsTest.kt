@@ -67,6 +67,7 @@ class StoreScreenshotsTest {
             }
             rule.onRoot().performTouchInput { swipeUp() }; rule.waitForIdle(); Thread.sleep(400)
         }
+        if (!has(text)) shot("zz-not-found")   // what the screen showed when [text] could not be found
         waitText(text, 5_000)
     }
 
