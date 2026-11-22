@@ -77,13 +77,18 @@ class PropertySelectionTest {
 
     private class FakeBuildings(var page: BuildingPage? = null, var fail: ApiException? = null) : BuildingsRepository {
         val selects = mutableListOf<Int>(); var created: BuildingInput? = null; var failSelect = false
-        override suspend fun list(query: String, page: Int, perPage: Int, status: String, withDues: Boolean): BuildingPage { fail?.let { throw it }; return this.page!! }
+        override suspend fun list(query: String, page: Int, perPage: Int, status: String, withDues: Boolean): BuildingPage { fail?.let { throw it }; lastList = Triple(page, status, withDues); return this.page!! }
         override suspend fun get(id: Int) = Building(id = id)
         override suspend fun create(input: BuildingInput): Building { created = input; return Building(id = 9, name = input.name, city = input.city) }
         override suspend fun update(id: Int, input: BuildingInput) {}
         override suspend fun delete(id: Int) {}
         override suspend fun select(id: Int) { if (failSelect) throw ApiException("NETWORK_ERROR", "x", 0); selects += id }
         override suspend fun moveRooms(roomIds: List<Int>, toBuildingId: Int) = roomIds.size
+        val summaryFor = mutableListOf<Int?>(); var lastList: Triple<Int, String, Boolean>? = null
+        override suspend fun summary(buildingId: Int?): com.genusit.prms.domain.model.PropertySummary {
+            summaryFor += buildingId
+            return com.genusit.prms.domain.model.PropertySummary(totalRooms = 7, property = if (buildingId != null) Building(id = buildingId, name = "P", city = "Pune") else null)
+        }
     }
 
     private class FakeReports(private val scope: FakeScope, private val property: Building?) : ReportRepository {
@@ -146,5 +151,25 @@ class PropertySelectionTest {
         val scope = FakeScope().apply { flow.value = SelectedProperty(3, "x") }
         DeleteBuildingUseCase(FakeBuildings(), scope)(3)
         assertEquals(SelectedProperty(0), scope.flow.value)
+    }
+
+    @Test fun reportOfTheOpenProperty() = runTest {
+        val scope = FakeScope().apply { flow.value = SelectedProperty(4, "x") }
+        val repo = FakeBuildings(BuildingPage())
+        val r = com.genusit.prms.domain.usecase.GetPropertyReportUseCase(repo, scope)()
+        assertEquals(listOf<Int?>(4), repo.summaryFor); assertEquals(4, r.property?.id); assertNull(r.rows); assertNull(repo.lastList)
+    }
+
+    @Test fun reportOfAllPropertiesHasOneRowPerProperty() = runTest {
+        val scope = FakeScope().apply { flow.value = SelectedProperty(0) }
+        val repo = FakeBuildings(BuildingPage(items = listOf(pune, mumbai), total = 2, totalProperties = 2))
+        val r = com.genusit.prms.domain.usecase.GetPropertyReportUseCase(repo, scope)(2)
+        assertEquals(listOf<Int?>(null), repo.summaryFor); assertEquals(2, r.rows?.items?.size)
+        assertEquals(Triple(2, "all", true), repo.lastList)   // page 2, active and inactive properties, with money figures
+    }
+
+    @Test fun collectedFallsBackForOlderServers() {
+        assertEquals(500.0, com.genusit.prms.domain.model.PropertySummary(monthCollection = 500.0).collected)
+        assertEquals(700.0, com.genusit.prms.domain.model.PropertySummary(monthCollection = 500.0, monthCollected = 700.0).collected)
     }
 }

@@ -990,4 +990,26 @@
     <string name="prop_view_all_n">सभी देखें (%1$d)</string>
     <string name="prop_wise_line">%1$d कमरे · %2$d भरे · %3$d खाली</string>
     <string name="prop_wise_rooms">प्रॉपर्टी-वार कमरे</string>
+    <string name="prop_occupied_rooms">भरे कमरे</string>
+    <string name="prop_vacant_rooms">खाली कमरे</string>
+    <string name="prop_pct_occupied">%1$d%% भरे</string>
+    <string name="prop_ready_to_let">किराये के लिए तैयार</string>
+    <string name="prop_collected_month">इस महीने वसूल</string>
+    <string name="prop_billed_amount">बिल %1$s</string>
+    <string name="prop_pending_rent">बकाया किराया</string>
+    <string name="prop_overdue_amount">देय तिथि पार %1$s</string>
+    <string name="prop_nothing_overdue">कुछ भी देय तिथि पार नहीं</string>
+    <string name="prop_active_tenants">सक्रिय किरायेदार</string>
+    <string name="prop_collected_short">वसूल %1$s</string>
+    <string name="prop_pending_short">बकाया %1$s</string>
+    <string name="prop_maintenance">मरम्मत</string>
+    <string name="prop_report">प्रॉपर्टी रिपोर्ट</string>
+    <string name="prop_report_note">इस महीने का बिल और वसूली। बकाया = अभी तक देय पूरा किराया; देय तिथि पार = जिसकी देय तिथि निकल चुकी है।</string>
+    <string name="prop_rent_billed">इस महीने बिल किया किराया</string>
+    <string name="prop_rent_collected">इस महीने वसूला किराया</string>
+    <string name="prop_overdue">देय तिथि पार राशि</string>
+    <string name="prop_wise_report">प्रॉपर्टी-वार</string>
+    <string name="prop_tenants_n">%1$d किरायेदार</string>
+    <string name="prop_prev">पिछला</string>
+    <string name="prop_next">अगला</string>
 </resources>

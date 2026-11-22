@@ -289,6 +289,7 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     openSupport = { nav.navigate("owner/support") },
                     openVendor = { nav.navigate("owner/vendor") },
                     changeProperty = { nav.navigate("owner/property-picker") },
+                    openRooms = { status -> nav.navigate("owner/rooms/$status") },
                 )
             }
             composable(Routes.OWNER_TENANTS) { OwnerTenantsScreen(openTenant = { nav.navigate("owner/tenant/$it") }, addTenant = { nav.navigate("owner/tenant-form/0") }) }
@@ -340,6 +341,11 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
             composable(Routes.OWNER_PROPERTIES) {
                 // a bottom-bar tab: no back arrow when it is the current tab
                 PropertiesScreen(onBack = null,
+                    addProperty = { nav.navigate("owner/property/new") }, editProperty = { id -> nav.navigate("owner/property/edit/$id") })
+            }
+            // 1.17: the rooms behind a Home figure (occupied / vacant), opened with that filter
+            composable("owner/rooms/{status}", listOf(navArgument("status") { type = NavType.StringType })) {
+                PropertiesScreen(onBack = back, initialStatus = it.arguments?.getString("status").orEmpty(),
                     addProperty = { nav.navigate("owner/property/new") }, editProperty = { id -> nav.navigate("owner/property/edit/$id") })
             }
             composable("owner/property/edit/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
@@ -407,7 +413,11 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
             composable("owner/query/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
                 QueryDetailScreen(it.arguments?.getInt("id") ?: 0, Role.OWNER, onBack = back)
             }
-            composable("owner/reports") { ReportsScreen(onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") }, openReceipt = openReceipt) }
+            composable("owner/reports") {
+                ReportsScreen(onBack = back, openInvoice = { id -> nav.navigate("owner/invoice/$id") }, openReceipt = openReceipt,
+                    openRooms = { st -> if (st.isEmpty()) nav.navigateTab(Routes.OWNER_PROPERTIES) else nav.navigate("owner/rooms/$st") },
+                    openPayments = { nav.navigate("owner/payments?period=month") }, openDues = { nav.navigate("owner/bills/tenants") })
+            }
             composable("owner/referrals") { ReferralScreen(onBack = back) }
             composable("owner/vendor") { com.genusit.prms.ui.owner.VendorDashboardScreen(onBack = back) }
             composable("owner/collections-hub") {

@@ -133,4 +133,19 @@ class PropertyScopeApiTest {
         assertEquals(404, e.httpStatus)
         assertTrue(com.genusit.prms.domain.usecase.PropertySelection.unsupported(e))
     }
+
+    @Test fun reportFiguresDecode() = runTest {
+        enqueue(200, """{"status":"success","data":{"total_rooms":12,"occupied_rooms":5,"available_rooms":6,"maintenance_rooms":1,"occupancy_pct":42,
+            "active_tenants":"5","month_billed":"26000.00","month_collected":8000,"month_collection":8000,"pending_rent":"18000.00","overdue_amount":"5000.50","overdue_bills":1,"collection_pct":31,"properties":3}}""")
+        val s = buildings.summary(null)
+        assertEquals("/api/v1/owner/buildings.php?summary=1", server.takeRequest().path)
+        assertEquals(5, s.activeTenants); assertEquals(26000.0, s.monthBilled); assertEquals(8000.0, s.collected); assertEquals(5000.5, s.overdueAmount); assertEquals(31, s.collectionPct)
+        enqueue(200, """{"status":"success","data":{"total_rooms":4,"property":{"id":2,"name":"Sea View","city":"Mumbai"}}}""")
+        assertEquals("Mumbai – Sea View", buildings.summary(2).property?.title)
+        assertEquals("/api/v1/owner/buildings.php?summary=1&building_id=2", server.takeRequest().path)
+        enqueue(200, """{"status":"success","data":{"items":[{"id":2,"name":"Sea View","city":"Mumbai","pending_dues":"13000.00","overdue":"0","month_billed":16000,"month_collected":"3000","active_tenants":2}],"total":1,"page":1,"pages":1,"total_properties":3}}""")
+        val p = buildings.list(page = 1, perPage = 20, status = "all", withDues = true)
+        assertEquals("/api/v1/owner/buildings.php?page=1&per_page=20&status=all&dues=1", server.takeRequest().path)
+        assertEquals(13000.0, p.items[0].pendingDues); assertEquals(3000.0, p.items[0].monthCollected); assertEquals(2, p.items[0].activeTenants)
+    }
 }

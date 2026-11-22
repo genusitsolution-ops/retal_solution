@@ -39,6 +39,11 @@ data class Building(
     val tenants: Int = 0,
     @SerialName("occupancy_pct") val occupancyPct: Int = 0,
     @SerialName("pending_dues") val pendingDues: Double = 0.0,
+    /** Report figures (sent with ?dues=1): tenants living there now, this month's bills / payments, overdue part of the dues. */
+    @SerialName("active_tenants") val activeTenants: Int = 0,
+    @SerialName("month_billed") val monthBilled: Double = 0.0,
+    @SerialName("month_collected") val monthCollected: Double = 0.0,
+    val overdue: Double = 0.0,
 ) {
     val title: String get() = label?.takeIf { it.isNotBlank() } ?: listOf(city, name).filter { it.isNotBlank() }.joinToString(" – ")
     val active: Boolean get() = status == "active"
@@ -76,6 +81,25 @@ data class PropertySummary(
     @SerialName("employees_assigned") val employeesAssigned: Int = 0,
     /** Only with All Properties. */
     val properties: Int? = null,
+    /** Report figures: tenants with an active room (each once), this month's billed / collected, the overdue part of pending. */
+    @SerialName("active_tenants") val activeTenants: Int = 0,
+    @SerialName("month_billed") val monthBilled: Double = 0.0,
+    @SerialName("month_collected") val monthCollected: Double = 0.0,
+    @SerialName("overdue_amount") val overdueAmount: Double = 0.0,
+    @SerialName("overdue_bills") val overdueBills: Int = 0,
+    @SerialName("collection_pct") val collectionPct: Int = 0,
+    /** With ?summary=1&building_id=N the server adds the property itself. */
+    val property: Building? = null,
+) {
+    /** Collected this month (older servers send only month_collection). */
+    val collected: Double get() = if (monthCollected > 0.0) monthCollected else monthCollection
+}
+
+/** The Property Report: figures of the selected property, and with All Properties one row per property (paged). */
+data class PropertyReport(
+    val summary: PropertySummary,
+    val property: Building? = null,
+    val rows: BuildingPage? = null,
 )
 
 /** What the owner types on the Add / Edit Property screen. */

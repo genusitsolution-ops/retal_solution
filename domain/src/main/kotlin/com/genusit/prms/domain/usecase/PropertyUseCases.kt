@@ -43,7 +43,7 @@ class GetOwnerHomeUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(): OwnerDashboard {
         val page = try {
-            buildings.list(page = 1, perPage = 5)
+            buildings.list(page = 1, perPage = 5, withDues = true)
         } catch (e: CancellationException) {
             throw e
         } catch (e: ApiException) {
@@ -63,7 +63,7 @@ class GetOwnerHomeUseCase @Inject constructor(
 }
 
 class ListPropertiesUseCase @Inject constructor(private val repo: BuildingsRepository) {
-    suspend operator fun invoke(query: String, page: Int, status: String = "active") = repo.list(query.trim(), page, 20, status, withDues = false)
+    suspend operator fun invoke(query: String, page: Int, status: String = "active") = repo.list(query.trim(), page, 20, status, withDues = true)
 }
 
 class GetBuildingUseCase @Inject constructor(private val repo: BuildingsRepository) {
@@ -103,5 +103,18 @@ class DeleteBuildingUseCase @Inject constructor(private val repo: BuildingsRepos
     suspend operator fun invoke(id: Int) {
         repo.delete(id)
         if (scope.currentId() == id) scope.set(SelectedProperty(0))
+    }
+}
+
+/**
+ * The Property Report of the property that is open: its summary; with All Properties also one row per property
+ * (20 per page, from the server). The server counts every figure.
+ */
+class GetPropertyReportUseCase @Inject constructor(private val repo: BuildingsRepository, private val scope: PropertyScope) {
+    suspend operator fun invoke(page: Int = 1): com.genusit.prms.domain.model.PropertyReport {
+        val id = scope.currentId()
+        val summary = repo.summary(id)
+        return if (id != null) com.genusit.prms.domain.model.PropertyReport(summary, property = summary.property)
+        else com.genusit.prms.domain.model.PropertyReport(summary, rows = repo.list(page = page, perPage = 20, status = "all", withDues = true))
     }
 }

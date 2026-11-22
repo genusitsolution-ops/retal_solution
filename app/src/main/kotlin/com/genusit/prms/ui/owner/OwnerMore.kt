@@ -1,5 +1,6 @@
 package com.genusit.prms.ui.owner
 
+import androidx.compose.foundation.horizontalScroll
 import com.genusit.prms.ui.common.ScreenEvent
 import com.genusit.prms.ui.common.EventEffect
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -129,7 +130,9 @@ fun OwnerMoreScreen(open: (String) -> Unit) {
 }
 
 @Composable
-fun PropertiesScreen(onBack: (() -> Unit)?, addProperty: () -> Unit, editProperty: (Int) -> Unit = {}) {
+fun PropertiesScreen(onBack: (() -> Unit)?, addProperty: () -> Unit, editProperty: (Int) -> Unit = {}, initialStatus: String = "") {
+    // 1.17: All / Occupied / Vacant / Maintenance — the same room statuses the server counts on Home
+    var filter by rememberSaveable { mutableStateOf(initialStatus.takeIf { it in listOf("occupied", "available", "maintenance") }.orEmpty()) }
     val vm = hiltViewModel<PropertiesViewModel>().properties
     val state by vm.state.collectAsStateWithLifecycle()
     // reload when coming back from "add property"
@@ -143,9 +146,20 @@ fun PropertiesScreen(onBack: (() -> Unit)?, addProperty: () -> Unit, editPropert
     ) { outer ->
         ScreenScaffold(stringResource(R.string.properties), onBack = onBack) { pad ->
             StateContent(state, vm::refresh, Modifier.padding(pad).padding(outer)) { list ->
+                val shown = if (filter.isEmpty()) list else list.filter { it.status == filter }
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (list.isEmpty()) item { EmptyState(stringResource(R.string.no_properties), Icons.Filled.MeetingRoom) }
-                    items(list, key = { it.id }) { p ->
+                    if (list.isNotEmpty()) item(key = "filter") {
+                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("" to R.string.all, "occupied" to R.string.prop_occupied, "available" to R.string.prop_vacant, "maintenance" to R.string.prop_maintenance)
+                                .filter { (k, _) -> k != "maintenance" || list.any { it.status == "maintenance" } || filter == "maintenance" }
+                                .forEach { (k, label) ->
+                                    val n = if (k.isEmpty()) list.size else list.count { it.status == k }
+                                    androidx.compose.material3.FilterChip(selected = filter == k, onClick = { filter = k }, label = { Text(stringResource(label) + "  " + n) })
+                                }
+                        }
+                    }
+                    if (shown.isEmpty()) item { EmptyState(stringResource(R.string.no_properties), Icons.Filled.MeetingRoom) }
+                    items(shown, key = { it.id }) { p ->
                         AppCard(onClick = { editProperty(p.id) }) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconBadge(Icons.Filled.MeetingRoom, if (p.status == "occupied") Palette.Info else Palette.Success)

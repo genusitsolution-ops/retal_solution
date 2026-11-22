@@ -234,6 +234,10 @@ interface PrmsApiService {
     @GET("owner/buildings.php")
     suspend fun building(@Query("id") id: Int): Response<ResponseBody>
 
+    /** Report figures of one property (building_id) or of all properties. */
+    @GET("owner/buildings.php")
+    suspend fun buildingSummary(@Query("summary") summary: Int, @Query("building_id") buildingId: Int?): Response<ResponseBody>
+
     @POST("owner/buildings.php")
     suspend fun createBuilding(@Body body: JsonObject): Response<ResponseBody>
 

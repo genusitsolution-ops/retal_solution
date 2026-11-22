@@ -250,6 +250,8 @@ interface BuildingsRepository {
     /** Remembers the selection on the server (0 = All Properties), so the website and the next login open it. */
     suspend fun select(id: Int)
     suspend fun moveRooms(roomIds: List<Int>, toBuildingId: Int): Int
+    /** Report figures of one property (id > 0) or of all properties (null / 0). */
+    suspend fun summary(buildingId: Int?): com.genusit.prms.domain.model.PropertySummary
 }
 
 /**

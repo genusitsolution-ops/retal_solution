@@ -393,9 +393,13 @@ fun QueryDetailScreen(id: Int, role: Role, onBack: () -> Unit) {
 /* ═════════════════════════ reports ═════════════════════════ */
 
 @Composable
-fun ReportsScreen(onBack: () -> Unit, openInvoice: (Int) -> Unit, openReceipt: (String) -> Unit) {
+fun ReportsScreen(
+    onBack: () -> Unit, openInvoice: (Int) -> Unit, openReceipt: (String) -> Unit,
+    openRooms: (String) -> Unit = {}, openPayments: () -> Unit = {}, openDues: () -> Unit = {},
+) {
     val model: ReportsViewModel = hiltViewModel()
-    var tab by rememberSaveable { mutableStateOf(0) }
+    // 1.17: tab 3 = Property report (this month's figures of the open property / each property)
+    var tab by rememberSaveable { mutableStateOf(3) }
     val today = Dates.today()
     var from by rememberSaveable { mutableStateOf(today.substring(0, 8) + "01") }
     var to by rememberSaveable { mutableStateOf(today) }
@@ -403,18 +407,20 @@ fun ReportsScreen(onBack: () -> Unit, openInvoice: (Int) -> Unit, openReceipt: (
     ScreenScaffold(stringResource(R.string.reports), onBack = onBack) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             Row(Modifier.padding(16.dp, 4.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = tab == 3, onClick = { tab = 3 }, label = { Text(stringResource(R.string.prop_report)) })
                 listOf(R.string.collections_report, R.string.revenue_report, R.string.pending_report).forEachIndexed { i, l ->
                     FilterChip(selected = tab == i, onClick = { tab = i }, label = { Text(stringResource(l)) })
                 }
             }
-            if (tab != 2) Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (tab == 0 || tab == 1) Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(Modifier.weight(1f)) { FormField(from, { from = it.filter { c -> c.isDigit() || c == '-' }.take(10) }, stringResource(R.string.from_date), Dates.parse(from) == null) }
                 Column(Modifier.weight(1f)) { FormField(to, { to = it.filter { c -> c.isDigit() || c == '-' }.take(10) }, stringResource(R.string.to_date), Dates.parse(to) == null) }
             }
             when (tab) {
                 0 -> if (rangeOk) CollectionsReportBody(model, from, to, openReceipt)
                 1 -> if (rangeOk) RevenueReportBody(model, from, to)
-                else -> PendingReportBody(model, openInvoice)
+                2 -> PendingReportBody(model, openInvoice)
+                else -> PropertyReportBody(openRooms, openPayments, openDues)
             }
         }
     }

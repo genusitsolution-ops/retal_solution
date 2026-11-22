@@ -992,4 +992,26 @@
     <string name="prop_view_all_n">View all (%1$d)</string>
     <string name="prop_wise_line">%1$d rooms · %2$d occupied · %3$d vacant</string>
     <string name="prop_wise_rooms">Property-wise rooms</string>
+    <string name="prop_occupied_rooms">Occupied rooms</string>
+    <string name="prop_vacant_rooms">Vacant rooms</string>
+    <string name="prop_pct_occupied">%1$d%% occupied</string>
+    <string name="prop_ready_to_let">Ready to let</string>
+    <string name="prop_collected_month">Collected this month</string>
+    <string name="prop_billed_amount">Billed %1$s</string>
+    <string name="prop_pending_rent">Pending rent</string>
+    <string name="prop_overdue_amount">Overdue %1$s</string>
+    <string name="prop_nothing_overdue">Nothing overdue</string>
+    <string name="prop_active_tenants">Active tenants</string>
+    <string name="prop_collected_short">Collected %1$s</string>
+    <string name="prop_pending_short">Pending %1$s</string>
+    <string name="prop_maintenance">Maintenance</string>
+    <string name="prop_report">Property report</string>
+    <string name="prop_report_note">This month\'s billing and collection. Pending is all rent still due; overdue is the part past its due date.</string>
+    <string name="prop_rent_billed">Rent billed this month</string>
+    <string name="prop_rent_collected">Rent collected this month</string>
+    <string name="prop_overdue">Overdue amount</string>
+    <string name="prop_wise_report">Property-wise</string>
+    <string name="prop_tenants_n">%1$d tenants</string>
+    <string name="prop_prev">Previous</string>
+    <string name="prop_next">Next</string>
 </resources>

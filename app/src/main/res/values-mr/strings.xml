@@ -990,4 +990,26 @@
     <string name="prop_view_all_n">सर्व पहा (%1$d)</string>
     <string name="prop_wise_line">%1$d खोल्या · %2$d भरलेल्या · %3$d रिकाम्या</string>
     <string name="prop_wise_rooms">प्रॉपर्टीनुसार खोल्या</string>
+    <string name="prop_occupied_rooms">भरलेल्या खोल्या</string>
+    <string name="prop_vacant_rooms">रिकाम्या खोल्या</string>
+    <string name="prop_pct_occupied">%1$d%% भरलेल्या</string>
+    <string name="prop_ready_to_let">भाड्याने देण्यास तयार</string>
+    <string name="prop_collected_month">या महिन्यात वसूल</string>
+    <string name="prop_billed_amount">बिल %1$s</string>
+    <string name="prop_pending_rent">बाकी भाडे</string>
+    <string name="prop_overdue_amount">थकीत %1$s</string>
+    <string name="prop_nothing_overdue">काहीही थकीत नाही</string>
+    <string name="prop_active_tenants">सक्रिय भाडेकरू</string>
+    <string name="prop_collected_short">वसूल %1$s</string>
+    <string name="prop_pending_short">बाकी %1$s</string>
+    <string name="prop_maintenance">दुरुस्ती</string>
+    <string name="prop_report">प्रॉपर्टी अहवाल</string>
+    <string name="prop_report_note">या महिन्याचे बिल आणि वसुली. बाकी = अजून येणे असलेले सर्व भाडे; थकीत = ज्याची देय तारीख उलटली आहे.</string>
+    <string name="prop_rent_billed">या महिन्यात बिल केलेले भाडे</string>
+    <string name="prop_rent_collected">या महिन्यात वसूल भाडे</string>
+    <string name="prop_overdue">थकीत रक्कम</string>
+    <string name="prop_wise_report">प्रॉपर्टीनुसार</string>
+    <string name="prop_tenants_n">%1$d भाडेकरू</string>
+    <string name="prop_prev">मागील</string>
+    <string name="prop_next">पुढील</string>
 </resources>

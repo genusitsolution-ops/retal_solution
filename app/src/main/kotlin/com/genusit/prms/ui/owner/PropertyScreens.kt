@@ -72,6 +72,7 @@ import com.genusit.prms.domain.usecase.GetBuildingUseCase
 import com.genusit.prms.domain.usecase.ListPropertiesUseCase
 import com.genusit.prms.domain.usecase.SavePropertyUseCase
 import com.genusit.prms.domain.usecase.SelectPropertyUseCase
+import com.genusit.prms.domain.util.Money
 import com.genusit.prms.ui.common.ActionError
 import com.genusit.prms.ui.common.ActionState
 import com.genusit.prms.ui.common.AppCard
@@ -141,12 +142,17 @@ fun OccupancyFigures(total: Int, occupied: Int, vacant: Int, pct: Int) {
 }
 
 /**
- * Top of the owner's Home: which property is open (or All Properties), its room summary with an occupancy bar,
- * and one big "Change" button. Tapping the figures opens the rooms.
+ * Top of the owner's Home: which property is open (with one big "Change" button) and the four things an owner
+ * checks first — occupied rooms, vacant rooms, rent collected this month, rent pending (overdue part in red).
+ * Each figure opens the list behind it. Every number comes from the server.
  */
 @Composable
-fun PropertyHeaderCard(title: String, typeLabel: String?, summary: PropertySummary?, onChange: () -> Unit, onRooms: () -> Unit) {
-    AppCard(onClick = onRooms) {
+fun PropertyHeaderCard(
+    title: String, typeLabel: String?, summary: PropertySummary?, onChange: () -> Unit, onRooms: () -> Unit,
+    onOccupied: () -> Unit = onRooms, onVacant: () -> Unit = onRooms, onCollected: () -> Unit = {}, onPending: () -> Unit = {},
+    onTenants: () -> Unit = {}, onComplaints: () -> Unit = {},
+) {
+    AppCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(Palette.TealSoft), contentAlignment = Alignment.Center) {
@@ -162,11 +168,67 @@ fun PropertyHeaderCard(title: String, typeLabel: String?, summary: PropertySumma
                 }
             }
             if (summary != null) {
-                OccupancyFigures(summary.totalRooms, summary.occupiedRooms, summary.vacantRooms, summary.occupancyPct)
-                OccupancyBar(summary.occupancyPct)
-                if (summary.maintenanceRooms > 0) Text(stringResource(R.string.prop_maintenance_n, summary.maintenanceRooms), style = MaterialTheme.typography.labelMedium, color = Palette.Muted)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FigureTile(stringResource(R.string.prop_occupied_rooms), "${summary.occupiedRooms}", "/ ${summary.totalRooms}", Palette.Success,
+                        stringResource(R.string.prop_pct_occupied, summary.occupancyPct), summary.occupancyPct, occupancyColor(summary.occupancyPct), onOccupied, Modifier.weight(1f))
+                    FigureTile(stringResource(R.string.prop_vacant_rooms), "${summary.vacantRooms}", null, Palette.Warning,
+                        if (summary.maintenanceRooms > 0) stringResource(R.string.prop_maintenance_n, summary.maintenanceRooms) else stringResource(R.string.prop_ready_to_let),
+                        null, Palette.Warning, onVacant, Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FigureTile(stringResource(R.string.prop_collected_month), Money.format(summary.collected, decimals = 0), null, Palette.Teal,
+                        stringResource(R.string.prop_billed_amount, Money.format(summary.monthBilled, decimals = 0)),
+                        if (summary.monthBilled > 0) summary.collectionPct else null, Palette.Success, onCollected, Modifier.weight(1f))
+                    FigureTile(stringResource(R.string.prop_pending_rent), Money.format(summary.pendingRent, decimals = 0), null, Palette.Danger,
+                        if (summary.overdueAmount > 0) stringResource(R.string.prop_overdue_amount, Money.format(summary.overdueAmount, decimals = 0)) else stringResource(R.string.prop_nothing_overdue),
+                        null, Palette.Danger, onPending, Modifier.weight(1f), subColor = if (summary.overdueAmount > 0) Palette.Danger else Palette.Muted)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SmallFact(stringResource(R.string.prop_active_tenants), summary.activeTenants, onTenants)
+                    SmallFact(stringResource(R.string.open_queries), summary.openComplaints, onComplaints)
+                }
             }
         }
+    }
+}
+
+/** One big figure with its label, a short line under it and (optionally) a progress bar; tapping opens its list. */
+@Composable
+private fun FigureTile(
+    label: String, value: String, suffix: String?, accent: Color, sub: String, barPct: Int?, barColor: Color,
+    onClick: () -> Unit, modifier: Modifier = Modifier, subColor: Color = Palette.Muted,
+) {
+    Column(
+        modifier.clip(RoundedCornerShape(14.dp)).background(accent.copy(alpha = 0.08f)).clickable(onClick = onClick).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Palette.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (suffix != null) { Spacer(Modifier.width(4.dp)); Text(suffix, style = MaterialTheme.typography.titleSmall, color = Palette.Muted, modifier = Modifier.padding(bottom = 2.dp)) }
+        }
+        if (barPct != null) OccupancyBarColored(barPct, barColor)
+        Text(sub, style = MaterialTheme.typography.labelMedium, color = subColor, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun SmallFact(label: String, value: Int, onClick: () -> Unit) {
+    Row(
+        Modifier.clip(RoundedCornerShape(50)).background(Palette.Line.copy(alpha = 0.5f)).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = Palette.Muted)
+        Spacer(Modifier.width(6.dp))
+        Text(value.toString(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Palette.Ink)
+    }
+}
+
+@Composable
+private fun OccupancyBarColored(pct: Int, color: Color) {
+    val p = pct.coerceIn(0, 100) / 100f
+    Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(6.dp)).background(Palette.Line)) {
+        if (p > 0f) Box(Modifier.fillMaxWidth(p).height(8.dp).clip(RoundedCornerShape(6.dp)).background(color))
     }
 }
 
@@ -192,6 +254,11 @@ fun PropertyRow(b: Building, selected: Boolean, onClick: () -> Unit, onEdit: (()
                 if (onEdit != null) IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, stringResource(R.string.prop_edit), tint = Palette.Brand) }
             }
             OccupancyBar(b.occupancyPct)
+            if (b.pendingDues > 0 || b.monthCollected > 0) Row {
+                Text(stringResource(R.string.prop_collected_short, Money.format(b.monthCollected, decimals = 0)), style = MaterialTheme.typography.labelMedium, color = Palette.Success, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.prop_pending_short, Money.format(b.pendingDues, decimals = 0)), style = MaterialTheme.typography.labelMedium,
+                    color = if (b.pendingDues > 0) Palette.Danger else Palette.Muted, fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
@@ -211,7 +278,10 @@ fun PropertyWiseCard(cards: List<Building>, total: Int, onOpen: (Building) -> Un
                         Text(b.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Palette.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                         Text("${b.occupancyPct}%", fontWeight = FontWeight.ExtraBold, color = occupancyColor(b.occupancyPct))
                     }
-                    Text(stringResource(R.string.prop_wise_line, b.rooms, b.occupied, b.available), style = MaterialTheme.typography.labelMedium, color = Palette.Muted)
+                    Row {
+                        Text(stringResource(R.string.prop_wise_line, b.rooms, b.occupied, b.available), style = MaterialTheme.typography.labelMedium, color = Palette.Muted, modifier = Modifier.weight(1f))
+                        if (b.pendingDues > 0) Text(stringResource(R.string.prop_pending_short, Money.format(b.pendingDues, decimals = 0)), style = MaterialTheme.typography.labelMedium, color = Palette.Danger, fontWeight = FontWeight.SemiBold)
+                    }
                     OccupancyBar(b.occupancyPct)
                 }
             }
@@ -435,4 +505,95 @@ private fun PropertyForm(model: PropertyFormViewModel, b: Building?) {
     }
     if (askDelete) ConfirmDialog(stringResource(R.string.prop_delete), stringResource(R.string.prop_delete_confirm), stringResource(R.string.prop_delete),
         onConfirm = { askDelete = false; model.delete() }, onDismiss = { askDelete = false })
+}
+
+/* ═════════════════════════ property report ═════════════════════════ */
+
+@HiltViewModel
+class PropertyReportViewModel @Inject constructor(
+    private val getReport: com.genusit.prms.domain.usecase.GetPropertyReportUseCase,
+    private val selectProperty: SelectPropertyUseCase,
+    expiry: SessionExpiryHandler,
+) : BaseViewModel(expiry) {
+    private var page = 1
+    val report = loadable(live = true) { getReport(page) }
+    val selectAction = action<Unit>()
+    fun goTo(p: Int) { page = p.coerceAtLeast(1); report.refresh() }
+    fun open(b: Building) = selectAction.run { selectProperty(b.id, b.title) }
+}
+
+/**
+ * Reports → Property: this month's figures of the property that is open; with All Properties one row per
+ * property (20 per page) and the combined total. Tapping a property opens it.
+ */
+@Composable
+fun PropertyReportBody(openRooms: (String) -> Unit, openPayments: () -> Unit, openDues: () -> Unit) {
+    val model: PropertyReportViewModel = hiltViewModel()
+    val st by model.report.state.collectAsStateWithLifecycle()
+    StateContent(st, model.report::refresh) { r ->
+        val s = r.summary
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item {
+                Text(r.property?.title ?: stringResource(R.string.prop_all), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = Palette.Ink)
+                Text(stringResource(R.string.prop_report_note), style = MaterialTheme.typography.labelMedium, color = Palette.Muted)
+            }
+            item {
+                AppCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        @Composable
+                        fun line(label: Int, value: String, color: Color = Palette.Ink, onClick: (() -> Unit)? = null) = Row(
+                            Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(stringResource(label), style = MaterialTheme.typography.bodyMedium, color = Palette.Muted, modifier = Modifier.weight(1f))
+                            Text(value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = color)
+                        }
+                        line(R.string.prop_total_rooms, s.totalRooms.toString(), onClick = { openRooms("") })
+                        line(R.string.prop_occupied_rooms, s.occupiedRooms.toString(), Palette.Success) { openRooms("occupied") }
+                        line(R.string.prop_vacant_rooms, s.vacantRooms.toString(), Palette.Warning) { openRooms("available") }
+                        line(R.string.prop_occupancy, "${s.occupancyPct}%", occupancyColor(s.occupancyPct))
+                        OccupancyBar(s.occupancyPct)
+                        line(R.string.prop_active_tenants, s.activeTenants.toString())
+                        line(R.string.prop_rent_billed, Money.format(s.monthBilled))
+                        line(R.string.prop_rent_collected, Money.format(s.collected), Palette.Success, openPayments)
+                        line(R.string.prop_pending_rent, Money.format(s.pendingRent), Palette.Warning, openDues)
+                        line(R.string.prop_overdue, Money.format(s.overdueAmount), if (s.overdueAmount > 0) Palette.Danger else Palette.Ink, openDues)
+                    }
+                }
+            }
+            val rows = r.rows
+            if (rows != null && rows.items.isNotEmpty()) {
+                item { Text(stringResource(R.string.prop_wise_report), style = MaterialTheme.typography.titleMedium, color = Palette.Ink, modifier = Modifier.padding(top = 6.dp)) }
+                items(rows.items, key = { "r" + it.id }) { b ->
+                    AppCard(onClick = { model.open(b) }) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(b.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Palette.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(b.city, style = MaterialTheme.typography.labelMedium, color = Palette.Muted)
+                                }
+                                Text("${b.occupancyPct}%", fontWeight = FontWeight.ExtraBold, color = occupancyColor(b.occupancyPct))
+                            }
+                            Text(stringResource(R.string.prop_wise_line, b.rooms, b.occupied, b.available) + " · " + stringResource(R.string.prop_tenants_n, b.activeTenants),
+                                style = MaterialTheme.typography.labelMedium, color = Palette.Muted)
+                            OccupancyBar(b.occupancyPct)
+                            Row {
+                                Text(stringResource(R.string.prop_collected_short, Money.format(b.monthCollected, decimals = 0)), style = MaterialTheme.typography.labelMedium, color = Palette.Success, modifier = Modifier.weight(1f))
+                                Text(stringResource(R.string.prop_pending_short, Money.format(b.pendingDues, decimals = 0)), style = MaterialTheme.typography.labelMedium,
+                                    color = if (b.pendingDues > 0) Palette.Danger else Palette.Muted, fontWeight = FontWeight.SemiBold)
+                            }
+                            if (b.overdue > 0) Text(stringResource(R.string.prop_overdue_amount, Money.format(b.overdue, decimals = 0)), style = MaterialTheme.typography.labelMedium, color = Palette.Danger)
+                        }
+                    }
+                }
+                if (rows.pages > 1) item {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(onClick = { model.goTo(rows.page - 1) }, enabled = rows.page > 1) { Text(stringResource(R.string.prop_prev)) }
+                        Text("${rows.page} / ${rows.pages}", color = Palette.Muted)
+                        OutlinedButton(onClick = { model.goTo(rows.page + 1) }, enabled = rows.hasMore) { Text(stringResource(R.string.prop_next)) }
+                    }
+                }
+            }
+        }
+    }
 }

@@ -5,6 +5,7 @@ import com.genusit.prms.data.remote.PrmsApiService
 import com.genusit.prms.domain.model.Building
 import com.genusit.prms.domain.model.BuildingInput
 import com.genusit.prms.domain.model.BuildingPage
+import com.genusit.prms.domain.model.PropertySummary
 import com.genusit.prms.domain.repository.BuildingsRepository
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
@@ -46,6 +47,9 @@ class BuildingsRepositoryImpl @Inject constructor(
         }
         return runCatching { data.jsonObject["moved"]!!.jsonPrimitive.int }.getOrDefault(roomIds.size)
     }
+
+    override suspend fun summary(buildingId: Int?): PropertySummary =
+        caller.get(PropertySummary.serializer()) { api.buildingSummary(1, buildingId?.takeIf { it > 0 }) }
 
     private fun body(i: BuildingInput): JsonObject = buildJsonObject {
         put("name", i.name); put("city", i.city); put("property_type", i.type)

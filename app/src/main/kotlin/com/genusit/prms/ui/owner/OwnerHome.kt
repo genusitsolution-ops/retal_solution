@@ -71,6 +71,8 @@ fun OwnerHomeScreen(
     openSupport: () -> Unit = {},
     openVendor: () -> Unit = {},
     changeProperty: () -> Unit = {},
+    /** 1.17: the rooms behind a figure ("occupied" / "available"). */
+    openRooms: (String) -> Unit = { openProperties() },
 ) {
     val model: OwnerHomeViewModel = hiltViewModel()
     val vm = model.dashboard
@@ -107,13 +109,18 @@ fun OwnerHomeScreen(
                             title = d.property?.title ?: stringResource(R.string.prop_all),
                             typeLabel = d.property?.typeLabel ?: d.propertySummary?.properties?.let { stringResource(R.string.prop_count_n, it) },
                             summary = d.propertySummary, onChange = changeProperty, onRooms = openProperties,
+                            onOccupied = { openRooms("occupied") }, onVacant = { openRooms("available") },
+                            onCollected = openPayments, onPending = if (s.duesTenants != null) openDuesByTenant else openDueInvoices,
+                            onTenants = openTenants, onComplaints = openOpenQueries,
                         )
                     }
                     if (d.property == null && d.propertyCards.size > 1) item(key = "property-wise") {
                         PropertyWiseCard(d.propertyCards, d.totalProperties, onOpen = model::open, onViewAll = changeProperty)
                     }
                 }
-                item {
+                // the property card above already shows rooms, collected and pending: no second copy of them
+                val keyFigures = d.totalProperties > 0 && d.propertySummary != null
+                if (!keyFigures) item {
                     // same rows and the same dates as Payments → "This month"
                     WalletCard(
                         label = stringResource(R.string.collected_in_month, monthYearText(s.monthFrom)),
@@ -127,7 +134,7 @@ fun OwnerHomeScreen(
                         )
                     }
                 }
-                item {
+                if (!keyFigures) item {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Max)) {
                         // 1.10: counted per tenant (all unpaid months of a tenant together) when the server sends it
                         val duesLabel = s.duesTenants?.let { stringResource(R.string.tenants_with_dues_n, it) } ?: stringResource(R.string.pending_invoices_n, s.pendingInvoices)
