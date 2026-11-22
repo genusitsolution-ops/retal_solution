@@ -51,12 +51,18 @@ internal fun SessionRepository.userNameIn(vm: BaseViewModel): StateFlow<String> 
 
 @HiltViewModel
 class OwnerHomeViewModel @Inject constructor(
-    getDashboard: GetOwnerDashboardUseCase,
+    getHome: com.genusit.prms.domain.usecase.GetOwnerHomeUseCase,
+    private val selectProperty: com.genusit.prms.domain.usecase.SelectPropertyUseCase,
     session: SessionRepository,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
-    val dashboard = loadable(live = true) { getDashboard() }
+    /** 1.17: the selected property's dashboard (the property list is read first to know which one). */
+    val dashboard = loadable(live = true) { getHome() }
     val userName: StateFlow<String> = session.userNameIn(this)
+    val selectAction = action<Unit>()
+
+    /** Opens one property from the All Properties summary (every screen then shows only that property). */
+    fun open(b: com.genusit.prms.domain.model.Building) = selectAction.run { selectProperty(b.id, b.title) }
 }
 
 /* ═════════════════════════ tenants ═════════════════════════ */

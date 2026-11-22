@@ -427,7 +427,7 @@ fun ChargesScreen(onBack: () -> Unit) {
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = { ExtendedFloatingActionButton(onClick = { adding = true }, icon = { Icon(Icons.Filled.Add, null) }, text = { Text(stringResource(R.string.add_charge)) }) },
     ) { outer ->
-        ScreenScaffold(stringResource(R.string.charges), onBack = onBack) { pad ->
+        ScreenScaffold(stringResource(R.string.charges), onBack = onBack, subtitle = stringResource(R.string.prop_charges_shared)) { pad ->
             StateContent(state, vm::refresh, Modifier.padding(pad).padding(outer)) { list ->
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     item { Text(stringResource(R.string.charges_sub), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }

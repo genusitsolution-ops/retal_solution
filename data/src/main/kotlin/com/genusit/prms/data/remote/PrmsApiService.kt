@@ -223,6 +223,33 @@ interface PrmsApiService {
     @GET("owner/allocations.php")
     suspend fun ownerAllocation(@Query("id") id: Int): Response<ResponseBody>
 
+    /* ───────── owner: 1.17 properties (buildings / PG / hostel / complex) ───────── */
+
+    @GET("owner/buildings.php")
+    suspend fun buildings(
+        @Query("q") q: String?, @Query("page") page: Int, @Query("per_page") perPage: Int,
+        @Query("status") status: String, @Query("dues") dues: Int?,
+    ): Response<ResponseBody>
+
+    @GET("owner/buildings.php")
+    suspend fun building(@Query("id") id: Int): Response<ResponseBody>
+
+    @POST("owner/buildings.php")
+    suspend fun createBuilding(@Body body: JsonObject): Response<ResponseBody>
+
+    @PUT("owner/buildings.php")
+    suspend fun updateBuilding(@Query("id") id: Int, @Body body: JsonObject): Response<ResponseBody>
+
+    @DELETE("owner/buildings.php")
+    suspend fun deleteBuilding(@Query("id") id: Int): Response<ResponseBody>
+
+    /** Remembers the selected property on the server (0 = All Properties). */
+    @POST("owner/buildings.php")
+    suspend fun selectBuilding(@Query("select") id: Int, @Body body: JsonObject = JsonObject(emptyMap())): Response<ResponseBody>
+
+    @POST("owner/buildings.php")
+    suspend fun moveRooms(@Query("move") move: Int, @Body body: JsonObject): Response<ResponseBody>
+
     /* ───────── owner: 1.16 Manage Charges of an allocated room ───────── */
 
     @GET("owner/room_charges.php")

@@ -182,7 +182,13 @@ private fun RoleShell(role: Role, token: String) {
     androidx.compose.runtime.LaunchedEffect(lifecycle) {
         lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { shell.refreshUnread() }
     }
-    androidx.compose.runtime.CompositionLocalProvider(LocalUnread provides unread) { RoleShellContent(role, nav, current) }
+    // 1.17: "City – Name" of the owner's selected property (or All Properties) under each owner screen's title
+    val property by shell.property.collectAsStateWithLifecycle()
+    val allProperties = androidx.compose.ui.res.stringResource(R.string.prop_all)
+    val propertyLabel = if (role != Role.OWNER) null else property?.let { if (it.id == 0) allProperties else it.label.takeIf { l -> l.isNotBlank() } }
+    androidx.compose.runtime.CompositionLocalProvider(LocalUnread provides unread, com.genusit.prms.ui.common.LocalPropertyLabel provides propertyLabel) {
+        RoleShellContent(role, nav, current)
+    }
 }
 
 @Composable
@@ -282,6 +288,7 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                     addProperty = { nav.navigate("owner/property/new") },
                     openSupport = { nav.navigate("owner/support") },
                     openVendor = { nav.navigate("owner/vendor") },
+                    changeProperty = { nav.navigate("owner/property-picker") },
                 )
             }
             composable(Routes.OWNER_TENANTS) { OwnerTenantsScreen(openTenant = { nav.navigate("owner/tenant/$it") }, addTenant = { nav.navigate("owner/tenant-form/0") }) }
@@ -339,6 +346,14 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                 EditPropertyScreen(it.arguments?.getInt("id") ?: 0, onBack = back, onDone = back)
             }
             composable("owner/charges") { ChargesScreen(onBack = back) }
+            // 1.17: properties — choose / search, add, edit
+            composable("owner/property-picker") {
+                com.genusit.prms.ui.owner.PropertyPickerScreen(onBack = back, onSelected = { nav.popBackStack() },
+                    addProperty = { nav.navigate("owner/building-form/0") }, editProperty = { id -> nav.navigate("owner/building-form/$id") })
+            }
+            composable("owner/building-form/{id}", listOf(navArgument("id") { type = NavType.IntType })) {
+                com.genusit.prms.ui.owner.PropertyFormScreen(onBack = back, onDone = { nav.popBackStack() })
+            }
             // 1.12.1: support person set by the Super Admin (Call / WhatsApp)
             composable("owner/support") { com.genusit.prms.ui.owner.ContactSupportScreen(onBack = back) }
             composable("owner/allocations") {

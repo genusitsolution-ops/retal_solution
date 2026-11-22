@@ -105,7 +105,9 @@ fun OwnerMoreScreen(open: (String) -> Unit) {
         Column(Modifier.padding(pad).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             com.genusit.prms.ui.common.BrandHeader()
             MenuRow(Icons.AutoMirrored.Filled.ReceiptLong, Palette.Purple, stringResource(R.string.generate_bill), stringResource(R.string.generate_bill_sub)) { open("owner/generate") }
-            MenuRow(Icons.Filled.Apartment, Palette.NavSelected, stringResource(R.string.properties), stringResource(R.string.properties_sub)) { open("owner/properties") }
+            // 1.17: properties (buildings / PG / hostel) above their rooms
+            MenuRow(Icons.Filled.Apartment, Palette.Teal, stringResource(R.string.prop_my_properties), stringResource(R.string.prop_my_properties_sub)) { open("owner/property-picker") }
+            MenuRow(Icons.Filled.MeetingRoom, Palette.NavSelected, stringResource(R.string.properties), stringResource(R.string.properties_sub)) { open("owner/properties") }
             MenuRow(Icons.Filled.Key, Palette.Teal, stringResource(R.string.allocations), stringResource(R.string.allocations_sub)) { open("owner/allocations") }
             MenuRow(Icons.Filled.Bolt, Palette.Gold, stringResource(R.string.charges), stringResource(R.string.charges_menu_sub)) { open("owner/charges") }
             MenuRow(Icons.Filled.Badge, Palette.Purple, stringResource(R.string.employees), stringResource(R.string.employees_sub)) { open("owner/employees") }

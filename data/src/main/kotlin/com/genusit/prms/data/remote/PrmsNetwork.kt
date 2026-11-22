@@ -43,6 +43,8 @@ object PrmsNetwork {
         tokens: TokenProvider,
         languages: LanguageProvider,
         onRedirect: ((Int, String, String) -> Unit)? = null,
+        /** 1.17: the selected property (owner requests get ?building_id=N); null in tests and older wiring. */
+        propertyScope: PropertyScopeProvider? = null,
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .connectTimeout(config.connectTimeoutSeconds, TimeUnit.SECONDS)
@@ -52,6 +54,8 @@ object PrmsNetwork {
             .followRedirects(false)
             .followSslRedirects(false)
             .addInterceptor(HeaderInterceptor(tokens, languages, config.userAgent))
+        if (propertyScope != null) builder.addInterceptor(PropertyScopeInterceptor(propertyScope))
+        builder
             .addInterceptor(SafeRedirectInterceptor(config.baseUrl, onRedirect = onRedirect))
         if (config.debugLogging) {
             builder.addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })

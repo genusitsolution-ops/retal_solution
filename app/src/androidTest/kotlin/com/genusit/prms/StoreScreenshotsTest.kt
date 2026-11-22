@@ -136,7 +136,7 @@ class StoreScreenshotsTest {
         first(who).performClick(); waitText("Total"); shot("04-bill-detail")
         back()
 
-        tab("Properties"); waitText("A-101"); shot("05-rooms")
+        tab("Rooms"); waitText("A-101"); shot("05-rooms")
 
         tab("More"); waitText("More", 10_000); scrollTo("Reports")
         first("Reports").performClick(); waitText("Collect", 20_000); shot("06-reports")

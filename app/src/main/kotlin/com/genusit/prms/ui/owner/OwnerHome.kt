@@ -70,6 +70,7 @@ fun OwnerHomeScreen(
     addProperty: () -> Unit = {},
     openSupport: () -> Unit = {},
     openVendor: () -> Unit = {},
+    changeProperty: () -> Unit = {},
 ) {
     val model: OwnerHomeViewModel = hiltViewModel()
     val vm = model.dashboard
@@ -89,6 +90,7 @@ fun OwnerHomeScreen(
     ScreenScaffold(
         title = stringResource(R.string.hello_name, name.substringBefore(' ')) + " 👋",
         subtitle = stringResource(R.string.role_owner),
+        showProperty = false,
         actions = {
             IconButton(onClick = vm::refresh) { Icon(Icons.Filled.Refresh, stringResource(R.string.refresh)) }
             com.genusit.prms.ui.common.NotificationBell(onClick = openNotifications)
@@ -98,6 +100,19 @@ fun OwnerHomeScreen(
             val s = d.summary
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 4.dp, 16.dp, 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 item { SubscriptionBanner(d.subscription, openSubscription) }
+                // 1.17: which property is open, its rooms and occupancy; Change opens the property picker
+                if (d.totalProperties > 0) {
+                    item(key = "property") {
+                        PropertyHeaderCard(
+                            title = d.property?.title ?: stringResource(R.string.prop_all),
+                            typeLabel = d.property?.typeLabel ?: d.propertySummary?.properties?.let { stringResource(R.string.prop_count_n, it) },
+                            summary = d.propertySummary, onChange = changeProperty, onRooms = openProperties,
+                        )
+                    }
+                    if (d.property == null && d.propertyCards.size > 1) item(key = "property-wise") {
+                        PropertyWiseCard(d.propertyCards, d.totalProperties, onOpen = model::open, onViewAll = changeProperty)
+                    }
+                }
                 item {
                     // same rows and the same dates as Payments → "This month"
                     WalletCard(

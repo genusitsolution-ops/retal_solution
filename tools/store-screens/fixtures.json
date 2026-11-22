@@ -665,7 +665,24 @@
 "days_left": 355,
 "is_trial": false
 },
-"is_vendor": false
+"is_vendor": false,
+"property": null,
+"property_summary": {
+"total_rooms": 8,
+"occupied_rooms": 8,
+"available_rooms": 0,
+"maintenance_rooms": 0,
+"occupancy_pct": 100,
+"tenants": 8,
+"month_collection": 22800,
+"pending_rent": 33600,
+"bills_this_month": 8,
+"pending_bills": 5,
+"open_complaints": 1,
+"employees_assigned": 1,
+"properties": 2
+},
+"properties_count": 2
 }
 }
 },
@@ -13075,6 +13092,67 @@
 }
 ],
 "today": "2026-11-18"
+}
+}
+},
+"owner/buildings.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"items": [
+{
+"id": 1,
+"name": "Shree Residency",
+"property_type": "apartment",
+"property_type_label": "Apartment",
+"city": "Indore",
+"area": null,
+"address": null,
+"pincode": null,
+"description": null,
+"status": "active",
+"status_label": "Active",
+"label": "Indore – Shree Residency",
+"has_image": false,
+"is_default": 1,
+"rooms": 6,
+"occupied": 6,
+"available": 0,
+"maintenance": 0,
+"tenants": 6,
+"occupancy_pct": 100
+},
+{
+"id": 2,
+"name": "Market Complex",
+"property_type": "commercial",
+"property_type_label": "Commercial",
+"city": "Indore",
+"area": null,
+"address": null,
+"pincode": null,
+"description": null,
+"status": "active",
+"status_label": "Active",
+"label": "Indore – Market Complex",
+"has_image": false,
+"is_default": 0,
+"rooms": 2,
+"occupied": 2,
+"available": 0,
+"maintenance": 0,
+"tenants": 2,
+"occupancy_pct": 100
+}
+],
+"total": 2,
+"page": 1,
+"per_page": 20,
+"pages": 1,
+"selected_id": 0,
+"total_properties": 2
 }
 }
 }

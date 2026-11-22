@@ -125,11 +125,14 @@ class SettingsViewModel @Inject constructor(
 @HiltViewModel
 class ShellViewModel @Inject constructor(
     val push: com.genusit.prms.platform.PushManager,
+    /** 1.17: the owner's selected property, shown under every owner screen's title. */
+    propertyScope: com.genusit.prms.domain.repository.PropertyScope,
     private val getUnread: com.genusit.prms.domain.usecase.GetUnreadCountUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     private val _unread = kotlinx.coroutines.flow.MutableStateFlow(0)
     val unread: StateFlow<Int> = _unread
+    val property: StateFlow<com.genusit.prms.domain.model.SelectedProperty?> = propertyScope.selected
 
     init {
         push.onSignedIn()

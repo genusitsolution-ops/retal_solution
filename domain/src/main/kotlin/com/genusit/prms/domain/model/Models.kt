@@ -311,6 +311,14 @@ data class OwnerDashboard(
     val subscription: SubscriptionBrief? = null,
     /** 1.13: true when the owner is an active vendor (shows the Vendor Dashboard). False on older servers. */
     @SerialName("is_vendor") val isVendor: Boolean = false,
+    /** 1.17: the selected property (null = All Properties or an older server) and its room figures. */
+    val property: Building? = null,
+    @SerialName("property_summary") val propertySummary: PropertySummary? = null,
+    @SerialName("properties_count") val propertiesCount: Int? = null,
+    /** 1.17: first properties with their occupancy, shown on Home with All Properties (filled by the app). */
+    @kotlinx.serialization.Transient val propertyCards: List<Building> = emptyList(),
+    /** 1.17: total properties of the owner (0 = server without multi-property; the property UI is hidden). */
+    @kotlinx.serialization.Transient val totalProperties: Int = 0,
 )
 
 @Serializable

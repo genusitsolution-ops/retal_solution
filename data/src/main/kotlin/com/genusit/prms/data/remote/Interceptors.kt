@@ -31,6 +31,45 @@ class HeaderInterceptor(
 }
 
 /**
+ * 1.17 — the property the owner works in. [buildingId] null = All Properties (nothing added: the server then
+ * answers for every property, exactly as for app 1.16). [onUnknown] is told when the server no longer knows the id
+ * (the property was deleted on the website); the request is then repeated for All Properties.
+ */
+interface PropertyScopeProvider {
+    fun buildingId(): Int?
+    fun onUnknown(id: Int) {}
+}
+
+/**
+ * Adds `building_id` to owner API requests so the server filters rooms, tenants, bills, collections, reports and
+ * the dashboard by the selected property. Requests that already name a building, the property list itself
+ * (owner/buildings.php) and every non-owner request are left unchanged.
+ */
+class PropertyScopeInterceptor(private val scope: PropertyScopeProvider) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val req = chain.request()
+        val id = scope.buildingId()?.takeIf { it > 0 }
+        if (id == null || !applies(req.url)) return chain.proceed(req)
+        val scoped = req.newBuilder().url(req.url.newBuilder().addQueryParameter(PARAM, id.toString()).build()).build()
+        val res = chain.proceed(scoped)
+        if (res.code == 404 && res.peekBody(4096).string().contains("PROPERTY_NOT_FOUND")) {
+            res.close()
+            scope.onUnknown(id)
+            return chain.proceed(req)
+        }
+        return res
+    }
+
+    companion object {
+        const val PARAM = "building_id"
+        fun applies(url: HttpUrl): Boolean {
+            val path = url.encodedPath
+            return path.contains("/owner/") && !path.endsWith("/owner/buildings.php") && url.queryParameter(PARAM) == null
+        }
+    }
+}
+
+/**
  * Follows a server redirect only when it is safe (OkHttp's own redirect following is switched off):
  *  - only to the configured host or its www / non-www twin,
  *  - never from https down to http, and never to another port,

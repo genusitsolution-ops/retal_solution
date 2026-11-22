@@ -76,6 +76,9 @@ import com.genusit.prms.ui.theme.Palette
 
 /* ───────── scaffolding ───────── */
 
+/** 1.17: the owner's selected property ("City – Name" or "All Properties"); null for other roles / older servers. */
+val LocalPropertyLabel = androidx.compose.runtime.compositionLocalOf<String?> { null }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenScaffold(
@@ -84,8 +87,11 @@ fun ScreenScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     /** Small line under the title (e.g. the role on a home screen). */
     subtitle: String? = null,
+    /** 1.17: show the owner's selected property under the title (when no other subtitle is given). */
+    showProperty: Boolean = true,
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    val property = if (showProperty && subtitle == null) LocalPropertyLabel.current else null
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         // the outer role shell already applies the navigation-bar inset
@@ -97,6 +103,8 @@ fun ScreenScaffold(
                         Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleLarge, color = Palette.Ink)
                         if (subtitle != null) Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (property != null) Text("\uD83C\uDFE2 $property", maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelMedium, color = Palette.Teal)
                     }
                 },
                 navigationIcon = {

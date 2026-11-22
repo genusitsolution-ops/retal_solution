@@ -239,3 +239,27 @@ interface PushTokenProvider {
 }
 
 object NoPushToken : PushTokenProvider { override fun currentToken(): String? = null }
+
+/** 1.17 — the owner's properties (owner/buildings.php). */
+interface BuildingsRepository {
+    suspend fun list(query: String = "", page: Int = 1, perPage: Int = 20, status: String = "active", withDues: Boolean = false): com.genusit.prms.domain.model.BuildingPage
+    suspend fun get(id: Int): com.genusit.prms.domain.model.Building
+    suspend fun create(input: com.genusit.prms.domain.model.BuildingInput): com.genusit.prms.domain.model.Building
+    suspend fun update(id: Int, input: com.genusit.prms.domain.model.BuildingInput)
+    suspend fun delete(id: Int)
+    /** Remembers the selection on the server (0 = All Properties), so the website and the next login open it. */
+    suspend fun select(id: Int)
+    suspend fun moveRooms(roomIds: List<Int>, toBuildingId: Int): Int
+}
+
+/**
+ * 1.17 — which property the owner is working in. Every owner request carries it (?building_id=N) so the
+ * server returns only that property's rooms, tenants, bills and collections. null / id 0 = All Properties.
+ */
+interface PropertyScope {
+    val selected: kotlinx.coroutines.flow.StateFlow<com.genusit.prms.domain.model.SelectedProperty?>
+    /** The id sent with owner requests (null = none: All Properties, or not chosen yet). Read synchronously. */
+    fun currentId(): Int?
+    suspend fun set(selected: com.genusit.prms.domain.model.SelectedProperty?)
+}
+

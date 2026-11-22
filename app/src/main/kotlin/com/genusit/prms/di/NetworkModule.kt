@@ -37,7 +37,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun okHttpClient(config: NetworkConfig, session: SessionRepository): OkHttpClient =
+    fun okHttpClient(config: NetworkConfig, session: SessionRepository, propertyScope: com.genusit.prms.platform.PropertyScopeStore): OkHttpClient =
         PrmsNetwork.okHttp(
             config = config,
             tokens = TokenProvider { session.token },
@@ -47,6 +47,7 @@ object NetworkModule {
                 // .htaccess is rewriting API URLs – it should be fixed on the server (see FIX-NOTES.md).
                 Log.w("PrmsApi", "Server redirect $status: ${from.substringBefore('?')} -> ${to.substringBefore('?')}")
             } else null,
+            propertyScope = propertyScope,
         )
 
     @Provides
