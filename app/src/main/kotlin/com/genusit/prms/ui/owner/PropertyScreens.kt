@@ -67,8 +67,8 @@ import com.genusit.prms.domain.model.PropertySummary
 import com.genusit.prms.domain.model.PropertyTypes
 import com.genusit.prms.domain.model.SelectedProperty
 import com.genusit.prms.domain.repository.PropertyScope
-import com.genusit.prms.domain.usecase.DeletePropertyUseCase
-import com.genusit.prms.domain.usecase.GetPropertyUseCase
+import com.genusit.prms.domain.usecase.DeleteBuildingUseCase
+import com.genusit.prms.domain.usecase.GetBuildingUseCase
 import com.genusit.prms.domain.usecase.ListPropertiesUseCase
 import com.genusit.prms.domain.usecase.SavePropertyUseCase
 import com.genusit.prms.domain.usecase.SelectPropertyUseCase
@@ -346,9 +346,9 @@ fun PropertyPickerScreen(onBack: () -> Unit, onSelected: () -> Unit, addProperty
 @HiltViewModel
 class PropertyFormViewModel @Inject constructor(
     handle: SavedStateHandle,
-    getProperty: GetPropertyUseCase,
+    getProperty: GetBuildingUseCase,
     private val save: SavePropertyUseCase,
-    private val remove: DeletePropertyUseCase,
+    private val remove: DeleteBuildingUseCase,
     expiry: SessionExpiryHandler,
 ) : BaseViewModel(expiry) {
     val id: Int = handle.get<Int>("id") ?: 0

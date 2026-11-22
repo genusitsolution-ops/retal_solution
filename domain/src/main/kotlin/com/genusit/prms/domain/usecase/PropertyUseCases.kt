@@ -66,7 +66,7 @@ class ListPropertiesUseCase @Inject constructor(private val repo: BuildingsRepos
     suspend operator fun invoke(query: String, page: Int, status: String = "active") = repo.list(query.trim(), page, 20, status, withDues = false)
 }
 
-class GetPropertyUseCase @Inject constructor(private val repo: BuildingsRepository) {
+class GetBuildingUseCase @Inject constructor(private val repo: BuildingsRepository) {
     suspend operator fun invoke(id: Int) = repo.get(id)
 }
 
@@ -99,7 +99,7 @@ class SavePropertyUseCase @Inject constructor(private val repo: BuildingsReposit
     }
 }
 
-class DeletePropertyUseCase @Inject constructor(private val repo: BuildingsRepository, private val scope: PropertyScope) {
+class DeleteBuildingUseCase @Inject constructor(private val repo: BuildingsRepository, private val scope: PropertyScope) {
     suspend operator fun invoke(id: Int) {
         repo.delete(id)
         if (scope.currentId() == id) scope.set(SelectedProperty(0))

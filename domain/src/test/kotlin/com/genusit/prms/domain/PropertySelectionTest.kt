@@ -10,7 +10,7 @@ import com.genusit.prms.domain.model.SelectedProperty
 import com.genusit.prms.domain.repository.BuildingsRepository
 import com.genusit.prms.domain.repository.PropertyScope
 import com.genusit.prms.domain.repository.ReportRepository
-import com.genusit.prms.domain.usecase.DeletePropertyUseCase
+import com.genusit.prms.domain.usecase.DeleteBuildingUseCase
 import com.genusit.prms.domain.usecase.GetOwnerHomeUseCase
 import com.genusit.prms.domain.usecase.PropertySelection
 import com.genusit.prms.domain.usecase.SavePropertyUseCase
@@ -144,7 +144,7 @@ class PropertySelectionTest {
 
     @Test fun deletingTheOpenPropertyFallsBackToAll() = runTest {
         val scope = FakeScope().apply { flow.value = SelectedProperty(3, "x") }
-        DeletePropertyUseCase(FakeBuildings(), scope)(3)
+        DeleteBuildingUseCase(FakeBuildings(), scope)(3)
         assertEquals(SelectedProperty(0), scope.flow.value)
     }
 }
