@@ -2,6 +2,8 @@ package com.genusit.prms
 
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.onLast
@@ -57,6 +59,11 @@ class StoreScreenshotsTest {
 
     /** Lazy lists only build visible rows: swipe up until [text] appears. */
     private fun scrollTo(text: String) {
+        // 1.17: scroll the screen's list itself to the row (a swipe that starts on the bottom bar does not scroll),
+        // then the swipes below only nudge it clear of the bottom bar
+        if (!has(text)) runCatching {
+            rule.onAllNodes(hasScrollToNodeAction()).onFirst().performScrollToNode(hasText(text, substring = true)); rule.waitForIdle()
+        }
         repeat(10) {
             if (has(text)) {
                 // bring it clear of the bottom navigation bar before tapping
