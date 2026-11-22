@@ -674,8 +674,14 @@
 "maintenance_rooms": 0,
 "occupancy_pct": 100,
 "tenants": 8,
+"active_tenants": 8,
 "month_collection": 22800,
+"month_collected": 22800,
+"month_billed": 56400,
+"collection_pct": 40,
 "pending_rent": 33600,
+"overdue_amount": 0,
+"overdue_bills": 0,
 "bills_this_month": 8,
 "pending_bills": 5,
 "open_complaints": 1,
@@ -13122,7 +13128,12 @@
 "available": 0,
 "maintenance": 0,
 "tenants": 6,
-"occupancy_pct": 100
+"occupancy_pct": 100,
+"active_tenants": 6,
+"month_billed": 40800,
+"month_collected": 16200,
+"pending_dues": 28800,
+"overdue": 0
 },
 {
 "id": 2,
@@ -13144,7 +13155,12 @@
 "available": 0,
 "maintenance": 0,
 "tenants": 2,
-"occupancy_pct": 100
+"occupancy_pct": 100,
+"active_tenants": 2,
+"month_billed": 15600,
+"month_collected": 6600,
+"pending_dues": 4800,
+"overdue": 0
 }
 ],
 "total": 2,
@@ -13153,6 +13169,34 @@
 "pages": 1,
 "selected_id": 0,
 "total_properties": 2
+}
+}
+},
+"owner/buildings.php?summary=1": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"total_rooms": 8,
+"occupied_rooms": 8,
+"available_rooms": 0,
+"maintenance_rooms": 0,
+"occupancy_pct": 100,
+"tenants": 8,
+"active_tenants": 8,
+"month_collection": 22800,
+"month_collected": 22800,
+"month_billed": 56400,
+"collection_pct": 40,
+"pending_rent": 33600,
+"overdue_amount": 0,
+"overdue_bills": 0,
+"bills_this_month": 8,
+"pending_bills": 5,
+"open_complaints": 1,
+"employees_assigned": 1,
+"properties": 2
 }
 }
 }
