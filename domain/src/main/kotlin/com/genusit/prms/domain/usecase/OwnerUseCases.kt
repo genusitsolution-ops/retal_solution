@@ -36,6 +36,45 @@ class GetVendorDashboardUseCase @Inject constructor(private val repo: ReportRepo
     suspend operator fun invoke(): com.genusit.prms.domain.model.VendorDashboard = repo.vendorDashboard()
 }
 
+/* ───────── 1.17 independent vendor ───────── */
+
+class GetVendorHomeUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.VendorAccountRepository) {
+    suspend operator fun invoke(): com.genusit.prms.domain.model.VendorDashboard = repo.home()
+}
+
+class GetVendorProfileUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.VendorAccountRepository) {
+    suspend operator fun invoke(): com.genusit.prms.domain.model.VendorProfile = repo.profile()
+}
+
+/**
+ * Checks the payment details the same way the server does (UPI / IFSC / account number format; bank transfer needs
+ * holder, account number and IFSC) and saves them. Returns a validation key, or null after saving.
+ */
+class SaveVendorPaymentUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.VendorAccountRepository) {
+    suspend operator fun invoke(input: com.genusit.prms.domain.model.VendorPaymentInput, hasSavedAccount: Boolean): com.genusit.prms.domain.model.VendorProfile {
+        val err = validate(input, hasSavedAccount)
+        if (err != null) throw com.genusit.prms.domain.error.ApiException("VALIDATION", err, 422)
+        return repo.savePayment(input)
+    }
+
+    companion object {
+        const val UPI = "upi_invalid"; const val IFSC = "ifsc_invalid"; const val ACCOUNT = "account_invalid"; const val BANK_NEEDS = "bank_needs_details"
+        /** null when valid, otherwise one of the keys above (the screen shows the translated text). */
+        fun validate(i: com.genusit.prms.domain.model.VendorPaymentInput, hasSavedAccount: Boolean): String? {
+            val upi = i.upiId.trim(); val ifsc = i.ifsc.trim().uppercase(); val acc = i.accountNumber.replace(" ", "")
+            if (upi.isNotEmpty() && !Regex("^[A-Za-z0-9._-]{2,256}@[A-Za-z][A-Za-z0-9.-]{1,64}$").matches(upi)) return UPI
+            if (ifsc.isNotEmpty() && !Regex("^[A-Z]{4}0[A-Z0-9]{6}$").matches(ifsc)) return IFSC
+            if (acc.isNotEmpty() && !Regex("^\\d{6,20}$").matches(acc)) return ACCOUNT
+            if (i.payoutMethod == "bank" && (i.accountHolder.isBlank() || ifsc.isEmpty() || (acc.isEmpty() && !hasSavedAccount))) return BANK_NEEDS
+            return null
+        }
+    }
+}
+
+class ChangeVendorPasswordUseCase @Inject constructor(private val repo: com.genusit.prms.domain.repository.VendorAccountRepository) {
+    suspend operator fun invoke(current: String, new: String) = repo.changePassword(current, new)
+}
+
 /* ───────── rooms ───────── */
 
 class GetPropertiesUseCase @Inject constructor(private val repo: PropertyRepository) {

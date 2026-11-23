@@ -81,6 +81,18 @@ interface PrmsApiService {
     @GET("owner/vendor.php")
     suspend fun ownerVendor(): Response<ResponseBody>
 
+    /* ───────── 1.17: independent vendor (vendor token only) ───────── */
+
+    @GET("vendor/dashboard.php")
+    suspend fun vendorDashboard(): Response<ResponseBody>
+
+    @GET("vendor/profile.php")
+    suspend fun vendorProfile(): Response<ResponseBody>
+
+    /** { action: "payment" | "password" | "contact", … } */
+    @PUT("vendor/profile.php")
+    suspend fun vendorProfileUpdate(@Body body: JsonObject): Response<ResponseBody>
+
     /* ───────── owner: rooms ───────── */
 
     @GET("owner/properties.php")

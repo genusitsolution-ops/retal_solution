@@ -182,6 +182,17 @@ interface ReportRepository {
     suspend fun vendorDashboard(): VendorDashboard
 }
 
+/**
+ * 1.17: the independent vendor's own account (vendor/dashboard.php, vendor/profile.php). The server answers only
+ * with the signed-in vendor's data; every owner endpoint refuses a vendor token.
+ */
+interface VendorAccountRepository {
+    suspend fun home(): VendorDashboard
+    suspend fun profile(): com.genusit.prms.domain.model.VendorProfile
+    suspend fun savePayment(input: com.genusit.prms.domain.model.VendorPaymentInput): com.genusit.prms.domain.model.VendorProfile
+    suspend fun changePassword(current: String, new: String)
+}
+
 /** Owner: plan status and renewal. */
 interface SubscriptionRepository {
     suspend fun status(): SubscriptionStatus

@@ -45,6 +45,10 @@ class AuthRepositoryImpl @Inject constructor(
             Role.OWNER -> caller.get(ProfileSaved.serializer()) { api.updateMe(body) }
             Role.TENANT -> caller.run { api.updateTenantProfile(body) }
             Role.EMPLOYEE -> caller.run { api.updateAgentProfile(body) }
+            // 1.17: the independent vendor changes the password on vendor/profile.php (contact details through the admin)
+            Role.VENDOR -> if (!newPassword.isNullOrEmpty()) caller.run {
+                api.vendorProfileUpdate(buildJsonObject { put("action", "password"); put("current_password", currentPassword ?: ""); put("new_password", newPassword) })
+            }
             Role.ADMIN -> Unit
         }
     }

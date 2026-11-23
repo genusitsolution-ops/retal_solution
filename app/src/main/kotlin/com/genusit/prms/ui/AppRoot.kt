@@ -193,6 +193,8 @@ private fun RoleShell(role: Role, token: String) {
 
 @Composable
 private fun RoleShellContent(role: Role, nav: NavHostController, current: String?) {
+    // 1.17: an independent vendor gets its own graph — no owner / agent / tenant route exists in it
+    if (role == Role.VENDOR) { VendorShellContent(nav, current); return }
 
     val tabs: List<Tab>
     val start: String
@@ -499,6 +501,74 @@ private fun RoleShellContent(role: Role, nav: NavHostController, current: String
                 QueryDetailScreen(it.arguments?.getInt("id") ?: 0, Role.TENANT, onBack = back)
             }
             composable(Routes.TEN_NEW_QUERY) { RaiseQueryScreen(onBack = back, onDone = { nav.popBackStack(); nav.navigateTab(Routes.TEN_QUERIES) }) }
+        }
+    }
+}
+
+private object VendorRoutes {
+    const val HOME = "vendor/home"; const val REFERRALS = "vendor/referrals"; const val COMMISSION = "vendor/commission"
+    const val PAYOUTS = "vendor/payouts"; const val PROFILE = "vendor/profile"
+}
+
+/**
+ * 1.17 independent vendor: Dashboard | Referrals | Commission | Payouts | Profile. A temporary password set by the
+ * Super Admin must be changed first (the server also refuses the dashboard until then).
+ */
+@Composable
+private fun VendorShellContent(nav: NavHostController, current: String?) {
+    val gate: com.genusit.prms.ui.vendor.VendorProfileViewModel = hiltViewModel(key = "vendor-gate")
+    val gateState by gate.profile.state.collectAsStateWithLifecycle()
+    when (val g = gateState) {
+        is com.genusit.prms.ui.common.UiState.Loading -> com.genusit.prms.ui.common.LoadingBox()
+        is com.genusit.prms.ui.common.UiState.Error -> com.genusit.prms.ui.common.ErrorBox(g.error, gate.profile::refresh)
+        is com.genusit.prms.ui.common.UiState.Data -> if (g.value.mustChangePassword) {
+            com.genusit.prms.ui.vendor.VendorPasswordScreen(forced = true, onBack = null, onDone = { gate.profile.refresh() })
+        } else {
+            val tabs = listOf(
+                Tab(VendorRoutes.HOME, NavIcons.Home, R.string.nav_home),
+                Tab(VendorRoutes.REFERRALS, NavIcons.Tenants, R.string.vendor_nav_referrals),
+                Tab(VendorRoutes.COMMISSION, NavIcons.Payments, R.string.vendor_nav_commission),
+                Tab(VendorRoutes.PAYOUTS, NavIcons.History, R.string.vendor_nav_payouts),
+                Tab(VendorRoutes.PROFILE, NavIcons.More, R.string.vendor_nav_profile),
+            )
+            val currentBase = current?.substringBefore('?')
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                contentWindowInsets = WindowInsets.navigationBars,
+                bottomBar = { if (tabs.any { it.route == currentBase }) BottomBar(tabs, currentBase, nav) },
+            ) { inner ->
+                NavHost(
+                    nav, startDestination = VendorRoutes.HOME, modifier = Modifier.padding(inner).consumeWindowInsets(inner).imePadding(),
+                    enterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(220)) { it / 14 } },
+                    exitTransition = { fadeOut(tween(150)) },
+                    popEnterTransition = { fadeIn(tween(220)) },
+                    popExitTransition = { fadeOut(tween(150)) + slideOutHorizontally(tween(220)) { it / 14 } },
+                ) {
+                    val back: () -> Unit = { nav.popBackStack() }
+                    composable(VendorRoutes.HOME) {
+                        com.genusit.prms.ui.vendor.VendorDashboardHome(
+                            openReferrals = { nav.navigateTab(VendorRoutes.REFERRALS) },
+                            openCommission = { nav.navigateTab(VendorRoutes.COMMISSION) },
+                            openPayouts = { nav.navigateTab(VendorRoutes.PAYOUTS) },
+                            openNotifications = { nav.navigate(Routes.NOTIFICATIONS) },
+                        )
+                    }
+                    composable(VendorRoutes.REFERRALS) { com.genusit.prms.ui.vendor.VendorReferralsScreen() }
+                    composable(VendorRoutes.COMMISSION) { com.genusit.prms.ui.vendor.VendorCommissionScreen() }
+                    composable(VendorRoutes.PAYOUTS) { com.genusit.prms.ui.vendor.VendorPayoutsScreen() }
+                    composable(VendorRoutes.PROFILE) {
+                        com.genusit.prms.ui.vendor.VendorProfileScreen(openPayment = { nav.navigate("vendor/payment") },
+                            openPassword = { nav.navigate("vendor/password") }, openNotifications = { nav.navigate(Routes.NOTIFICATIONS) })
+                    }
+                    composable("vendor/payment") { com.genusit.prms.ui.vendor.VendorPaymentScreen(onBack = back) }
+                    composable("vendor/password") { com.genusit.prms.ui.vendor.VendorPasswordScreen(forced = false, onBack = back, onDone = back) }
+                    composable(Routes.NOTIFICATIONS) {
+                        NotificationsScreen(onBack = back, open = { route ->
+                            com.genusit.prms.domain.util.NotificationRoutes.target(Role.VENDOR.api, route)?.let { t -> runCatching { nav.navigate(t) } }
+                        })
+                    }
+                }
+            }
         }
     }
 }

@@ -5075,7 +5075,7 @@
 },
 "opening_balances": [],
 "whatsapp": {
-"text": "*Rajesh Sharma*\nWelcome to Rental Solution, Priya Joshi!\n\nYour tenant account is ready. Sign in to see your bills, payments and receipts.\nApp: https://play.google.com/store/apps/details?id=com.genusit.prms\nWeb login: http://127.0.0.1:8099/login.php\nUsername: priya.j\nPassword: the password your owner gave you\n\nRoom: A-102, Indore\nAllotted on: 01 Jun 2026\nMonthly rent: ₹6,500.00\nSecurity deposit: ₹13,000.00\nDeposit paid: ₹13,000.00\n*Deposit pending: ₹0.00*\n\nDocuments submitted: none yet",
+"text": "*Rajesh Sharma*\nWelcome to Rental Solution, Priya Joshi!\n\nYour tenant account is ready. Sign in to see your bills, payments and receipts.\nApp: https://play.google.com/store/apps/details?id=com.genusit.prms\nWeb login: https://demo.example.test/login.php\nUsername: priya.j\nPassword: the password your owner gave you\n\nRoom: A-102, Indore\nAllotted on: 01 Jun 2026\nMonthly rent: ₹6,500.00\nSecurity deposit: ₹13,000.00\nDeposit paid: ₹13,000.00\n*Deposit pending: ₹0.00*\n\nDocuments submitted: none yet",
 "url": "https://wa.me/919800000202?text=%2ARajesh%20Sharma%2A%0AWelcome%20to%20Rental%20Solution%2C%20Priya%20Joshi%21%0A%0AYour%20tenant%20account%20is%20ready.%20Sign%20in%20to%20see%20your%20bills%2C%20payments%20and%20receipts.%0AApp%3A%20https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.genusit.prms%0AWeb%20login%3A%20http%3A%2F%2F127.0.0.1%3A8099%2Flogin.php%0AUsername%3A%20priya.j%0APassword%3A%20the%20password%20your%20owner%20gave%20you%0A%0ARoom%3A%20A-102%2C%20Indore%0AAllotted%20on%3A%2001%20Jun%202026%0AMonthly%20rent%3A%20%E2%82%B96%2C500.00%0ASecurity%20deposit%3A%20%E2%82%B913%2C000.00%0ADeposit%20paid%3A%20%E2%82%B913%2C000.00%0A%2ADeposit%20pending%3A%20%E2%82%B90.00%2A%0A%0ADocuments%20submitted%3A%20none%20yet"
 }
 }
@@ -7179,7 +7179,7 @@
 "current_balance": 7500,
 "total_payable": 7500,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=36&k=59df6d55d16e85c96c2bdbd0e1dc23bd"
+"bill_url": "https://demo.example.test/bill.php?i=36&k=59df6d55d16e85c96c2bdbd0e1dc23bd"
 }
 }
 },
@@ -7253,7 +7253,7 @@
 "current_balance": 6000,
 "total_payable": 6000,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=33&k=c0137b51c5ab836ba2da9e38a43611f9"
+"bill_url": "https://demo.example.test/bill.php?i=33&k=c0137b51c5ab836ba2da9e38a43611f9"
 }
 }
 },
@@ -7327,7 +7327,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 7500,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=35&k=644678b76153b513419e12880466083a"
+"bill_url": "https://demo.example.test/bill.php?i=35&k=644678b76153b513419e12880466083a"
 }
 }
 },
@@ -7401,7 +7401,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6000,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=32&k=353b2cd745af9a45c50ad14a763e914f"
+"bill_url": "https://demo.example.test/bill.php?i=32&k=353b2cd745af9a45c50ad14a763e914f"
 }
 }
 },
@@ -7518,7 +7518,7 @@
 "current_balance": 6600,
 "total_payable": 6600,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=37&k=27daf29492b7921db07232f1bd8c629f"
+"bill_url": "https://demo.example.test/bill.php?i=37&k=27daf29492b7921db07232f1bd8c629f"
 }
 }
 },
@@ -7592,7 +7592,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 7500,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=34&k=f3151a202b5881f477a0d6ebf0ee7056"
+"bill_url": "https://demo.example.test/bill.php?i=34&k=f3151a202b5881f477a0d6ebf0ee7056"
 }
 }
 },
@@ -7666,7 +7666,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6000,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=28&k=8505083f5ba7115fcaeaa9510849cd8b"
+"bill_url": "https://demo.example.test/bill.php?i=28&k=8505083f5ba7115fcaeaa9510849cd8b"
 }
 }
 },
@@ -7740,7 +7740,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 9000,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=25&k=3be9e1a67c807053bc86f98dfc7e5505"
+"bill_url": "https://demo.example.test/bill.php?i=25&k=3be9e1a67c807053bc86f98dfc7e5505"
 }
 }
 },
@@ -7814,7 +7814,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6600,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=22&k=15b2dfd46ea46c1882b9d39a25e41e49"
+"bill_url": "https://demo.example.test/bill.php?i=22&k=15b2dfd46ea46c1882b9d39a25e41e49"
 }
 }
 },
@@ -7888,7 +7888,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6600,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=19&k=87a4fce1b50af79f136a29aa4522954e"
+"bill_url": "https://demo.example.test/bill.php?i=19&k=87a4fce1b50af79f136a29aa4522954e"
 }
 }
 },
@@ -7962,7 +7962,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 4500,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=16&k=bc2cebfd6b012135273bb9a76405c2dd"
+"bill_url": "https://demo.example.test/bill.php?i=16&k=bc2cebfd6b012135273bb9a76405c2dd"
 }
 }
 },
@@ -8036,7 +8036,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 4500,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=13&k=1a6c174e96cc9adf26c35a6240d9520d"
+"bill_url": "https://demo.example.test/bill.php?i=13&k=1a6c174e96cc9adf26c35a6240d9520d"
 }
 }
 },
@@ -8110,7 +8110,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=10&k=194457deac94185d96e6815b28f25327"
+"bill_url": "https://demo.example.test/bill.php?i=10&k=194457deac94185d96e6815b28f25327"
 }
 }
 },
@@ -8184,7 +8184,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=7&k=d00f2a4994cdc837da894d246471ed27"
+"bill_url": "https://demo.example.test/bill.php?i=7&k=d00f2a4994cdc837da894d246471ed27"
 }
 }
 },
@@ -8288,7 +8288,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=4&k=19aa60011336003e521cfffd12584ed1"
+"bill_url": "https://demo.example.test/bill.php?i=4&k=19aa60011336003e521cfffd12584ed1"
 }
 }
 },
@@ -8392,7 +8392,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=1&k=ff3b85d8262def210f09e34acb09c756"
+"bill_url": "https://demo.example.test/bill.php?i=1&k=ff3b85d8262def210f09e34acb09c756"
 }
 }
 },
@@ -8466,7 +8466,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6000,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=30&k=19074e191853eec7c02ff087b5e64f39"
+"bill_url": "https://demo.example.test/bill.php?i=30&k=19074e191853eec7c02ff087b5e64f39"
 }
 }
 },
@@ -8525,7 +8525,7 @@
 "current_balance": 9000,
 "total_payable": 9000,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=27&k=fdac31551e2f8ce68221c6f8cfdfed9d"
+"bill_url": "https://demo.example.test/bill.php?i=27&k=fdac31551e2f8ce68221c6f8cfdfed9d"
 }
 }
 },
@@ -8599,7 +8599,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 9000,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=24&k=d78dca3fdbf365b428cd765f0e85025b"
+"bill_url": "https://demo.example.test/bill.php?i=24&k=d78dca3fdbf365b428cd765f0e85025b"
 }
 }
 },
@@ -8673,7 +8673,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6600,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=21&k=cece2471b85234b8830a820163c9dafe"
+"bill_url": "https://demo.example.test/bill.php?i=21&k=cece2471b85234b8830a820163c9dafe"
 }
 }
 },
@@ -8747,7 +8747,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6600,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=18&k=8fef444c8f15721e49e48554aed88bfb"
+"bill_url": "https://demo.example.test/bill.php?i=18&k=8fef444c8f15721e49e48554aed88bfb"
 }
 }
 },
@@ -8821,7 +8821,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 4500,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=15&k=89bbacce87cb5612774e35230b27dc7c"
+"bill_url": "https://demo.example.test/bill.php?i=15&k=89bbacce87cb5612774e35230b27dc7c"
 }
 }
 },
@@ -8895,7 +8895,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=12&k=50a2b9794f6888d9c92e3b49eb6ae88d"
+"bill_url": "https://demo.example.test/bill.php?i=12&k=50a2b9794f6888d9c92e3b49eb6ae88d"
 }
 }
 },
@@ -8969,7 +8969,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=9&k=95a1f5a4e28d6a40f66bbf2b51a4872c"
+"bill_url": "https://demo.example.test/bill.php?i=9&k=95a1f5a4e28d6a40f66bbf2b51a4872c"
 }
 }
 },
@@ -9073,7 +9073,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=6&k=72824b8af5a8f86f2e810dd7e1cfdd4c"
+"bill_url": "https://demo.example.test/bill.php?i=6&k=72824b8af5a8f86f2e810dd7e1cfdd4c"
 }
 }
 },
@@ -9177,7 +9177,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=3&k=c800468fe47ad702f7c463d2128d003d"
+"bill_url": "https://demo.example.test/bill.php?i=3&k=c800468fe47ad702f7c463d2128d003d"
 }
 }
 },
@@ -9251,7 +9251,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6000,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=29&k=e10ac4f6d333a2cd6026acfb46ca79a5"
+"bill_url": "https://demo.example.test/bill.php?i=29&k=e10ac4f6d333a2cd6026acfb46ca79a5"
 }
 }
 },
@@ -9325,7 +9325,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 9000,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=26&k=f65c5b8e8fe39e96e5f534d6d4398476"
+"bill_url": "https://demo.example.test/bill.php?i=26&k=f65c5b8e8fe39e96e5f534d6d4398476"
 }
 }
 },
@@ -9399,7 +9399,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6600,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=20&k=811be33640fcd5a589d9c299e308c06f"
+"bill_url": "https://demo.example.test/bill.php?i=20&k=811be33640fcd5a589d9c299e308c06f"
 }
 }
 },
@@ -9473,7 +9473,7 @@
 "current_balance": 4500,
 "total_payable": 4500,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=17&k=917142d90cd12256986c11fa3bfba99c"
+"bill_url": "https://demo.example.test/bill.php?i=17&k=917142d90cd12256986c11fa3bfba99c"
 }
 }
 },
@@ -9547,7 +9547,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 4500,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=14&k=39eb221ecb514d5bbbd4495841d95c99"
+"bill_url": "https://demo.example.test/bill.php?i=14&k=39eb221ecb514d5bbbd4495841d95c99"
 }
 }
 },
@@ -9621,7 +9621,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=11&k=5dc2eee53556406e504e5a82c1aca405"
+"bill_url": "https://demo.example.test/bill.php?i=11&k=5dc2eee53556406e504e5a82c1aca405"
 }
 }
 },
@@ -9695,7 +9695,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=8&k=3da292e6686f708ee83e20e54fd6151d"
+"bill_url": "https://demo.example.test/bill.php?i=8&k=3da292e6686f708ee83e20e54fd6151d"
 }
 }
 },
@@ -9799,7 +9799,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=5&k=f6190bfe8f441f56aeca2a2ed4e12be5"
+"bill_url": "https://demo.example.test/bill.php?i=5&k=f6190bfe8f441f56aeca2a2ed4e12be5"
 }
 }
 },
@@ -9903,7 +9903,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 0,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=2&k=a0658962905289474452b525c1ae8107"
+"bill_url": "https://demo.example.test/bill.php?i=2&k=a0658962905289474452b525c1ae8107"
 }
 }
 },
@@ -9977,7 +9977,7 @@
 "current_balance": 0,
 "total_payable": 0,
 "later_balance": 6000,
-"bill_url": "http://127.0.0.1:8099/bill.php?i=31&k=178e83a429791f78b3e4c6a9b2783691"
+"bill_url": "https://demo.example.test/bill.php?i=31&k=178e83a429791f78b3e4c6a9b2783691"
 }
 }
 },
@@ -13197,6 +13197,494 @@
 "open_complaints": 1,
 "employees_assigned": 1,
 "properties": 2
+}
+}
+},
+"POST auth/login.php|VEN10001": {
+"status": "success",
+"message": "Login successful.",
+"data": {
+"token": "demo-vendor-token",
+"expires_in": 86400,
+"user_type": "vendor",
+"user": {
+"id": 1,
+"full_name": "Test Vendor One",
+"phone": "9800000101",
+"email": "v1@example.test",
+"username": "VEN10001",
+"vendor_code": "VEN10001",
+"lang_pref": "en",
+"must_change_password": false
+},
+"lang": "en",
+"subscription": null
+}
+},
+"vendor|vendor/dashboard.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"monthly": [
+{
+"month": "2026-11",
+"renewals": 1,
+"renewal_revenue": 199,
+"commission": 19.9,
+"pending": 0,
+"approved": 0,
+"paid": 19.9,
+"reversed": 0
+}
+],
+"vendor": {
+"commission_percent": 10,
+"status": "active",
+"since": "2026-11-23",
+"referral_code": "VEN10001",
+"name": "Test Vendor One",
+"vendor_type": "independent",
+"share_url": "https://demo.example.test/index.php?ref=VEN10001#contact"
+},
+"totals": {
+"paid_renewals": 1,
+"total": 19.9,
+"pending": 0,
+"approved": 0,
+"paid": 19.9,
+"reversed": 0,
+"referrals": 1,
+"registrations": 1,
+"referrals_waiting": 0,
+"referrals_rejected": 0,
+"referrals_earning": 1
+},
+"referred_owners": [
+{
+"owner_name": "Referred A.",
+"referral_date": "2026-11-23 09:10:40",
+"referral_code": "VEN10001",
+"trial_status": "On Free Trial · until 21 Jan 2027",
+"plan_state": "trial",
+"renewal_status": "renewed",
+"renewal_label": "Renewed",
+"renewal_amount": 199,
+"payment_status": "confirmed",
+"payment_label": "Payment Confirmed",
+"paid_renewals": 1,
+"commission_percent": 10,
+"commission_amount": 19.9,
+"commission_total": 19.9,
+"commission_status": "paid",
+"commission_label": "Commission Paid",
+"referral_state": "approved"
+}
+],
+"commissions": [
+{
+"id": 1,
+"referred_owner": "Referred A.",
+"invoice_number": "SUB-202611-0019-44B9",
+"renewal_amount": 199,
+"eligible_amount": 199,
+"commission_percent": 10,
+"commission_amount": 19.9,
+"payment_confirmed_at": "2026-11-23 09:10:40",
+"status": "paid",
+"status_label": "Commission Paid",
+"approved_at": "2026-11-23 09:10:40",
+"paid_at": "2026-11-23",
+"payout_reference": "UTRTEST001",
+"reversal_reason": null
+}
+],
+"payouts": [
+{
+"paid_at": "2026-11-23",
+"payout_reference": "UTRTEST001",
+"entries": 1,
+"amount": 19.9,
+"reversed_amount": 0,
+"payout_method": "bank"
+}
+],
+"profile": {
+"id": 1,
+"vendor_code": "VEN10001",
+"full_name": "Test Vendor One",
+"mobile": "9800000101",
+"whatsapp": null,
+"email": "v1@example.test",
+"address": "12 Test Street",
+"city": "Pune",
+"state": "Maharashtra",
+"pincode": "411001",
+"status": "active",
+"registered_at": "2026-11-23",
+"commission_percent": 10,
+"must_change_password": false,
+"payment": {
+"payout_method": "upi",
+"upi_id": "testvendor@upi",
+"account_holder": null,
+"bank_name": null,
+"account_number_masked": null,
+"has_account_number": false,
+"ifsc": null,
+"can_edit": true
+}
+},
+"share_text": "Manage your rental property with Rental Solution. Use my referral code VEN10001 when you register: https://demo.example.test/index.php?ref=VEN10001#contact"
+}
+}
+},
+"vendor|vendor/profile.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"id": 1,
+"vendor_code": "VEN10001",
+"full_name": "Test Vendor One",
+"mobile": "9800000101",
+"whatsapp": null,
+"email": "v1@example.test",
+"address": "12 Test Street",
+"city": "Pune",
+"state": "Maharashtra",
+"pincode": "411001",
+"status": "active",
+"registered_at": "2026-11-23",
+"commission_percent": 10,
+"must_change_password": false,
+"payment": {
+"payout_method": "upi",
+"upi_id": "testvendor@upi",
+"account_holder": null,
+"bank_name": null,
+"account_number_masked": null,
+"has_account_number": false,
+"ifsc": null,
+"can_edit": true
+}
+}
+}
+},
+"vendor|auth/me.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"id": 1,
+"user_type": "vendor",
+"full_name": "Test Vendor One",
+"email": "v1@example.test",
+"phone": "9800000101",
+"username": "VEN10001",
+"lang": "en",
+"subscription": null,
+"photo_version": null,
+"vendor_code": "VEN10001",
+"must_change_password": false
+}
+}
+},
+"vendor|common/notifications.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"unread": 2,
+"items": [
+{
+"id": 131,
+"title": "Vendor commission paid",
+"message": "Your commission of ₹19.90 was paid.",
+"link": null,
+"is_read": false,
+"created_at": "2026-11-23 09:10:40",
+"event": "vendor",
+"category": "vendor",
+"route": "vendor/home"
+},
+{
+"id": 130,
+"title": "Vendor commission generated",
+"message": "A referred owner renewed. Commission of ₹19.90 is waiting for approval.",
+"link": null,
+"is_read": false,
+"created_at": "2026-11-23 09:10:40",
+"event": "vendor",
+"category": "vendor",
+"route": "vendor/home"
+}
+]
+}
+}
+},
+"vendor|common/push.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"push_available": false,
+"categories": []
+}
+}
+},
+"vendor|common/meta.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"lang": "en",
+"languages": [
+{
+"code": "en",
+"label": "English"
+},
+{
+"code": "hi",
+"label": "हिंदी"
+},
+{
+"code": "mr",
+"label": "मराठी"
+}
+],
+"status_labels": {
+"active": "Active",
+"inactive": "Inactive",
+"suspended": "Suspended",
+"occupied": "Occupied",
+"available": "Available",
+"maintenance": "Maintenance",
+"pending": "Pending",
+"partial": "Partial",
+"paid": "Paid",
+"unpaid": "Unpaid",
+"overdue": "Overdue",
+"cancelled": "Cancelled",
+"open": "Open",
+"in_progress": "In Progress",
+"resolved": "Resolved",
+"closed": "Closed",
+"expired": "Expired",
+"allocated": "Allocated",
+"trial": "Trial",
+"grace": "Grace Period",
+"none": "No Plan",
+"low": "Low",
+"medium": "Medium",
+"high": "High",
+"fixed": "Fixed",
+"variable": "Variable"
+},
+"payment_modes": [
+{
+"value": "cash",
+"label": "Cash"
+},
+{
+"value": "upi",
+"label": "UPI"
+},
+{
+"value": "online",
+"label": "Online Transfer"
+},
+{
+"value": "bank_transfer",
+"label": "Bank Transfer"
+},
+{
+"value": "cheque",
+"label": "Cheque"
+},
+{
+"value": "other",
+"label": "Other"
+}
+],
+"months": [
+{
+"value": 1,
+"label": "January",
+"short": "Jan"
+},
+{
+"value": 2,
+"label": "February",
+"short": "Feb"
+},
+{
+"value": 3,
+"label": "March",
+"short": "Mar"
+},
+{
+"value": 4,
+"label": "April",
+"short": "Apr"
+},
+{
+"value": 5,
+"label": "May",
+"short": "May"
+},
+{
+"value": 6,
+"label": "June",
+"short": "Jun"
+},
+{
+"value": 7,
+"label": "July",
+"short": "Jul"
+},
+{
+"value": 8,
+"label": "August",
+"short": "Aug"
+},
+{
+"value": 9,
+"label": "September",
+"short": "Sep"
+},
+{
+"value": 10,
+"label": "October",
+"short": "Oct"
+},
+{
+"value": 11,
+"label": "November",
+"short": "Nov"
+},
+{
+"value": 12,
+"label": "December",
+"short": "Dec"
+}
+],
+"currency": "INR",
+"api_version": "1.1",
+"app_version": "2.1"
+}
+}
+},
+"vendor|common/app_config.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"version": 0,
+"branding": {
+"name": "Rental Solution",
+"tagline": "Rent, receipts and rooms — in one place",
+"show_tagline": true,
+"logo_url": null,
+"login_logo_url": null
+},
+"signup": {
+"mode": "approval",
+"enabled": true
+},
+"referral": {
+"enabled": true
+},
+"trial": {
+"enabled": true,
+"days": 60,
+"package_name": "Trial",
+"max_properties": 50,
+"max_tenants": 50
+},
+"push": null,
+"login_help": null
+}
+}
+},
+"vendor|owner/dashboard.php": {
+"status": 403,
+"body": {
+"status": "error",
+"code": "FORBIDDEN",
+"message": "Access denied for your role."
+}
+},
+"vendor|vendor/profile.php#temp": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"id": 1,
+"vendor_code": "VEN10001",
+"full_name": "Test Vendor One",
+"mobile": "9800000101",
+"whatsapp": null,
+"email": "v1@example.test",
+"address": "12 Test Street",
+"city": "Pune",
+"state": "Maharashtra",
+"pincode": "411001",
+"status": "active",
+"registered_at": "2026-11-23",
+"commission_percent": 10,
+"must_change_password": true,
+"payment": {
+"payout_method": "upi",
+"upi_id": "testvendor@upi",
+"account_holder": null,
+"bank_name": null,
+"account_number_masked": null,
+"has_account_number": false,
+"ifsc": null,
+"can_edit": true
+}
+}
+}
+},
+"vendor|PUT vendor/profile.php": {
+"status": 200,
+"body": {
+"status": "success",
+"message": "Success",
+"data": {
+"id": 1,
+"vendor_code": "VEN10001",
+"full_name": "Test Vendor One",
+"mobile": "9800000101",
+"whatsapp": null,
+"email": "v1@example.test",
+"address": "12 Test Street",
+"city": "Pune",
+"state": "Maharashtra",
+"pincode": "411001",
+"status": "active",
+"registered_at": "2026-11-23",
+"commission_percent": 10,
+"must_change_password": false,
+"payment": {
+"payout_method": "upi",
+"upi_id": "testvendor@upi",
+"account_holder": null,
+"bank_name": null,
+"account_number_masked": null,
+"has_account_number": false,
+"ifsc": null,
+"can_edit": true
+}
 }
 }
 }

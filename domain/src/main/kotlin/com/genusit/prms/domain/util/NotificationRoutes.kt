@@ -47,6 +47,14 @@ object NotificationRoutes {
                 "notifications" -> "notifications"
                 else -> null
             }
+            // 1.17: independent vendor — only vendor screens exist in the vendor app
+            "vendor" -> when (head) {
+                "vendor", "home" -> "vendor/home"
+                "commission", "commissions" -> "vendor/commission"
+                "payouts" -> "vendor/payouts"
+                "notifications" -> "notifications"
+                else -> null
+            }
             else -> null
         }
     }

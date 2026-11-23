@@ -84,13 +84,13 @@ private enum class VendorTab { SUMMARY, OWNERS, COMMISSIONS, PAYOUTS }
 
 /** "November 2026" for "2026-11". */
 @Composable
-private fun monthLabel(ym: String): String {
+internal fun monthLabel(ym: String): String {
     val months = stringArrayResource(R.array.months)
     val m = ym.substringAfter('-', "").toIntOrNull() ?: return ym
     return "${months.getOrElse(m - 1) { m.toString() }} ${ym.substringBefore('-')}"
 }
 
-private fun pct(p: Double?): String = p?.let { (if (it % 1.0 == 0.0) it.toLong().toString() else "%.2f".format(it).trimEnd('0').trimEnd('.')) + "%" } ?: "—"
+internal fun pct(p: Double?): String = p?.let { (if (it % 1.0 == 0.0) it.toLong().toString() else "%.2f".format(it).trimEnd('0').trimEnd('.')) + "%" } ?: "—"
 
 @Composable
 fun VendorDashboardScreen(onBack: () -> Unit) {
@@ -186,7 +186,7 @@ private fun VendorTotalsGrid(d: VendorDashboard) {
 }
 
 @Composable
-private fun MonthCard(m: VendorMonth) {
+internal fun MonthCard(m: VendorMonth) {
     AppCard {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -205,7 +205,7 @@ private fun MonthCard(m: VendorMonth) {
 }
 
 @Composable
-private fun OwnerCard(o: VendorReferredOwner) {
+internal fun OwnerCard(o: VendorReferredOwner) {
     AppCard {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -225,7 +225,7 @@ private fun OwnerCard(o: VendorReferredOwner) {
 }
 
 @Composable
-private fun CommissionCard(c: VendorCommission) {
+internal fun CommissionCard(c: VendorCommission) {
     AppCard {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -245,7 +245,7 @@ private fun CommissionCard(c: VendorCommission) {
 }
 
 @Composable
-private fun PayoutCard(p: VendorPayout) {
+internal fun PayoutCard(p: VendorPayout) {
     AppCard {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -253,11 +253,21 @@ private fun PayoutCard(p: VendorPayout) {
                 Text(Money.format(p.amount), fontWeight = FontWeight.Bold, color = Palette.Success)
             }
             HorizontalDivider(Modifier.padding(vertical = 6.dp).fillMaxWidth())
+            // 1.17: how it was paid (UPI / bank transfer / cash / other), when recorded
+            p.payoutMethod?.takeIf { it.isNotBlank() }?.let { LabelValue(stringResource(R.string.vendor_payout_method), payoutMethodLabel(it)) }
             LabelValue(stringResource(R.string.vendor_utr), p.payoutReference?.takeIf { it.isNotBlank() } ?: "—")
             LabelValue(stringResource(R.string.vendor_entries), p.entries.toString())
             if (p.reversedAmount > 0) LabelValue(stringResource(R.string.vendor_reversed_later), Money.format(p.reversedAmount), Palette.Danger)
         }
     }
+}
+
+@Composable
+internal fun payoutMethodLabel(m: String): String = when (m) {
+    "upi" -> stringResource(R.string.vendor_method_upi)
+    "bank" -> stringResource(R.string.vendor_method_bank)
+    "cash" -> stringResource(R.string.vendor_method_cash)
+    else -> stringResource(R.string.vendor_method_other)
 }
 
 /** Owner home: entry to the Vendor Dashboard, shown only to active vendors. */

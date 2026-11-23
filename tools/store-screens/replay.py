@@ -4,6 +4,7 @@ import json, sys, urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 FX = json.load(open(sys.argv[1], encoding="utf-8"))
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8090
+CHANGED = False   # vendor demo: temporary password changed
 def key(path, query):
     q = {k: v[0] for k, v in urllib.parse.parse_qs(query).items() if k not in ("from", "to")}
     return path + ("?" + urllib.parse.urlencode(sorted(q.items())) if q else "")
@@ -18,10 +19,14 @@ class H(BaseHTTPRequestHandler):
     def role(self):
         # 1.14: tenant and collection-agent demo accounts have their own recorded answers ("tenant|…", "employee|…")
         tok = (self.headers.get("Authorization") or "").replace("Bearer ", "")
-        return {"demo-tenant-token": "tenant", "demo-agent-token": "employee"}.get(tok)
+        # 1.17: independent vendor demo account ("vendor|…")
+        return {"demo-tenant-token": "tenant", "demo-agent-token": "employee", "demo-vendor-token": "vendor"}.get(tok)
     def do_GET(self):
         path, q = self.route()
         r = self.role()
+        # 1.17: the vendor signs in with a temporary password first; after PUT vendor/profile.php it is changed
+        if r == "vendor" and path == "vendor/profile.php" and not CHANGED and "vendor|vendor/profile.php#temp" in FX:
+            hit = FX["vendor|vendor/profile.php#temp"]; return self.send(hit.get("status", 200), hit.get("body"))
         hit = (FX.get(r + "|" + key(path, q)) or FX.get(r + "|" + path)) if r else (FX.get(key(path, q)) or FX.get(path))
         if hit is None:
             open("replay-misses.txt", "a").write("GET " + key(path, q) + "\n")
@@ -36,5 +41,16 @@ class H(BaseHTTPRequestHandler):
             return self.send(200, FX.get("POST auth/login.php|" + user) or FX["POST auth/login.php"])
         open("replay-misses.txt", "a").write("POST " + path + "\n")
         self.send(200, {"status": "success", "message": "OK", "data": {}})
+    def do_PUT(self):
+        global CHANGED
+        path, q = self.route()
+        n = int(self.headers.get("Content-Length") or 0); self.rfile.read(n)
+        r = self.role()
+        hit = FX.get((r or "") + "|PUT " + path)
+        if hit is None:
+            open("replay-misses.txt", "a").write("PUT " + path + "\n")
+            return self.send(200, {"status": "success", "message": "OK", "data": {}})
+        if r == "vendor" and path == "vendor/profile.php": CHANGED = True
+        self.send(hit.get("status", 200), hit.get("body"))
     def log_message(self, *a): pass
 ThreadingHTTPServer(("0.0.0.0", PORT), H).serve_forever()

@@ -46,6 +46,28 @@ class ReportRepositoryImpl @Inject constructor(
         caller.get(com.genusit.prms.domain.model.VendorDashboard.serializer()) { api.ownerVendor() }
 }
 
+/** 1.17: independent vendor's own dashboard and profile. */
+class VendorAccountRepositoryImpl @Inject constructor(
+    private val api: PrmsApiService,
+    private val caller: ApiCaller,
+) : com.genusit.prms.domain.repository.VendorAccountRepository {
+    override suspend fun home(): com.genusit.prms.domain.model.VendorDashboard =
+        caller.get(com.genusit.prms.domain.model.VendorDashboard.serializer()) { api.vendorDashboard() }
+    override suspend fun profile(): com.genusit.prms.domain.model.VendorProfile =
+        caller.get(com.genusit.prms.domain.model.VendorProfile.serializer()) { api.vendorProfile() }
+    override suspend fun savePayment(input: com.genusit.prms.domain.model.VendorPaymentInput): com.genusit.prms.domain.model.VendorProfile {
+        val body = buildJsonObject {
+            put("action", "payment"); put("payout_method", input.payoutMethod); put("upi_id", input.upiId.trim())
+            put("account_holder", input.accountHolder.trim()); put("bank_name", input.bankName.trim())
+            put("account_number", input.accountNumber.replace(" ", "")); put("ifsc", input.ifsc.trim().uppercase())
+        }
+        return caller.get(com.genusit.prms.domain.model.VendorProfile.serializer()) { api.vendorProfileUpdate(body) }
+    }
+    override suspend fun changePassword(current: String, new: String) {
+        caller.run { api.vendorProfileUpdate(buildJsonObject { put("action", "password"); put("current_password", current); put("new_password", new) }) }
+    }
+}
+
 class PropertyRepositoryImpl @Inject constructor(
     private val api: PrmsApiService,
     private val caller: ApiCaller,

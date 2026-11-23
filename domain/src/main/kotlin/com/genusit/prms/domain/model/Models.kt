@@ -16,7 +16,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
 enum class Role(val api: String) {
-    OWNER("owner"), EMPLOYEE("employee"), TENANT("tenant"), ADMIN("admin");
+    // 1.17: VENDOR = independent vendor created by the Super Admin (vendor screens only, never owner screens)
+    OWNER("owner"), EMPLOYEE("employee"), TENANT("tenant"), ADMIN("admin"), VENDOR("vendor");
     companion object { fun from(v: String?): Role? = values().firstOrNull { it.api == v } }
 }
 
@@ -705,4 +706,5 @@ object FlexIntOrNullSerializer : kotlinx.serialization.KSerializer<Int?> {
 }
 
 /** Whose profile photo (owner or tenant). Separate from Aadhaar / PAN documents. */
-enum class PhotoSubject(val apiValue: String) { OWNER("owner"), TENANT("tenant"), EMPLOYEE("employee") }
+// 1.17: VENDOR — the independent vendor views the photo the Super Admin set (read-only)
+enum class PhotoSubject(val apiValue: String) { OWNER("owner"), TENANT("tenant"), EMPLOYEE("employee"), VENDOR("vendor") }
