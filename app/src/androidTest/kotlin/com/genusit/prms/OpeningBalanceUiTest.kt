@@ -10,6 +10,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -54,6 +57,7 @@ class OpeningBalanceUiTest {
         val prop = mutableStateOf(0)
         val since = mutableStateOf("2025-06-01")
         val prev = mutableStateOf("")
+        val depA = mutableStateOf(""); val depC = mutableStateOf("")
         val chosen = mutableStateMapOf<Int, Boolean>()
         val rooms = listOf(Property(id = 1, propertyCode = "R1", city = "Indore", baseRent = 4000.0, status = "available"))
         val charges = listOf(Charge(id = 4, name = "Electricity", chargeType = "fixed", fixedAmount = 500.0))
@@ -62,7 +66,8 @@ class OpeningBalanceUiTest {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         ExistingTenantSection(rooms, charges, prop.value, { prop.value = it }, since.value, { since.value = it }, chosen, { id, on -> chosen[id] = on },
-                            prev.value, { prev.value = it }, tried = true)
+                            prev.value, { prev.value = it }, tried = true,
+                            depositAgreed = depA.value, onDepositAgreed = { depA.value = it }, depositCollected = depC.value, onDepositCollected = { depC.value = it })
                     }
                 }
             }
@@ -70,8 +75,13 @@ class OpeningBalanceUiTest {
         rule.onAllNodesWithText("Previous Outstanding Balance (₹)").onFirst().assertIsDisplayed()
         rule.onAllNodesWithText("Tenant Since (YYYY-MM-DD)").onFirst().assertIsDisplayed()
         rule.onAllNodesWithText("Room Allocation").onFirst().performScrollTo().assertIsDisplayed()
-        // no deposit fields and no month-wise lines any more
-        assertEquals(0, rule.onAllNodesWithText("Deposit", substring = true).fetchSemanticsNodes().size)
+        // 1.17.1: the security deposit the existing tenant already paid is asked again (it was missing → ₹0 on WhatsApp)
+        rule.onAllNodesWithText("Security deposit agreed").onFirst().performScrollTo().assertIsDisplayed()
+        rule.onAllNodesWithText("Security deposit already collected").onFirst().performScrollTo().assertIsDisplayed()
+        rule.onAllNodes(hasSetTextAction() and hasText("Security deposit already collected")).onFirst().performTextInput("7500")
+        rule.waitForIdle()
+        assertEquals("7500", depC.value)
+        // no month-wise lines any more
         assertEquals(0, rule.onAllNodesWithText("Add line", substring = true).fetchSemanticsNodes().size)
         rule.runOnIdle { prev.value = "5000"; prop.value = 1 }
         rule.waitForIdle()

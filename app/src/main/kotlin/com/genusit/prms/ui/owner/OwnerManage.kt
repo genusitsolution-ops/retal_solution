@@ -165,7 +165,7 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
     val roomsState by model.rooms.state.collectAsStateWithLifecycle()
     val chargesState by model.charges.state.collectAsStateWithLifecycle()
     val joinOk = Dates.parse(model.joiningDate)?.let { !it.isAfter(java.time.LocalDate.now()) } == true
-    val migrationOk = !existingType || (model.propertyId > 0 && joinOk && previousAmount(model.previousOutstanding) != null)
+    val migrationOk = !existingType || (model.propertyId > 0 && joinOk && previousAmount(model.previousOutstanding) != null && model.depositOk())
     val valid = name.isNotBlank() && Validators.phone(phone) && emailOk && aadhaarOk && panOk && accountOk && migrationOk
 
     ScreenScaffold(stringResource(if (id == 0) R.string.add_tenant else R.string.edit_tenant), onBack = onBack) { pad ->
@@ -272,6 +272,8 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                         tenantSince = model.joiningDate, onTenantSince = { model.joiningDate = it },
                         chosen = model.chargeChoices, onCharge = { cid, on -> model.chargeChoices[cid] = on },
                         previous = model.previousOutstanding, onPrevious = { model.previousOutstanding = it }, tried = tried,
+                        depositAgreed = model.depositAgreed, onDepositAgreed = { model.depositAgreed = it },
+                        depositCollected = model.depositCollected, onDepositCollected = { model.depositCollected = it }, depositOk = model.depositOk(),
                     )
                 }
             }

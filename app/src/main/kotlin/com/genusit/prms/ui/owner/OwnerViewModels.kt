@@ -186,6 +186,12 @@ class TenantFormViewModel @Inject constructor(
     var joiningDate by androidx.compose.runtime.mutableStateOf("")
     val chargeChoices = androidx.compose.runtime.mutableStateMapOf<Int, Boolean>()
     var previousOutstanding by androidx.compose.runtime.mutableStateOf("")
+    /** Security deposit the existing tenant already has for this room (blank = 0; only "collected" entered → agreed = collected). */
+    var depositAgreed by androidx.compose.runtime.mutableStateOf("")
+    var depositCollected by androidx.compose.runtime.mutableStateOf("")
+    fun depositCollectedValue(): Double? = if (depositCollected.isBlank()) 0.0 else previousAmount(depositCollected)
+    fun depositAgreedValue(): Double? = if (depositAgreed.isBlank()) depositCollectedValue() else previousAmount(depositAgreed)
+    fun depositOk(): Boolean { val a = depositAgreedValue(); val c = depositCollectedValue(); return a != null && c != null && c <= a + 0.005 }
     val rooms = loadable(autoLoad = false) { getProperties() }
     val charges = loadable(autoLoad = false) { getCharges() }
 
@@ -202,7 +208,8 @@ class TenantFormViewModel @Inject constructor(
         if (id != 0 || tenantType != "existing") return null
         val ch = (charges.state.value as? UiState.Data)?.value.orEmpty().map { it.id }.filter { chargeChoices[it] != false }
         return com.genusit.prms.domain.model.MigrationInput(propertyId = propertyId, joiningDate = joiningDate.trim(), chargeIds = ch,
-            previousOutstanding = previousAmount(previousOutstanding) ?: 0.0)
+            previousOutstanding = previousAmount(previousOutstanding) ?: 0.0,
+            depositAgreed = depositAgreedValue() ?: 0.0, depositCollected = depositCollectedValue() ?: 0.0)
     }
 
     /** New tenant's profile photo: compressed on the phone now, uploaded once the tenant is saved. */

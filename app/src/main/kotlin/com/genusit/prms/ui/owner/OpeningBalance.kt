@@ -91,6 +91,8 @@ fun ExistingTenantSection(
     rooms: List<Property>, charges: List<Charge>, propertyId: Int, onProperty: (Int) -> Unit,
     tenantSince: String, onTenantSince: (String) -> Unit, chosen: Map<Int, Boolean>, onCharge: (Int, Boolean) -> Unit,
     previous: String, onPrevious: (String) -> Unit, tried: Boolean,
+    depositAgreed: String = "", onDepositAgreed: (String) -> Unit = {},
+    depositCollected: String = "", onDepositCollected: (String) -> Unit = {}, depositOk: Boolean = true,
 ) {
     val sinceDate = Dates.parse(tenantSince)
     val sinceOk = sinceDate != null && !sinceDate.isAfter(java.time.LocalDate.now())
@@ -105,6 +107,8 @@ fun ExistingTenantSection(
                 KeyboardType.Decimal, supporting = stringResource(R.string.ex_previous_hint))
             FormField(tenantSince, { onTenantSince(it.filter { c -> c.isDigit() || c == '-' }.take(10)) }, stringResource(R.string.ex_since),
                 tried && !sinceOk, supporting = stringResource(R.string.ex_since_hint))
+            FormField(depositAgreed, { onDepositAgreed(amountInput(it)) }, stringResource(R.string.ob_deposit_agreed), tried && !depositOk, KeyboardType.Decimal)
+            FormField(depositCollected, { onDepositCollected(amountInput(it)) }, stringResource(R.string.ob_deposit_collected), tried && !depositOk, KeyboardType.Decimal)
             ChoiceField(stringResource(R.string.ex_room), rooms.map { it.id to "${it.propertyCode} · ${it.city} · ${Money.format(it.baseRent, decimals = 0)}" }, propertyId,
                 onProperty, isError = tried && propertyId == 0, emptyText = stringResource(R.string.ob_no_vacant_room))
             if (charges.isNotEmpty()) {
