@@ -97,6 +97,7 @@ class OpeningBalanceUiTest {
     @Test fun roomChoiceFillsAgreedDepositOnly() {
         val prop = mutableStateOf(0)
         val depA = mutableStateOf(""); val depC = mutableStateOf("3000")
+        val noCharges = mutableStateMapOf<Int, Boolean>()
         val rooms = listOf(
             Property(id = 1, propertyCode = "R101", city = "Pune", baseRent = 4000.0, depositAmount = 5000.0, status = "available"),
             Property(id = 2, propertyCode = "R102", city = "Pune", baseRent = 4500.0, depositAmount = 7000.0, status = "available"),
@@ -107,7 +108,7 @@ class OpeningBalanceUiTest {
                     Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         // same rule as the Add Tenant screen model: choosing a room puts its deposit in "agreed"
                         ExistingTenantSection(rooms, emptyList(), prop.value, { id -> prop.value = id; depA.value = roomDepositDefault(rooms.first { it.id == id }.depositAmount) },
-                            "2025-06-01", {}, mutableStateMapOf(), { _, _ -> }, "0", {}, tried = false,
+                            "2025-06-01", {}, noCharges, { _, _ -> }, "0", {}, tried = false,
                             depositAgreed = depA.value, onDepositAgreed = { depA.value = it }, depositCollected = depC.value, onDepositCollected = { depC.value = it })
                     }
                 }
