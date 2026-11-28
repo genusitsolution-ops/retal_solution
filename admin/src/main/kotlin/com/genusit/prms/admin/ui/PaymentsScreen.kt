@@ -60,8 +60,8 @@ fun PaymentsScreen(nav: NavHostController) {
     LaunchedEffect(Unit) { vm.load(showSpinner = false) }
     val counts = (state as? Load.Data)?.value?.counts.orEmpty()
 
-    Page("Payment verification", onRefresh = { vm.load(showSpinner = false) }, header = {
-        Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp)) {
+    Page("Payments", subtitle = "Owner payment submissions to verify", onRefresh = { vm.load(showSpinner = false) }, header = {
+        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
             Chips(listOf("pending" to "To verify (${counts["pending"] ?: 0})", "approved" to "Approved (${counts["approved"] ?: 0})",
                 "rejected" to "Rejected (${counts["rejected"] ?: 0})", "all" to "All"), filter) { filter = it }
         }
@@ -78,18 +78,20 @@ fun PaymentsScreen(nav: NavHostController) {
 
 @Composable
 private fun PaymentCard(p: Payment, onClick: () -> Unit) {
-    AppCard(onClick = onClick) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(p.owner.name, fontWeight = FontWeight.SemiBold)
-                    SmallText("${p.requestNo} · ${p.invoice.requestedPackage ?: "—"} · ${dateTime(p.createdAt)}")
-                }
+    AppCard(onClick = onClick, padding = 14) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            PersonRow(p.owner.name, "${p.requestNo} · ${dateTime(p.createdAt)}") {
                 Column(horizontalAlignment = Alignment.End) { Text(money(p.amount), fontWeight = FontWeight.Bold, color = C.BrandDark); StatusChip(p.status) }
             }
-            SmallText("UTR ${p.utr} · paid on ${date(p.paidOn)} · " + if (p.method == "gateway") "Online payment" else "UPI")
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Tag(p.invoice.requestedPackage ?: "—")
+                Tag(if (p.method == "gateway") "Online" else "UPI", C.BrandDark, C.Bg)
+                Tag("UTR ${p.utr}", C.BrandDark, C.Bg)
+            }
+            SmallText("Paid on ${date(p.paidOn)}")
             val warn = warnings(p)
-            if (warn.isNotEmpty()) SmallText("⚠ " + warn.joinToString(" · "), C.Danger)
+            if (warn.isNotEmpty()) Text("⚠ " + warn.joinToString(" · "), color = C.Danger, style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(C.DangerSoft).padding(8.dp))
         }
     }
 }
@@ -151,7 +153,7 @@ fun PaymentDetailScreen(nav: NavHostController, id: Int) {
     val img = (shot as? Load.Data)?.value
     if (fullScreen && img != null) ZoomImage(img) { fullScreen = false }
 
-    Page(p?.requestNo ?: "Payment", nav, onRefresh = { vm.load(showSpinner = false) }) {
+    Page(p?.requestNo ?: "Payment", nav, subtitle = p?.owner?.name, onRefresh = { vm.load(showSpinner = false) }) {
         when (val s = state) {
             is Load.Data -> {
                 val d = s.value
@@ -159,7 +161,7 @@ fun PaymentDetailScreen(nav: NavHostController, id: Int) {
                     AppCard {
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) { Text(money(d.amount), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold); SmallText("Claimed by the owner") }
+                                Column(Modifier.weight(1f)) { Text(money(d.amount), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = C.Ink); SmallText("Claimed by ${d.owner.name}") }
                                 StatusChip(d.status)
                             }
                             InfoRow("Invoice total", money(d.invoiceTotal), if (d.checks.amountDiffers) C.Danger else Color.Unspecified, bold = d.checks.amountDiffers)

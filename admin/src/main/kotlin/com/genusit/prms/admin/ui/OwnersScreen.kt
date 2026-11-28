@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -49,13 +52,9 @@ fun OwnersScreen(nav: NavHostController) {
     LaunchedEffect(Unit) { vm.load(showSpinner = false) }
     val counts = (state as? Load.Data)?.value?.counts.orEmpty()
 
-    Page("Owners", onRefresh = { vm.load(showSpinner = false) }, header = {
-        Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(typed, { typed = it }, singleLine = true, placeholder = { Text("Search name, username, phone, email") },
-                leadingIcon = { Icon(Icons.Filled.Search, null) },
-                trailingIcon = { if (typed != query) TextButton(onClick = { query = typed.trim() }) { Text("Search") } },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { query = typed.trim() }),
-                modifier = Modifier.fillMaxWidth())
+    Page("Owners", subtitle = "Registered property owners", onRefresh = { vm.load(showSpinner = false) }, header = {
+        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SearchBox(typed, { typed = it }, query, { query = it; typed = it }, "Search name, username, phone, email")
             Chips(listOf("" to "All (${counts["all"] ?: 0})", "active" to "Active (${counts["active"] ?: 0})",
                 "inactive" to "Inactive (${counts["inactive"] ?: 0})", "suspended" to "Suspended (${counts["suspended"] ?: 0})"), filter) { filter = it }
         }
@@ -65,18 +64,19 @@ fun OwnersScreen(nav: NavHostController) {
                 if (s.value.owners.isEmpty()) item { Empty("No owner found.") }
                 s.value.owners.forEach { o ->
                     item(key = o.id) {
-                        AppCard(onClick = { nav.navigate("owner/${o.id}") }) {
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(o.fullName, fontWeight = FontWeight.SemiBold)
-                                        SmallText("@${o.username}" + (o.businessName?.takeIf { it.isNotBlank() }?.let { " · $it" } ?: ""))
-                                    }
-                                    if (o.isVendor) { Icon(Icons.Filled.Storefront, "Vendor", tint = C.Success); Spacer(Modifier.width(6.dp)) }
+                        AppCard(onClick = { nav.navigate("owner/${o.id}") }, padding = 14) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                PersonRow(o.fullName, "@${o.username}" + (o.businessName?.takeIf { it.isNotBlank() }?.let { " · $it" } ?: "")) {
                                     StatusChip(if (o.signupStatus == "pending") "pending" else o.status, if (o.signupStatus == "pending") "Awaiting approval" else null)
                                 }
-                                SmallText(listOfNotNull(o.phone, o.email).joinToString(" · "))
-                                SmallText("Plan: ${o.packageName ?: "—"} · ${o.properties} properties · ${o.tenants} tenants · joined ${date(o.createdAt)}")
+                                listOfNotNull(o.phone?.takeIf { it.isNotBlank() }, o.email?.takeIf { it.isNotBlank() }).joinToString(" · ").takeIf { it.isNotBlank() }?.let { SmallText(it) }
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Tag(o.packageName ?: "No plan")
+                                    Tag("${o.properties} properties", C.BrandDark, C.Bg)
+                                    Tag("${o.tenants} tenants", C.BrandDark, C.Bg)
+                                    if (o.isVendor) Tag("Vendor", C.Teal, C.TealSoft)
+                                }
+                                SmallText("Joined ${date(o.createdAt)}")
                             }
                         }
                     }
@@ -95,7 +95,6 @@ fun OwnerDetailScreen(nav: NavHostController, id: Int) {
     val state by vm.state.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
     var changeStatus by remember { mutableStateOf(false) }
-    var convert by remember { mutableStateOf(false) }
     Messages(vm.messages)
     val o = (state as? Load.Data)?.value
 
@@ -105,26 +104,18 @@ fun OwnerDetailScreen(nav: NavHostController, id: Int) {
             options = Triple("Status", o.status, listOf("active" to "Active", "inactive" to "Inactive", "suspended" to "Suspended")),
             onSubmit = { v -> val st = v["_choice"]!!; if (st != o.status) vm.act({ api.setOwnerStatus(o.id, st) }) }, onDismiss = { changeStatus = false })
     }
-    if (convert && o != null) {
-        FormDialog("Convert ${o.fullName} to vendor", listOf(
-            Field("percent", "Commission %", required = true, keyboard = KeyboardType.Decimal, hint = "e.g. 10"),
-            Field("remarks", "Remarks", multiline = true)), "Convert",
-            intro = "The owner keeps their account and data. They earn this % of every renewal paid by owners who register with their referral code.",
-            options = Triple("Vendor status", "active", listOf("active" to "Active", "inactive" to "Inactive")),
-            onSubmit = { v -> vm.act({ api.convertToVendor(o.id, v["percent"]!!, v["_choice"]!!, v["remarks"]!!) }) }, onDismiss = { convert = false })
-    }
 
-    Page(o?.fullName ?: "Owner", nav, onRefresh = { vm.load(showSpinner = false) }) {
+    Page(o?.fullName ?: "Owner", nav, subtitle = o?.let { "@" + it.username }, onRefresh = { vm.load(showSpinner = false) }) {
         when (val s = state) {
             is Load.Data -> {
                 val d = s.value
                 item {
                     AppCard {
                         Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) { Text(d.fullName, fontWeight = FontWeight.Bold); SmallText("@${d.username}") }
+                            PersonRow(d.fullName, "@${d.username}") {
                                 StatusChip(if (d.signupStatus == "pending") "pending" else d.status, if (d.signupStatus == "pending") "Awaiting approval" else null)
                             }
+                            Spacer(Modifier.height(8.dp))
                             InfoRow("Business", d.businessName)
                             InfoRow("Phone", d.phone)
                             InfoRow("Email", d.email)
@@ -133,12 +124,14 @@ fun OwnerDetailScreen(nav: NavHostController, id: Int) {
                             InfoRow("Last sign-in", dateTime(d.lastLogin))
                             InfoRow("Referral code", d.referralCode)
                             ActionRow {
-                                d.phone?.takeIf { it.isNotBlank() }?.let { p -> OutlinedButton(onClick = { dial(ctx, p) }) { Icon(Icons.Filled.Call, null); Spacer(Modifier.width(4.dp)); Text("Call") } }
-                                d.email?.takeIf { it.isNotBlank() }?.let { e -> OutlinedButton(onClick = { email(ctx, e) }) { Icon(Icons.Filled.Email, null); Spacer(Modifier.width(4.dp)); Text("Email") } }
+                                d.phone?.takeIf { it.isNotBlank() }?.let { p -> OutlinedButton(onClick = { dial(ctx, p) }, modifier = Modifier.weight(1f)) { Icon(Icons.Filled.Call, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("Call") } }
+                                d.phone?.takeIf { it.isNotBlank() }?.let { p -> OutlinedButton(onClick = { whatsapp(ctx, p) }, modifier = Modifier.weight(1f)) { Icon(Icons.AutoMirrored.Filled.Send, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("WhatsApp") } }
+                                d.email?.takeIf { it.isNotBlank() }?.let { e -> OutlinedButton(onClick = { email(ctx, e) }, modifier = Modifier.weight(1f)) { Icon(Icons.Filled.Email, null, Modifier.size(18.dp)) } }
                             }
                             ActionRow {
                                 if (d.signupStatus == "pending") SmallText("Waiting for approval — approve or reject it under Approvals.", C.Warning)
-                                else androidx.compose.material3.Button(onClick = { changeStatus = true }, enabled = !busy) { Text("Change status") }
+                                else androidx.compose.material3.Button(onClick = { changeStatus = true }, enabled = !busy, modifier = Modifier.fillMaxWidth(),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)) { Text("Change account status") }
                             }
                         }
                     }
@@ -175,12 +168,11 @@ fun OwnerDetailScreen(nav: NavHostController, id: Int) {
                         Column { SectionTitle("Referred by"); InfoRow("Owner", r.name, C.Brand, bold = true); InfoRow("Date", date(r.date)); InfoRow("Referral", r.status) }
                     }
                 } }
-                item {
+                d.vendor?.let { v -> item {
                     AppCard {
                         Column {
-                            SectionTitle("Vendor")
-                            val v = d.vendor
-                            if (v != null) {
+                            SectionTitle("Vendor (owner account)")
+                            run {
                                 InfoRow("Status", v.status.replaceFirstChar { it.uppercase() }, statusColors(v.status).first, bold = true)
                                 InfoRow("Commission", pct(v.commissionPercent))
                                 InfoRow("Referrals", v.totals.referrals.toString())
@@ -188,24 +180,17 @@ fun OwnerDetailScreen(nav: NavHostController, id: Int) {
                                 InfoRow("Pending / approved", money(v.totals.pending) + " / " + money(v.totals.approved))
                                 InfoRow("Paid", money(v.totals.paid), C.Success)
                                 ActionRow { androidx.compose.material3.Button(onClick = { nav.navigate("vendor/${v.id}") }) { Text("Open vendor") } }
-                            } else {
-                                SmallText("Not a vendor. A vendor earns commission on renewals of owners who register with their referral code.")
-                                ActionRow {
-                                    androidx.compose.material3.Button(onClick = { convert = true }, enabled = !busy && d.signupStatus != "pending") {
-                                        Icon(Icons.Filled.Storefront, null); Spacer(Modifier.width(6.dp)); Text("Convert to vendor")
-                                    }
-                                }
                             }
                         }
                     }
-                }
+                } }
                 if (d.recentPayments.isNotEmpty()) {
                     item { SectionTitle("Recent payments") }
                     d.recentPayments.forEach { p ->
                         item(key = "p${p.id}") {
-                            AppCard(onClick = { nav.navigate("payment/${p.id}") }) {
+                            AppCard(onClick = { nav.navigate("payment/${p.id}") }, padding = 14) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) { Text(p.requestNo ?: "#${p.id}", fontWeight = FontWeight.SemiBold); SmallText("UTR ${p.utr ?: "—"} · ${dateTime(p.createdAt)}") }
+                                    Column(Modifier.weight(1f)) { Text(p.requestNo ?: "#${p.id}", fontWeight = FontWeight.SemiBold, color = C.Ink); SmallText("UTR ${p.utr ?: "—"} · ${dateTime(p.createdAt)}") }
                                     Column(horizontalAlignment = Alignment.End) { Text(money(p.amount), fontWeight = FontWeight.Bold); StatusChip(p.status) }
                                 }
                             }

@@ -78,6 +78,26 @@ def posts():
     except FileNotFoundError: return []
 def last_post(): p = posts(); return p[-1] if p else {}
 
+def by_id(rid):
+    return [n for n in nodes() if (n.get("resource-id") or "").endswith(rid)]
+def fill(rid, value, clear=False, tries=10):
+    """Types into the form field with test tag `rid` (scrolls down to it; keeps it above the keyboard)."""
+    hide_kb()
+    for i in range(tries * 2):
+        if i == tries: to_top()   # second pass from the top (the field may have scrolled above the screen)
+        m = by_id(rid)
+        if m:
+            x, y = center(m[0])
+            if y > H * .70: sh("input", "swipe", str(W // 2), str(int(H * .70)), str(W // 2), str(int(H * .40)), "300"); time.sleep(0.8); continue
+            sh("input", "tap", str(x), str(y)); time.sleep(0.5)
+            if clear: sh("input", "keyevent", "KEYCODE_MOVE_END"); sh("input", "keyevent", *(["67"] * 24))
+            sh("input", "text", value.replace(" ", "%s")); time.sleep(0.4); return True
+        swipe_up()
+    return False
+def field_text(rid):
+    m = by_id(rid)
+    if not m: return None
+    return " ".join(label(n) for n in m[0].iter("node")) or label(m[0])
 def fresh_start():
     sh("am", "force-stop", PKG); sh("pm", "clear", PKG)
     sh("am", "start", "-n", f"{PKG}/com.genusit.prms.admin.ui.MainActivity"); time.sleep(4)
@@ -101,10 +121,13 @@ time.sleep(1.5); shot("02-dashboard")
 t = texts()
 check("dashboard: pending approvals 1, payments to verify 2, owners 7, vendors 1/1",
       "Pending approvals" in t and "Payments to verify" in t and "7" in t and "1 / 1" in t, t)
+check("dashboard: quick actions", find("Add vendor") and find("Verify payments", timeout=3), texts())
+check("dashboard: owners by status + self-registration", scroll_to("Owners by status") and scroll_to("Self-registration"), texts())
 check("dashboard: vendor commission block", scroll_to("Approved, to pay")); shot("03-dashboard-more")
+to_top()
 
 # ── approvals ──
-tap("Approvals"); time.sleep(1.5)
+tap("Approvals", nth=0); time.sleep(1.5)
 check("approvals: Pooja Rao pending with referral", find("Pooja Rao") and find("RSU", exact=False, timeout=3) is not None or find("Ramesh Patel", exact=False, timeout=3), texts())
 shot("04-approvals")
 tap("Approve"); check("approve asks for confirmation", find("Approve Pooja Rao?"))
@@ -125,65 +148,133 @@ check("owners list: 7 owners incl. suspended Sunita", find("All (7)", timeout=8)
 to_top(); chip("Suspended (1)", "All (7)"); time.sleep(1.5)
 check("filter Suspended", find("Sunita Sharma") and not find("Amit Kulkarni", timeout=2), texts())
 tap("Sunita Sharma"); time.sleep(1.5); shot("09-owner-detail")
-check("owner detail: subscription and vendor sections", scroll_to("Subscription") and scroll_to("Convert to vendor"), texts())
-to_top(); scroll_to("Change status", tries=3)
-tap("Change status"); time.sleep(0.8)
+check("owner detail: subscription section", scroll_to("Subscription"), texts())
+check("owner detail: no 'Convert to vendor' (vendors are registered separately now)", not scroll_to("Convert to vendor", tries=4), texts())
+to_top(); scroll_to("Change account status", tries=3)
+tap("Change account status"); time.sleep(0.8)
 check("status dialog with Active / Inactive / Suspended", find("Active") and find("Inactive") and find("Suspended"), texts())
 tap("Active"); shot("10-owner-status"); tap("Save"); time.sleep(1.5)
 p = last_post(); check("status change sent", p.get("path") == "admin/owners.php" and p.get("action") == "status" and p.get("status") == "active" and p.get("id") == 2, p)
-scroll_to("Convert to vendor"); tap("Convert to vendor"); time.sleep(0.8)
-edit(0, "7.5"); edit(1, "Agent for Raipur"); hide_kb(); shot("11-convert-vendor"); tap_last("Convert"); time.sleep(1.5)
-p = last_post(); check("convert to vendor sent with %, status, remarks", p.get("action") == "convert" and p.get("owner_id") == 2 and p.get("commission_percent") == "7.5"
-                       and p.get("status") == "active" and p.get("remarks") == "Agent for Raipur", p)
 back(); time.sleep(1)
 
 # ── vendors ──
-tap("Vendors"); time.sleep(1.5); shot("12-vendors")
-check("vendors list: Ramesh Patel 10%", find("Ramesh Patel") and find("10% commission", exact=False), texts())
-tap("Ramesh Patel"); time.sleep(1.5); shot("13-vendor-detail")
-check("vendor detail: totals and monthly payout", scroll_to("Earned") and scroll_to("Record payout"), texts())
-tap("Record payout"); time.sleep(0.8)
+def wait_snack_gone():
+    for _ in range(20):
+        if not any(m in " ".join(texts()) for m in ("Payout saved", "Owner status updated", "Registration rejected", "Owner approved", "Vendor ", "Commission ", "Remark saved", "New temporary")): break
+        time.sleep(1)
+tap("Vendors", nth=0); time.sleep(1.5); shot("12-vendors")
+check("vendors list: independent Sunita Deshpande (VEN10101) and old owner-account vendor Ramesh Patel",
+      find("Sunita Deshpande") and find("VEN10101") and scroll_to("Ramesh Patel") and find("Owner account"), texts())
+to_top(); chip("Suspended", "All"); time.sleep(1.5)
+check("filter Suspended: Kiran Traders only", find("Kiran Traders") and not find("Sunita Deshpande", timeout=2), texts())
+chip("All", "Active"); time.sleep(1.5)
+
+# add vendor: checks, server error, success with the sign-in details
+tap("Add vendor"); time.sleep(1.5)
+check("add vendor form opens", find("Independent vendor with own sign-in", timeout=6), texts())
+shot("13-add-vendor-empty")
+for _ in range(8):
+    if by_id("vf_save"): break
+    swipe_up()
+x, y = center(by_id("vf_save")[0]); sh("input", "tap", str(x), str(y)); time.sleep(1); to_top()
+check("empty form: fields marked, nothing sent", find("Please correct the", exact=False) and last_post().get("action") != "create_independent", texts())
+shot("14-add-vendor-errors")
+for rid, val in [("vf_full_name", "Meena Joshi"), ("vf_mobile", "9000000001"), ("vf_email", "meena@example.test"), ("vf_address", "Shop 4 Station Road"),
+                 ("vf_city", "Nagpur"), ("vf_pincode", "440001"), ("vf_state", "Maharashtra"), ("vf_commission_percent", "12.5")]:
+    check(f"typed {rid}", fill(rid, val))
+hide_kb(); scroll_to("Bank transfer"); tap("Bank transfer"); time.sleep(0.5)
+for rid, val in [("vf_upi_id", "meena@okbank"), ("vf_account_holder", "Meena Joshi"), ("vf_bank_name", "Test Bank"), ("vf_account_number", "123456789"), ("vf_ifsc", "test0001234")]:
+    check(f"typed {rid}", fill(rid, val))
+hide_kb(); shot("15-add-vendor-payment")
+for _ in range(8):
+    if by_id("vf_save"): break
+    swipe_up()
+x, y = center(by_id("vf_save")[0]); sh("input", "tap", str(x), str(y)); time.sleep(2)
+to_top(); check("duplicate mobile: server's message shown", find("Another vendor already uses this mobile number.", timeout=6), texts())
+to_top(); check("fix mobile", fill("vf_mobile", "9876501234", clear=True))
+hide_kb()
+for _ in range(8):
+    if by_id("vf_save"): break
+    swipe_up()
+x, y = center(by_id("vf_save")[0]); sh("input", "tap", str(x), str(y)); time.sleep(2)
+p = last_post()
+check("create_independent sent with every detail", p.get("action") == "create_independent" and p.get("full_name") == "Meena Joshi" and p.get("mobile") == "9876501234"
+      and p.get("commission_percent") == "12.5" and p.get("payout_method") == "bank" and p.get("ifsc") == "TEST0001234" and p.get("account_number") == "123456789"
+      and p.get("upi_id") == "meena@okbank" and p.get("city") == "Nagpur" and p.get("pincode") == "440001" and p.get("status") == "active"
+      and p.get("vendor_can_edit_payment") is False and p.get("password") == "", p)
+check("sign-in details shown once: code, mobile, temporary password", find("Vendor registered") and find("VEN10101") and find("TEMP8421") and find("9876501234"), texts())
+check("share buttons: Copy / WhatsApp / Share", find("Copy") and find("WhatsApp") and find("Share (SMS, email…)"), texts())
+shot("16-vendor-registered")
+tap("Done"); time.sleep(2)
+
+# vendor detail (independent)
+check("vendor detail: code, type, commission", find("VEN10101", timeout=8) and find("Independent") and find("10% commission"), texts())
+shot("17-vendor-detail")
+check("vendor detail: profile and payment details", scroll_to("Payment details") and find("sunita@okbank") and find("••••••••9012"), texts())
+shot("18-vendor-profile")
+to_top(); tap("Status"); time.sleep(0.8); tap("Suspended"); time.sleep(0.3)
+tap_last("Save"); time.sleep(1)
+check("suspend needs a reason (nothing sent)", last_post().get("action") != "set_status", last_post())
+edit(0, "Documents pending"); hide_kb(); shot("19-vendor-status"); tap_last("Save"); time.sleep(1.5)
+p = last_post(); check("set_status sent: suspended with reason", p.get("action") == "set_status" and p.get("id") == 101 and p.get("status") == "suspended" and p.get("reason") == "Documents pending", p)
+wait_snack_gone(); to_top(); tap("Reset"); time.sleep(0.8)
+check("reset asks for confirmation", find("Reset sign-in of", exact=False), texts()); tap_last("Reset"); time.sleep(2)
+p = last_post(); check("reset_password sent", p.get("action") == "reset_password" and p.get("id") == 101, p)
+check("new temporary password shown once", find("New temporary password") and find("RSTX5521"), texts()); shot("20-vendor-reset"); tap("Done"); time.sleep(1)
+wait_snack_gone(); to_top(); tap("Edit"); time.sleep(2)
+check("edit form loads the saved details", find("Sunita Deshpande", exact=False, timeout=8), texts())
+check("change commission to 11", fill("vf_commission_percent", "11", clear=True)); hide_kb(); shot("21-vendor-edit")
+for _ in range(10):
+    if by_id("vf_save"): break
+    swipe_up()
+x, y = center(by_id("vf_save")[0]); sh("input", "tap", str(x), str(y)); time.sleep(2)
+p = last_post(); check("update_independent sent; account number kept in full", p.get("action") == "update_independent" and p.get("id") == 101 and p.get("commission_percent") == "11"
+                       and p.get("account_number") == "123456789012" and p.get("upi_id") == "sunita@okbank" and p.get("remarks") == "Field partner, Pune"
+                       and p.get("address") == "12 MG Road" and p.get("full_name") == "Sunita Deshpande", p)
+check("back on the vendor after saving", find("VEN10101", timeout=6), texts())
+wait_snack_gone(); scroll_to("Commissions")
+chip("Commissions", "Monthly payout"); time.sleep(1); scroll_to("History"); shot("22-vendor-commissions")
+check("commissions: paid one shows UPI + UTR, pending one can be approved or rejected", find("UTR55667788", exact=False) and find("Approve") and find("Reject"), texts())
+tap("Reject"); time.sleep(0.8); check("reject (pending) asks for a reason", find("Reject commission", exact=False))
+edit(0, "Duplicate renewal"); hide_kb(); tap_last("Reject"); time.sleep(1.5)
+p = last_post(); check("reverse sent with reason", p.get("action") == "reverse" and p.get("commission_id") == 202 and p.get("reason") == "Duplicate renewal", p)
+wait_snack_gone(); scroll_to("Mark paid"); tap("Mark paid"); time.sleep(0.8); tap("Bank transfer"); edit(1, "NEFT123"); hide_kb(); shot("23-mark-paid"); tap_last("Mark paid"); time.sleep(1.5)
+p = last_post(); check("mark_paid sent with payout method", p.get("action") == "mark_paid" and p.get("payout_method") == "bank" and p.get("payout_reference") == "NEFT123" and "_choice" not in p, p)
+wait_snack_gone(); scroll_to("History"); tap("History"); time.sleep(2); shot("24-commission-history")
+check("commission history dialog", find("History of C-", exact=False), texts()); tap("Close")
+to_top(); scroll_to("Commissions"); chip("Referred owners", "Monthly payout"); time.sleep(1)
+check("referred owners: A and B", scroll_to("Referred Owner A") and scroll_to("Referred Owner B"), texts()); shot("25-vendor-referred")
+to_top(); scroll_to("Commissions"); chip("Payout history", "Monthly payout"); time.sleep(1)
+check("payout history with method and UTR", scroll_to("UTR55667788") and find("UPI"), texts()); shot("26-vendor-payouts")
+back(); time.sleep(1)
+
+# old owner-account vendor still works (monthly payout, % / status)
+to_top(); scroll_to("Ramesh Patel"); tap("Ramesh Patel"); time.sleep(1.5)
+check("old vendor: totals", scroll_to("Total earned"), texts())
+to_top(); scroll_to("Commissions"); chip("Monthly payout", "Commissions"); time.sleep(1)
+scroll_to("Record payout"); tap("Record payout"); time.sleep(0.8)
 check("payout dialog explains it only records the transfer", find("this only records it", exact=False), texts())
-check("payout dialog offers to approve the pending one", find("Also approve and pay", exact=False))
 tap("Also approve and pay", exact=False)
-edit(1, "UTR998877"); hide_kb(); shot("14-record-payout"); tap("Save payout"); time.sleep(1.5)
-p = last_post(); check("payout sent with month, UTR, date, approve_pending", p.get("action") == "pay_month" and p.get("payout_reference") == "UTR998877"
-                       and re.match(r"\d{4}-\d{2}$", p.get("month", "")) and re.match(r"\d{4}-\d{2}-\d{2}$", p.get("paid_date", "")) and p.get("approve_pending") is True, p)
-to_top()
-for _ in range(20):   # wait until no snackbar message is on screen (it can cover the chip row on a 320x640 screen)
-    if not any(m in " ".join(texts()) for m in ("Payout saved", "Owner converted", "Owner status updated", "Registration rejected", "Owner approved")): break
-    time.sleep(1)
-scroll_to("Commissions")   # on a 320x640 screen the tab row is below the fold when the page is at the top
-chip("Commissions", "Monthly payout"); time.sleep(1.5)
-scroll_to("History"); shot("15-vendor-commissions")
-check("commissions tab: paid one with UTR, pending one with Approve", find("NEFT-HDFC-88231", exact=False) and find("Approve"), texts())
-tap("Approve"); time.sleep(0.8); tap_last("Approve"); time.sleep(1.5)
-p = last_post(); check("commission approve sent", p.get("action") == "approve" and p.get("commission_id"), p)
-tap("History"); time.sleep(2); shot("16-commission-history")
-check("commission history dialog", find("History of C-", exact=False) and (find("Created", exact=False, timeout=4)), texts())
-tap("Close")
-to_top()
-scroll_to("Commissions"); chip("Referred owners", "Monthly payout"); time.sleep(1); scroll_to("Amit Kulkarni"); shot("17-vendor-referred")
-check("referred owners tab: Amit and Neha", scroll_to("Amit Kulkarni") and scroll_to("Neha Joshi"), texts())
-to_top(); scroll_to("Commissions"); chip("Payout history", "Monthly payout"); time.sleep(1); scroll_to("Recorded by"); shot("18-vendor-payouts")
-check("payout history tab: NEFT-HDFC-88231 by Test Admin", scroll_to("NEFT-HDFC-88231") and scroll_to("Test Admin"), texts())
-to_top(); tap("Edit % / status")
-time.sleep(0.8); shot("19-vendor-edit"); tap("Inactive"); tap("Save"); time.sleep(1.5)
-p = last_post(); check("vendor update sent (inactive, 10%)", p.get("action") == "update" and p.get("status") == "inactive" and p.get("commission_percent") == "10", p)
+edit(1, "UTR998877"); hide_kb(); shot("27-record-payout"); tap("Save payout"); time.sleep(1.5)
+p = last_post(); check("payout sent with month, UTR, date, method, approve_pending", p.get("action") == "pay_month" and p.get("payout_reference") == "UTR998877"
+                       and re.match(r"\d{4}-\d{2}$", p.get("month", "")) and re.match(r"\d{4}-\d{2}-\d{2}$", p.get("paid_date", "")) and p.get("approve_pending") is True and p.get("payout_method") == "upi", p)
+wait_snack_gone(); to_top(); tap("Edit % / status")
+time.sleep(0.8); tap("Inactive"); tap("Save"); time.sleep(1.5)
+p = last_post(); check("old vendor update sent (inactive, 10%)", p.get("action") == "update" and p.get("status") == "inactive" and p.get("commission_percent") == "10", p)
 back()
 
 # ── payments ──
-tap("Payments"); time.sleep(1.5); shot("20-payments")
+tap("Payments"); time.sleep(1.5); shot("28-payments")
 check("payments: 2 to verify, warnings on the short one", find("To verify (2)") and find("paid less than the invoice", exact=False), texts())
-tap("Vikas Mehta"); time.sleep(3); shot("21-payment-detail")
+tap("Vikas Mehta"); time.sleep(3); shot("29-payment-detail")
 check("payment detail: checks list the problems", find("UTR on screenshot differs", exact=False) or find("UTR on screenshot: 712345678909", exact=False), texts())
 scroll_to("Open full screen (pinch to zoom)")
 check("screenshot loaded from the server", find("Open full screen (pinch to zoom)", timeout=8), texts())
-shot("22-payment-screenshot")
-tap("Open full screen (pinch to zoom)"); time.sleep(1); shot("23-screenshot-full"); tap("Close"); time.sleep(0.5)
+shot("30-payment-screenshot")
+tap("Open full screen (pinch to zoom)"); time.sleep(1); shot("31-screenshot-full"); tap("Close"); time.sleep(0.5)
 scroll_to("Approve"); tap("Approve"); time.sleep(0.8)
 check("approve dialog requires the bank check and the difference", find("Accept the difference", exact=False) and find("I found this payment", exact=False), texts())
-shot("24-approve-payment")
+shot("32-approve-payment")
 tap_last("Approve"); time.sleep(1)
 check("cannot approve before ticking (nothing sent)", last_post().get("path") != "admin/payments.php")
 tap("I found this payment", exact=False); tap("Accept the difference", exact=False); tap_last("Approve"); time.sleep(1.5)

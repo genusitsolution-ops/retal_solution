@@ -57,7 +57,8 @@ object FlexInt : KSerializer<Int> {
     @SerialName("commission_paid") val commissionPaid: Double = 0.0,
 )
 @Serializable data class RecentSignup(val id: Int = 0, @SerialName("owner_id") val ownerId: Int = 0, @SerialName("full_name") val fullName: String = "",
-                                      val username: String = "", @SerialName("created_at") val createdAt: String? = null)
+                                      val username: String = "", @SerialName("created_at") val createdAt: String? = null,
+                                      @SerialName("referral_code") val referralCode: String? = null)
 @Serializable data class RecentPayment(val id: Int = 0, @SerialName("request_no") val requestNo: String? = null, @SerialName("owner_name") val ownerName: String = "",
                                        val amount: Double = 0.0, val utr: String? = null, @SerialName("created_at") val createdAt: String? = null)
 
@@ -120,9 +121,15 @@ object FlexInt : KSerializer<Int> {
     @SerialName("owner_status") val ownerStatus: String? = null, val status: String = "",
     @SerialName("commission_percent") val commissionPercent: Double = 0.0, val remarks: String? = null,
     @SerialName("converted_at") val convertedAt: String? = null, val totals: VendorTotals = VendorTotals(),
-)
+    /** "independent" (registered by the Super Admin, own login) or "converted" (an owner account, old way). */
+    @SerialName("vendor_type") val vendorType: String = "converted", @SerialName("vendor_code") val vendorCode: String? = null,
+) {
+    val isIndependent: Boolean get() = vendorType == "independent"
+    /** The code owners enter when they register (VEN… for independent vendors). */
+    val code: String? get() = vendorCode ?: referralCode
+}
 @Serializable data class VendorDetail(
-    val vendor: Vendor = Vendor(), val totals: VendorTotals = VendorTotals(),
+    val vendor: Vendor = Vendor(), val profile: VendorProfile? = null, val totals: VendorTotals = VendorTotals(),
     @SerialName("referred_owners") val referredOwners: List<ReferredOwner> = emptyList(),
     val commissions: List<Commission> = emptyList(),
     @SerialName("unpaid_months") val unpaidMonths: List<UnpaidMonth> = emptyList(),
@@ -145,6 +152,7 @@ object FlexInt : KSerializer<Int> {
     @SerialName("status_label") val statusLabel: String? = null, @SerialName("approved_at") val approvedAt: String? = null,
     @SerialName("paid_at") val paidAt: String? = null, @SerialName("payout_reference") val payoutReference: String? = null,
     @SerialName("admin_remarks") val adminRemarks: String? = null, @SerialName("reversal_reason") val reversalReason: String? = null,
+    @SerialName("payout_method") val payoutMethod: String? = null,
 )
 @Serializable data class UnpaidMonth(
     val month: String = "", @SerialName("pending_n") val pendingN: Int = 0, @SerialName("pending_amount") val pendingAmount: Double = 0.0,
@@ -153,7 +161,27 @@ object FlexInt : KSerializer<Int> {
 @Serializable data class Payout(
     @SerialName("paid_at") val paidAt: String? = null, @SerialName("payout_reference") val payoutReference: String? = null, val entries: Int = 0,
     val amount: Double = 0.0, @SerialName("reversed_amount") val reversedAmount: Double = 0.0, @SerialName("recorded_by") val recordedBy: String? = null,
+    @SerialName("payout_method") val payoutMethod: String? = null,
 )
+/** Independent vendor's profile (admin view: the full account number is included for editing). */
+@Serializable data class VendorProfile(
+    val id: Int = 0, @SerialName("vendor_code") val vendorCode: String? = null, @SerialName("full_name") val fullName: String = "",
+    val mobile: String? = null, val whatsapp: String? = null, val email: String? = null, val address: String? = null, val city: String? = null,
+    val state: String? = null, val pincode: String? = null, val status: String = "", @SerialName("registered_at") val registeredAt: String? = null,
+    @SerialName("commission_percent") val commissionPercent: Double = 0.0, @SerialName("must_change_password") val mustChangePassword: Boolean = false,
+    val payment: VendorPayment = VendorPayment(), @SerialName("account_number") val accountNumber: String? = null,
+)
+@Serializable data class VendorPayment(
+    @SerialName("payout_method") val payoutMethod: String? = null, @SerialName("upi_id") val upiId: String? = null,
+    @SerialName("account_holder") val accountHolder: String? = null, @SerialName("bank_name") val bankName: String? = null,
+    @SerialName("account_number_masked") val accountNumberMasked: String? = null, @SerialName("has_account_number") val hasAccountNumber: Boolean = false,
+    val ifsc: String? = null, @SerialName("can_edit") val canEdit: Boolean = false,
+)
+/** Answer to "create_independent": shown once (the temporary password is not stored in plain text anywhere). */
+@Serializable data class CreatedVendor(val id: Int = 0, @SerialName("vendor_code") val vendorCode: String = "", val mobile: String = "", val password: String = "")
+@Serializable data class NewPassword(val id: Int = 0, val password: String = "")
+
+fun payoutMethodLabel(m: String?): String = when (m) { "upi" -> "UPI"; "bank" -> "Bank transfer"; "cash" -> "Cash"; "other" -> "Other"; null, "" -> "—"; else -> m }
 @Serializable data class CommissionHistory(val history: List<HistoryRow> = emptyList())
 @Serializable data class HistoryRow(
     val action: String = "", @SerialName("from_status") val fromStatus: String? = null, @SerialName("to_status") val toStatus: String? = null,

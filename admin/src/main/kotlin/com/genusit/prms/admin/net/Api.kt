@@ -71,7 +71,10 @@ class AdminApi(baseUrl: String, private val tokenProvider: () -> String?, client
         AdminJson.decodeFromJsonElement(ser, call(request(url(path, query)).get().build()))
 
     /** POST a JSON body; returns the server's message (shown to the admin after the action). */
-    private suspend fun post(path: String, body: JsonObject): String = withContext(Dispatchers.IO) {
+    private suspend fun post(path: String, body: JsonObject): String = postFull(path, body).first
+
+    /** POST a JSON body; returns the server's message and its "data". */
+    private suspend fun postFull(path: String, body: JsonObject): Pair<String, JsonElement> = withContext(Dispatchers.IO) {
         val req = request(url(path)).post(body.toString().toRequestBody(jsonType)).build()
         val resp = try { http.newCall(req).execute() } catch (e: IOException) {
             throw ApiException("NETWORK", "No connection to the server. Check the internet and try again.")
@@ -82,7 +85,7 @@ class AdminApi(baseUrl: String, private val tokenProvider: () -> String?, client
                 throw ApiException("BAD_RESPONSE", "Unexpected answer from the server (HTTP ${r.code}).", r.code)
             }
             val msg = root["message"]?.jsonPrimitive?.contentOrNull ?: ""
-            if (root["status"]?.jsonPrimitive?.contentOrNull == "success" && r.code in 200..299) return@use msg.ifBlank { "Saved." }
+            if (root["status"]?.jsonPrimitive?.contentOrNull == "success" && r.code in 200..299) return@use msg.ifBlank { "Saved." } to (root["data"] ?: JsonNull)
             throw ApiException(root["code"]?.jsonPrimitive?.contentOrNull ?: "HTTP_${r.code}", msg.ifBlank { "Request failed (HTTP ${r.code})." }, r.code)
         }
     }
@@ -108,19 +111,35 @@ class AdminApi(baseUrl: String, private val tokenProvider: () -> String?, client
     suspend fun vendors(q: String, status: String) = get(VendorList.serializer(), "admin/vendors.php", mapOf("q" to q, "status" to status))
     suspend fun vendor(id: Int) = get(VendorDetail.serializer(), "admin/vendors.php", mapOf("id" to id.toString()))
     suspend fun commissionHistory(id: Int) = get(CommissionHistory.serializer(), "admin/vendors.php", mapOf("commission_id" to id.toString()))
-    suspend fun convertToVendor(ownerId: Int, percent: String, status: String, remarks: String) = post("admin/vendors.php", buildJsonObject {
-        put("action", "convert"); put("owner_id", ownerId); put("commission_percent", percent); put("status", status); put("remarks", remarks)
-    })
+    /** Commission % / status of a vendor that was converted from an owner account (old way; still shown and managed). */
     suspend fun updateVendor(id: Int, percent: String, status: String, remarks: String) = post("admin/vendors.php", buildJsonObject {
         put("action", "update"); put("id", id); put("commission_percent", percent); put("status", status); put("remarks", remarks)
     })
+    /** Registers an independent vendor (own login, VEN… code). Keys as the server expects (see admin/vendors.php). */
+    suspend fun createVendor(fields: Map<String, String>): Pair<String, CreatedVendor> {
+        val (msg, data) = postFull("admin/vendors.php", buildJsonObject { put("action", "create_independent"); putFields(fields) })
+        return msg to AdminJson.decodeFromJsonElement(CreatedVendor.serializer(), data)
+    }
+    suspend fun updateIndependentVendor(id: Int, fields: Map<String, String>) =
+        post("admin/vendors.php", buildJsonObject { put("action", "update_independent"); put("id", id); putFields(fields) })
+    suspend fun setVendorStatus(id: Int, status: String, reason: String) =
+        post("admin/vendors.php", buildJsonObject { put("action", "set_status"); put("id", id); put("status", status); put("reason", reason) })
+    /** New temporary password for an independent vendor (shown once; the old one stops working). */
+    suspend fun resetVendorPassword(id: Int): Pair<String, String> {
+        val (msg, data) = postFull("admin/vendors.php", buildJsonObject { put("action", "reset_password"); put("id", id) })
+        return msg to AdminJson.decodeFromJsonElement(NewPassword.serializer(), data).password
+    }
+    private fun kotlinx.serialization.json.JsonObjectBuilder.putFields(fields: Map<String, String>) =
+        fields.forEach { (k, v) -> if (k == "vendor_can_edit_payment") put(k, v == "1") else put(k, v) }
+
     suspend fun commissionAction(action: String, commissionId: Int, fields: Map<String, String>) = post("admin/vendors.php", buildJsonObject {
         put("action", action); put("commission_id", commissionId); fields.forEach { (k, v) -> put(k, v) }
     })
-    suspend fun payMonth(vendorId: Int, month: String, paidDate: String, reference: String, remarks: String, approvePending: Boolean) =
+    suspend fun payMonth(vendorId: Int, month: String, paidDate: String, reference: String, remarks: String, approvePending: Boolean, payoutMethod: String = "") =
         post("admin/vendors.php", buildJsonObject {
             put("action", "pay_month"); put("id", vendorId); put("month", month); put("paid_date", paidDate)
             put("payout_reference", reference); put("remarks", remarks); put("approve_pending", approvePending)
+            if (payoutMethod.isNotBlank()) put("payout_method", payoutMethod)
         })
 
     suspend fun payments(status: String, ownerId: Int? = null) =

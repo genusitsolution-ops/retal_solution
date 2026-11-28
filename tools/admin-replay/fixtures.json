@@ -1037,6 +1037,66 @@
     },
     "vendors": [
      {
+      "id": 102,
+      "owner_id": 0,
+      "full_name": "Kiran Traders",
+      "username": "VEN10102",
+      "phone": "9266907002",
+      "email": "sv266907@example.test",
+      "referral_code": "VEN10102",
+      "owner_status": null,
+      "status": "suspended",
+      "commission_percent": 10,
+      "remarks": null,
+      "converted_at": "2026-11-28 17:25:07",
+      "updated_at": "2026-11-28 17:25:07",
+      "totals": {
+       "paid_renewals": 0,
+       "total": 0,
+       "pending": 0,
+       "approved": 0,
+       "paid": 0,
+       "reversed": 0,
+       "referrals": 0,
+       "registrations": 0,
+       "referrals_waiting": 0,
+       "referrals_rejected": 0,
+       "referrals_earning": 0
+      },
+      "vendor_type": "independent",
+      "vendor_code": "VEN10102"
+     },
+     {
+      "id": 101,
+      "owner_id": 0,
+      "full_name": "Sunita Deshpande",
+      "username": "VEN10101",
+      "phone": "9266907001",
+      "email": "sunita.d@example.test",
+      "referral_code": "VEN10101",
+      "owner_status": null,
+      "status": "active",
+      "commission_percent": 10,
+      "remarks": "Field partner, Pune",
+      "converted_at": "2026-11-28 17:25:07",
+      "updated_at": "2026-11-28 17:25:18",
+      "totals": {
+       "paid_renewals": 2,
+       "total": 39.8,
+       "pending": 19.9,
+       "approved": 0,
+       "paid": 19.9,
+       "reversed": 0,
+       "referrals": 2,
+       "registrations": 2,
+       "referrals_waiting": 0,
+       "referrals_rejected": 0,
+       "referrals_earning": 1
+      },
+      "vendor_type": "independent",
+      "vendor_code": "VEN10101"
+     },
+     {
       "id": 1,
       "owner_id": 1,
       "full_name": "Ramesh Patel",
@@ -1080,6 +1140,36 @@
      "referrals": 2
     },
     "vendors": [
+     {
+      "id": 101,
+      "owner_id": 0,
+      "full_name": "Sunita Deshpande",
+      "username": "VEN10101",
+      "phone": "9266907001",
+      "email": "sunita.d@example.test",
+      "referral_code": "VEN10101",
+      "owner_status": null,
+      "status": "active",
+      "commission_percent": 10,
+      "remarks": "Field partner, Pune",
+      "converted_at": "2026-11-28 17:25:07",
+      "updated_at": "2026-11-28 17:25:18",
+      "totals": {
+       "paid_renewals": 2,
+       "total": 39.8,
+       "pending": 19.9,
+       "approved": 0,
+       "paid": 19.9,
+       "reversed": 0,
+       "referrals": 2,
+       "registrations": 2,
+       "referrals_waiting": 0,
+       "referrals_rejected": 0,
+       "referrals_earning": 1
+      },
+      "vendor_type": "independent",
+      "vendor_code": "VEN10101"
+     },
      {
       "id": 1,
       "owner_id": 1,
@@ -2104,6 +2194,393 @@
     "days_left": 25,
     "is_trial": false,
     "package_name": "Test Basic"
+   }
+  }
+ },
+ "admin/vendors.php?id=101": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "vendor": {
+     "id": 101,
+     "owner_id": 0,
+     "full_name": "Sunita Deshpande",
+     "username": "VEN10101",
+     "phone": "9266907001",
+     "email": "sunita.d@example.test",
+     "referral_code": "VEN10101",
+     "owner_status": null,
+     "status": "active",
+     "commission_percent": 10,
+     "remarks": "Field partner, Pune",
+     "converted_at": "2026-11-28 17:25:07",
+     "updated_at": "2026-11-28 17:25:18",
+     "totals": {
+      "paid_renewals": 2,
+      "total": 39.8,
+      "pending": 19.9,
+      "approved": 0,
+      "paid": 19.9,
+      "reversed": 0,
+      "referrals": 2,
+      "registrations": 2,
+      "referrals_waiting": 0,
+      "referrals_rejected": 0,
+      "referrals_earning": 1
+     },
+     "vendor_type": "independent",
+     "vendor_code": "VEN10101"
+    },
+    "profile": {
+     "id": 101,
+     "vendor_code": "VEN10101",
+     "full_name": "Sunita Deshpande",
+     "mobile": "9266907001",
+     "whatsapp": null,
+     "email": "sunita.d@example.test",
+     "address": "12 MG Road",
+     "city": "Pune",
+     "state": "Maharashtra",
+     "pincode": "411001",
+     "status": "active",
+     "registered_at": "2026-11-28",
+     "commission_percent": 10,
+     "must_change_password": true,
+     "has_photo": false,
+     "photo_version": null,
+     "payment": {
+      "payout_method": "upi",
+      "upi_id": "sunita@okbank",
+      "account_holder": "Sunita Deshpande",
+      "bank_name": "Test Bank",
+      "account_number_masked": "••••••••9012",
+      "has_account_number": true,
+      "ifsc": "TEST0001234",
+      "can_edit": false
+     },
+     "account_number": "123456789012"
+    },
+    "totals": {
+     "paid_renewals": 2,
+     "total": 39.8,
+     "pending": 19.9,
+     "approved": 0,
+     "paid": 19.9,
+     "reversed": 0,
+     "referrals": 2,
+     "registrations": 2,
+     "referrals_waiting": 0,
+     "referrals_rejected": 0,
+     "referrals_earning": 1
+    },
+    "referred_owners": [
+     {
+      "owner_id": 7,
+      "owner_name": "Referred Owner B",
+      "referral_date": "2026-11-28 17:25:07",
+      "trial_status": "On Free Trial · until 26 Jan 2027",
+      "renewal_label": "Renewed",
+      "renewal_amount": 199,
+      "payment_label": "Payment Confirmed",
+      "payment_status": "confirmed",
+      "paid_renewals": 1,
+      "commission_amount": 19.9,
+      "commission_total": 19.9,
+      "commission_status": "pending",
+      "commission_label": "Commission Pending",
+      "referral_type": "vendor"
+     },
+     {
+      "owner_id": 6,
+      "owner_name": "Referred Owner A",
+      "referral_date": "2026-11-28 17:25:07",
+      "trial_status": "On Free Trial · until 26 Jan 2027",
+      "renewal_label": "Renewed",
+      "renewal_amount": 199,
+      "payment_label": "Payment Confirmed",
+      "payment_status": "confirmed",
+      "paid_renewals": 1,
+      "commission_amount": 19.9,
+      "commission_total": 19.9,
+      "commission_status": "paid",
+      "commission_label": "Commission Paid",
+      "referral_type": "vendor"
+     }
+    ],
+    "commissions": [
+     {
+      "id": 202,
+      "vendor_owner_id": 0,
+      "vendor_id": 101,
+      "vendor_name": "Sunita Deshpande",
+      "referred_owner_id": 7,
+      "referred_name": "Referred Owner B",
+      "invoice_number": "SUB-202611-0020-2C96",
+      "renewal_amount": 199,
+      "eligible_amount": 199,
+      "commission_percent": 10,
+      "commission_amount": 19.9,
+      "payment_confirmed_at": "2026-11-28 17:25:07",
+      "status": "pending",
+      "status_label": "Commission Pending",
+      "approved_at": null,
+      "paid_at": null,
+      "payout_reference": null,
+      "admin_remarks": null,
+      "reversal_reason": null,
+      "payout_method": null
+     },
+     {
+      "id": 201,
+      "vendor_owner_id": 0,
+      "vendor_id": 101,
+      "vendor_name": "Sunita Deshpande",
+      "referred_owner_id": 6,
+      "referred_name": "Referred Owner A",
+      "invoice_number": "SUB-202611-0019-ABAB",
+      "renewal_amount": 199,
+      "eligible_amount": 199,
+      "commission_percent": 10,
+      "commission_amount": 19.9,
+      "payment_confirmed_at": "2026-11-28 17:25:07",
+      "status": "paid",
+      "status_label": "Commission Paid",
+      "approved_at": "2026-11-28 17:25:07",
+      "paid_at": "2026-11-28",
+      "payout_reference": "UTR55667788",
+      "admin_remarks": null,
+      "reversal_reason": null,
+      "payout_method": "upi"
+     }
+    ],
+    "unpaid_months": [
+     {
+      "month": "2026-11",
+      "pending_n": 1,
+      "pending_amount": 19.9,
+      "approved_n": 0,
+      "approved_amount": 0
+     }
+    ],
+    "payouts": [
+     {
+      "paid_at": "2026-11-28",
+      "payout_reference": "UTR55667788",
+      "entries": 1,
+      "amount": 19.9,
+      "reversed_amount": 0,
+      "first_confirmed": "2026-11-28 17:25:07",
+      "last_confirmed": "2026-11-28 17:25:07",
+      "recorded_by": "Test Admin",
+      "payout_method": "upi"
+     }
+    ]
+   }
+  }
+ },
+ "admin/vendors.php?id=102": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "vendor": {
+     "id": 102,
+     "owner_id": 0,
+     "full_name": "Kiran Traders",
+     "username": "VEN10102",
+     "phone": "9266907002",
+     "email": "sv266907@example.test",
+     "referral_code": "VEN10102",
+     "owner_status": null,
+     "status": "suspended",
+     "commission_percent": 10,
+     "remarks": null,
+     "converted_at": "2026-11-28 17:25:07",
+     "updated_at": "2026-11-28 17:25:07",
+     "totals": {
+      "paid_renewals": 0,
+      "total": 0,
+      "pending": 0,
+      "approved": 0,
+      "paid": 0,
+      "reversed": 0,
+      "referrals": 0,
+      "registrations": 0,
+      "referrals_waiting": 0,
+      "referrals_rejected": 0,
+      "referrals_earning": 0
+     },
+     "vendor_type": "independent",
+     "vendor_code": "VEN10102"
+    },
+    "profile": {
+     "id": 102,
+     "vendor_code": "VEN10102",
+     "full_name": "Kiran Traders",
+     "mobile": "9266907002",
+     "whatsapp": null,
+     "email": "sv266907@example.test",
+     "address": "Test",
+     "city": "Pune",
+     "state": "MH",
+     "pincode": "411001",
+     "status": "suspended",
+     "registered_at": "2026-11-28",
+     "commission_percent": 10,
+     "must_change_password": true,
+     "has_photo": false,
+     "photo_version": null,
+     "payment": {
+      "payout_method": "upi",
+      "upi_id": null,
+      "account_holder": null,
+      "bank_name": null,
+      "account_number_masked": null,
+      "has_account_number": false,
+      "ifsc": null,
+      "can_edit": false
+     },
+     "account_number": null
+    },
+    "totals": {
+     "paid_renewals": 0,
+     "total": 0,
+     "pending": 0,
+     "approved": 0,
+     "paid": 0,
+     "reversed": 0,
+     "referrals": 0,
+     "registrations": 0,
+     "referrals_waiting": 0,
+     "referrals_rejected": 0,
+     "referrals_earning": 0
+    },
+    "referred_owners": [],
+    "commissions": [],
+    "unpaid_months": [],
+    "payouts": []
+   }
+  }
+ },
+ "admin/vendors.php?commission_id=201": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "history": [
+     {
+      "id": 1,
+      "commission_id": 1,
+      "action": "created",
+      "from_status": null,
+      "to_status": "pending",
+      "note": "10% of 199.00 (invoice SUB-202611-0019-ABAB)",
+      "actor_type": "system",
+      "actor_id": null,
+      "created_at": "2026-11-28 17:25:07",
+      "admin_name": null
+     },
+     {
+      "id": 2,
+      "commission_id": 1,
+      "action": "approved",
+      "from_status": "pending",
+      "to_status": "approved",
+      "note": null,
+      "actor_type": "admin",
+      "actor_id": 1,
+      "created_at": "2026-11-28 17:25:07",
+      "admin_name": "Test Admin"
+     },
+     {
+      "id": 4,
+      "commission_id": 1,
+      "action": "paid",
+      "from_status": "approved",
+      "to_status": "paid",
+      "note": "Paid on 2026-11-28 by upi, ref UTR55667788",
+      "actor_type": "admin",
+      "actor_id": 1,
+      "created_at": "2026-11-28 17:25:18",
+      "admin_name": "Test Admin"
+     }
+    ]
+   }
+  }
+ },
+ "admin/vendors.php?commission_id=202": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "message": "Success",
+   "data": {
+    "history": [
+     {
+      "id": 3,
+      "commission_id": 2,
+      "action": "created",
+      "from_status": null,
+      "to_status": "pending",
+      "note": "10% of 199.00 (invoice SUB-202611-0020-2C96)",
+      "actor_type": "system",
+      "actor_id": null,
+      "created_at": "2026-11-28 17:25:07",
+      "admin_name": null
+     }
+    ]
+   }
+  }
+ },
+ "admin/vendors.php?status=suspended": {
+  "status": 200,
+  "body": {
+   "status": "success",
+   "data": {
+    "totals": {
+     "paid_renewals": 2,
+     "total": 99.8,
+     "pending": 49.9,
+     "approved": 0,
+     "paid": 49.9,
+     "reversed": 0,
+     "referrals": 2
+    },
+    "vendors": [
+     {
+      "id": 102,
+      "owner_id": 0,
+      "full_name": "Kiran Traders",
+      "username": "VEN10102",
+      "phone": "9266907002",
+      "email": "sv266907@example.test",
+      "referral_code": "VEN10102",
+      "owner_status": null,
+      "status": "suspended",
+      "commission_percent": 10,
+      "remarks": null,
+      "converted_at": "2026-11-28 17:25:07",
+      "updated_at": "2026-11-28 17:25:07",
+      "totals": {
+       "paid_renewals": 0,
+       "total": 0,
+       "pending": 0,
+       "approved": 0,
+       "paid": 0,
+       "reversed": 0,
+       "referrals": 0,
+       "registrations": 0,
+       "referrals_waiting": 0,
+       "referrals_rejected": 0,
+       "referrals_earning": 0
+      },
+      "vendor_type": "independent",
+      "vendor_code": "VEN10102"
+     }
+    ]
    }
   }
  }

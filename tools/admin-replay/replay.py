@@ -13,7 +13,12 @@ MESSAGES = {
     ("admin/vendors.php", "remark"): "Remark saved.", ("admin/vendors.php", "pay_month"): "Payout saved and marked as paid.",
     ("admin/payments.php", "approve"): "Payment approved. The plan is active.", ("admin/payments.php", "reject"): "Payment rejected. The owner was notified.",
     ("admin/payments.php", "remarks"): "Remarks saved.",
+    ("admin/vendors.php", "create_independent"): "Vendor registered.", ("admin/vendors.php", "update_independent"): "Vendor updated.",
+    ("admin/vendors.php", "set_status"): "Vendor status updated.", ("admin/vendors.php", "reset_password"): "New temporary password created.",
 }
+# answers that carry data (the real server returns these; the password is a made-up test value)
+DATA = {("admin/vendors.php", "create_independent"): lambda b: {"id": 101, "vendor_code": "VEN10101", "mobile": b.get("mobile", ""), "password": "TEMP8421"},
+        ("admin/vendors.php", "reset_password"): lambda b: {"id": b.get("id"), "password": "RSTX5521"}}
 REQUIRED = {("admin/signups.php", "reject"): "reason", ("admin/payments.php", "reject"): "reason", ("admin/vendors.php", "reverse"): "reason",
             ("admin/vendors.php", "pay_month"): "payout_reference"}
 
@@ -55,9 +60,15 @@ class H(BaseHTTPRequestHandler):
             return self.send(422, {"status": "error", "code": "VALIDATION", "message": "Missing " + need})
         if (path, a) == ("admin/payments.php", "approve") and not body.get("verified"):
             return self.send(422, {"status": "error", "code": "VALIDATION", "message": "Confirm that you found this payment in your bank or UPI statement."})
+        if (path, a) == ("admin/vendors.php", "set_status") and body.get("status") == "suspended" and not str(body.get("reason", "")).strip():
+            return self.send(422, {"status": "error", "code": "VALIDATION", "message": "Missing reason"})
+        if (path, a) in (("admin/vendors.php", "create_independent"), ("admin/vendors.php", "update_independent")):
+            if str(body.get("mobile", "")) == "9000000001":   # the server refuses a mobile another vendor already uses
+                return self.send(409, {"status": "error", "code": "DUPLICATE", "message": "Another vendor already uses this mobile number."})
         msg = MESSAGES.get((path, a))
         if not msg: return self.send(422, {"status": "error", "code": "VALIDATION", "message": "Unknown action."})
-        self.send(200, {"status": "success", "message": msg, "data": {}})
+        data = DATA.get((path, a), lambda b: {})(body)
+        self.send(201 if a == "create_independent" else 200, {"status": "success", "message": msg, "data": data})
     def log_message(self, *a): pass
 
 ThreadingHTTPServer(("0.0.0.0", PORT), H).serve_forever()

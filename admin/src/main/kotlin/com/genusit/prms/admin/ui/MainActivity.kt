@@ -5,6 +5,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +28,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -43,7 +46,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -101,10 +106,12 @@ fun Home() {
         Scaffold(
             snackbarHost = { SnackbarHost(snack) },
             bottomBar = {
-                NavigationBar(containerColor = Color.White) {
+                NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
                     Tab.entries.forEach { t ->
                         NavigationBarItem(
                             selected = tab == t,
+                            colors = NavigationBarItemDefaults.colors(selectedIconColor = C.BrandDark, selectedTextColor = C.BrandDark,
+                                indicatorColor = C.BrandSoft, unselectedIconColor = C.Muted, unselectedTextColor = C.Muted),
                             onClick = { tab = t; nav.navigate(t.route) { popUpTo(0); launchSingleTop = true } },
                             icon = {
                                 val n = when (t) { Tab.APPROVALS -> badges.first; Tab.PAYMENTS -> badges.second; else -> 0 }
@@ -131,6 +138,8 @@ fun Home() {
                 composable(Tab.VENDORS.route) { VendorsScreen(nav) }
                 composable(Tab.PAYMENTS.route) { PaymentsScreen(nav) }
                 composable("owner/{id}", listOf(navArgument("id") { type = NavType.IntType })) { OwnerDetailScreen(nav, it.arguments!!.getInt("id")) }
+                composable("vendor/new") { VendorFormScreen(nav, null) }
+                composable("vendor/{id}/edit", listOf(navArgument("id") { type = NavType.IntType })) { VendorFormScreen(nav, it.arguments!!.getInt("id")) }
                 composable("vendor/{id}", listOf(navArgument("id") { type = NavType.IntType })) { VendorDetailScreen(nav, it.arguments!!.getInt("id")) }
                 composable("payment/{id}", listOf(navArgument("id") { type = NavType.IntType })) { PaymentDetailScreen(nav, it.arguments!!.getInt("id")) }
             }
@@ -143,11 +152,17 @@ fun Home() {
 @Composable
 fun Page(
     title: String, nav: NavHostController? = null, onRefresh: (() -> Unit)? = null, onSignOut: (() -> Unit)? = null,
-    header: (@Composable () -> Unit)? = null, body: LazyListScope.() -> Unit,
+    header: (@Composable () -> Unit)? = null, subtitle: String? = null, fab: (@Composable () -> Unit)? = null, body: LazyListScope.() -> Unit,
 ) {
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(title, maxLines = 1) },
+            title = {
+                Column {
+                    Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleLarge)
+                    if (subtitle != null) Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = .75f))
+                }
+            },
             navigationIcon = { if (nav != null) IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
             actions = {
                 if (onRefresh != null) IconButton(onClick = onRefresh) { Icon(Icons.Filled.Refresh, "Refresh") }
@@ -157,7 +172,10 @@ fun Page(
                 navigationIconContentColor = Color.White, actionIconContentColor = Color.White),
         )
         header?.invoke()
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(14.dp, 10.dp, 14.dp, 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = body)
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, if (fab != null) 96.dp else 28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp), content = body)
+    }
+    if (fab != null) Box(Modifier.align(Alignment.BottomEnd).padding(18.dp)) { fab() }
     }
 }
 

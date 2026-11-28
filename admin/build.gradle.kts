@@ -16,8 +16,8 @@ android {
         applicationId = "com.genusit.prms.admin"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
         val apiUrl = (project.findProperty("admin.apiBaseUrl") as String?) ?: "https://rentalsolution.co.in/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
         resourceConfigurations += listOf("en")

@@ -45,8 +45,8 @@ fun SignupsScreen(nav: NavHostController) {
     }
 
     val counts = (state as? Load.Data)?.value?.counts.orEmpty()
-    Page("Owner approvals", onRefresh = { vm.load(showSpinner = false) }, header = {
-        Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp)) {
+    Page("Approvals", subtitle = "Owner registrations from the app", onRefresh = { vm.load(showSpinner = false) }, header = {
+        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
             Chips(listOf("pending" to "Pending (${counts["pending"] ?: 0})", "approved" to "Approved (${counts["approved"] ?: 0})",
                 "rejected" to "Rejected (${counts["rejected"] ?: 0})", "all" to "All"), filter) { filter = it }
         }
@@ -63,13 +63,8 @@ fun SignupsScreen(nav: NavHostController) {
                     item(key = r.id) {
                         AppCard(onClick = { nav.navigate("owner/${r.ownerId}") }) {
                             Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text(r.fullName, fontWeight = FontWeight.SemiBold)
-                                        SmallText("@${r.username}")
-                                    }
-                                    StatusChip(r.status)
-                                }
+                                PersonRow(r.fullName, "@${r.username}") { StatusChip(r.status) }
+                                androidx.compose.foundation.layout.Spacer(Modifier.padding(top = 6.dp))
                                 InfoRow("Phone", r.phone)
                                 InfoRow("Email", r.email)
                                 InfoRow("Registered", dateTime(r.createdAt))
