@@ -135,7 +135,7 @@ t = texts()
 check("dashboard: pending approvals 1, payments to verify 2, owners 7, vendors 1/1",
       "Pending approvals" in t and "Payments to verify" in t and "7" in t and "1 / 1" in t, t)
 check("dashboard: quick actions", scroll_to("Verify payments") and find("Add vendor", timeout=3), texts())
-check("dashboard: owners by status + self-registration", scroll_to("Owners by status") and scroll_to("Self-registration"), texts())
+check("dashboard: owners by status + self-registration", scroll_to("Owners by status") and scroll_to("Owner self-registration"), texts())
 check("dashboard: vendor commission block", scroll_to("Approved, to pay")); shot("03-dashboard-more")
 to_top()
 
