@@ -90,16 +90,21 @@ def fill(rid, value, clear=False, tries=10):
         if m:
             x, y = center(m[0])
             if y > H * .70: sh("input", "swipe", str(W // 4), str(int(H * .70)), str(W // 4), str(int(H * .40)), "300"); time.sleep(0.8); continue
-            if clear:
-                # tap near the right edge: the cursor lands after the (left-aligned) text, then delete it in one go
-                x2 = int(re.findall(r"\d+", m[0].get("bounds"))[2])
-                old = label(m[0])
-                sh("input", "tap", str(x2 - 25), str(y)); time.sleep(0.8)
-                sh("input", "keyevent", *(["67"] * (len(old) + 3))); time.sleep(0.6)
-            else:
-                sh("input", "tap", str(x), str(y)); time.sleep(0.8)
-            sh("input", "text", value.replace(" ", "%s")); time.sleep(1.2)   # no screen dump right after typing (it can drop keys)
-            return True
+            x2 = int(re.findall(r"\d+", m[0].get("bounds"))[2])
+            for attempt in range(3):
+                # tap near the right edge: the cursor lands after the (left-aligned) text
+                sh("input", "tap", str(x2 - 25 if clear or attempt else x), str(y)); time.sleep(0.8)
+                if clear or attempt:
+                    cur = label((by_id(rid) or m)[0])
+                    for _ in range(len(cur) + 2): sh("input", "keyevent", "67"); time.sleep(0.08)
+                    time.sleep(0.4)
+                for ch in value:   # one key at a time: fast injected text can lose characters while the form redraws
+                    sh("input", "text", "%s" if ch == " " else ch); time.sleep(0.12)
+                time.sleep(1.0)
+                now = [label(n) for n in by_id(rid)]
+                if now and now[0] == value: return True
+                print(f"retyping {rid}: shows {now[0] if now else None!r}, wanted {value!r}", flush=True)
+            return False
         swipe_up()
     return False
 def tap_id(rid, timeout=10):
