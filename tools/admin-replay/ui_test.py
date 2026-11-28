@@ -43,7 +43,7 @@ def edit(i, value):
     if len(e) <= i: return False
     x, y = center(e[i]); sh("input", "tap", str(x), str(y)); time.sleep(0.4)
     sh("input", "text", value.replace(" ", "%s")); time.sleep(0.4); return True
-def scroll_to(t, exact=True, tries=8):
+def scroll_to(t, exact=True, tries=14):
     for _ in range(tries):
         if find(t, exact, timeout=2): return True
         swipe_up()
@@ -52,7 +52,8 @@ def back(): sh("input", "keyevent", "4"); time.sleep(1)
 _m = re.search(r"(\d+)x(\d+)", sh("wm", "size").split("Override size:")[-1]) or re.search(r"(\d+)x(\d+)", sh("wm", "size"))
 W, H = (int(_m.group(1)), int(_m.group(2))) if _m else (1080, 1920)
 print(f"screen {W}x{H}", flush=True)
-def swipe_up(): sh("input", "swipe", str(W // 2), str(int(H * .78)), str(W // 2), str(int(H * .30)), "350"); time.sleep(0.8)
+# swipes on the left quarter: the "Add vendor" button sits bottom-right; medium distance so short rows are not skipped
+def swipe_up(): sh("input", "swipe", str(W // 4), str(int(H * .72)), str(W // 4), str(int(H * .40)), "400"); time.sleep(0.8)
 def to_top():
     for _ in range(4): sh("input", "swipe", str(W // 2), str(int(H * .30)), str(W // 2), str(int(H * .85)), "250")
     time.sleep(1.8)   # let the fling stop: a tap during a fling only stops it
@@ -88,10 +89,16 @@ def fill(rid, value, clear=False, tries=10):
         m = by_id(rid)
         if m:
             x, y = center(m[0])
-            if y > H * .70: sh("input", "swipe", str(W // 2), str(int(H * .70)), str(W // 2), str(int(H * .40)), "300"); time.sleep(0.8); continue
-            sh("input", "tap", str(x), str(y)); time.sleep(0.5)
-            if clear: sh("input", "keyevent", "KEYCODE_MOVE_END"); sh("input", "keyevent", *(["67"] * 24))
-            sh("input", "text", value.replace(" ", "%s")); time.sleep(0.4); return True
+            if y > H * .70: sh("input", "swipe", str(W // 4), str(int(H * .70)), str(W // 4), str(int(H * .40)), "300"); time.sleep(0.8); continue
+            sh("input", "tap", str(x), str(y)); time.sleep(0.7)
+            if clear:
+                old = label(m[0])
+                sh("input", "keyevent", "123"); time.sleep(0.2)          # cursor to the end
+                for _ in range(len(old) + 2): sh("input", "keyevent", "67")
+            sh("input", "text", value.replace(" ", "%s")); time.sleep(0.6)
+            got = [label(n) for n in by_id(rid)]
+            if clear and got and value not in got[0]: print(f"field {rid} shows {got[0]!r} after typing {value!r}", flush=True)
+            return True
         swipe_up()
     return False
 def tap_id(rid, timeout=10):
