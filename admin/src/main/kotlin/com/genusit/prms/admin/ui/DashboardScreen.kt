@@ -48,6 +48,7 @@ import androidx.navigation.NavHostController
 import com.genusit.prms.admin.net.Dashboard
 
 /** Home: the same live figures as before (admin/dashboard.php), laid out as summary cards. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun DashboardScreen(nav: NavHostController, onCounts: (Int, Int) -> Unit, onSignOut: () -> Unit, openTab: (String) -> Unit) {
     val api = appApi(); val session = appSession()
@@ -81,7 +82,8 @@ fun DashboardScreen(nav: NavHostController, onCounts: (Int, Int) -> Unit, onSign
                     }
                 }
                 item {
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // wraps to a second line on small phones so every action stays visible
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (d.vendors.ready) Quick("Add vendor", Icons.Filled.AddBusiness) { nav.navigate("vendor/new") }
                         Quick("Approvals", Icons.Filled.HowToReg) { openTab("approvals") }
                         Quick("Verify payments", Icons.Filled.Payments) { openTab("payments") }

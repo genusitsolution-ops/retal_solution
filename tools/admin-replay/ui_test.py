@@ -90,14 +90,15 @@ def fill(rid, value, clear=False, tries=10):
         if m:
             x, y = center(m[0])
             if y > H * .70: sh("input", "swipe", str(W // 4), str(int(H * .70)), str(W // 4), str(int(H * .40)), "300"); time.sleep(0.8); continue
-            sh("input", "tap", str(x), str(y)); time.sleep(0.7)
             if clear:
+                # tap near the right edge: the cursor lands after the (left-aligned) text, then delete it in one go
+                x2 = int(re.findall(r"\d+", m[0].get("bounds"))[2])
                 old = label(m[0])
-                sh("input", "keyevent", "123"); time.sleep(0.2)          # cursor to the end
-                for _ in range(len(old) + 2): sh("input", "keyevent", "67")
-            sh("input", "text", value.replace(" ", "%s")); time.sleep(0.6)
-            got = [label(n) for n in by_id(rid)]
-            if clear and got and value not in got[0]: print(f"field {rid} shows {got[0]!r} after typing {value!r}", flush=True)
+                sh("input", "tap", str(x2 - 25), str(y)); time.sleep(0.8)
+                sh("input", "keyevent", *(["67"] * (len(old) + 3))); time.sleep(0.6)
+            else:
+                sh("input", "tap", str(x), str(y)); time.sleep(0.8)
+            sh("input", "text", value.replace(" ", "%s")); time.sleep(1.2)   # no screen dump right after typing (it can drop keys)
             return True
         swipe_up()
     return False
@@ -141,7 +142,8 @@ time.sleep(1.5); shot("02-dashboard")
 t = texts()
 check("dashboard: pending approvals 1, payments to verify 2, owners 7, vendors 1/1",
       "Pending approvals" in t and "Payments to verify" in t and "7" in t and "1 / 1" in t, t)
-check("dashboard: quick actions", scroll_to("Verify payments") and find("Add vendor", timeout=3), texts())
+check("dashboard: quick actions", scroll_to("Add vendor") and find("Verify payments", timeout=3) and find("Approvals", timeout=3), texts())
+to_top()
 check("dashboard: owners by status + self-registration", scroll_to("Owners by status") and scroll_to("Owner self-registration"), texts())
 check("dashboard: vendor commission block", scroll_to("Approved, to pay")); shot("03-dashboard-more")
 to_top()
