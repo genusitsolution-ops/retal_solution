@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -33,6 +34,7 @@ import com.genusit.prms.ui.owner.ExistingTenantSection
 import com.genusit.prms.ui.owner.SupportCard
 import com.genusit.prms.ui.owner.TenantMoneyCard
 import com.genusit.prms.ui.owner.previousAmount
+import com.genusit.prms.ui.owner.roomDepositDefault
 import com.genusit.prms.ui.owner.supportDialIntent
 import com.genusit.prms.ui.owner.supportWhatsAppIntent
 import com.genusit.prms.ui.theme.PrmsTheme
