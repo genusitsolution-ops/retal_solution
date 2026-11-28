@@ -92,6 +92,39 @@ class OpeningBalanceUiTest {
         assertNull(previousAmount("-5"))                         // negative is not
     }
 
+    @Test fun roomChoiceFillsAgreedDepositOnly() {
+        val prop = mutableStateOf(0)
+        val depA = mutableStateOf(""); val depC = mutableStateOf("3000")
+        val rooms = listOf(
+            Property(id = 1, propertyCode = "R101", city = "Pune", baseRent = 4000.0, depositAmount = 5000.0, status = "available"),
+            Property(id = 2, propertyCode = "R102", city = "Pune", baseRent = 4500.0, depositAmount = 7000.0, status = "available"),
+            Property(id = 3, propertyCode = "R103", city = "Pune", baseRent = 3000.0, depositAmount = 0.0, status = "available"))
+        rule.setContent {
+            PrmsTheme {
+                Surface(Modifier.fillMaxSize()) {
+                    Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // same rule as the Add Tenant screen model: choosing a room puts its deposit in "agreed"
+                        ExistingTenantSection(rooms, emptyList(), prop.value, { id -> prop.value = id; depA.value = roomDepositDefault(rooms.first { it.id == id }.depositAmount) },
+                            "2025-06-01", {}, mutableStateMapOf(), { _, _ -> }, "0", {}, tried = false,
+                            depositAgreed = depA.value, onDepositAgreed = { depA.value = it }, depositCollected = depC.value, onDepositCollected = { depC.value = it })
+                    }
+                }
+            }
+        }
+        fun pick(code: String, rent: String) {
+            rule.onAllNodesWithText("Room Allocation").onFirst().performScrollTo().performClick(); rule.waitForIdle()
+            rule.onAllNodesWithText("$code · Pune · $rent").onFirst().performClick(); rule.waitForIdle()
+        }
+        pick("R101", "₹4,000"); assertEquals("5000", depA.value); assertEquals("3000", depC.value)
+        rule.onAllNodesWithText("5000").onFirst().assertIsDisplayed()
+        shot("existing-tenant-room-deposit")
+        rule.runOnIdle { depA.value = "4500" }                                  // owner edits the default
+        rule.waitForIdle(); assertEquals("4500", depA.value)
+        pick("R102", "₹4,500"); assertEquals("7000", depA.value); assertEquals("3000", depC.value)
+        pick("R103", "₹3,000"); assertEquals("", depA.value); assertEquals("3000", depC.value)   // no deposit on the room → blank, typed by hand
+        assertEquals("10000", roomDepositDefault(10000.0)); assertEquals("2500.5", roomDepositDefault(2500.50)); assertEquals("", roomDepositDefault(0.0))
+    }
+
     @Test fun supportCardShowsCallAndWhatsApp() {
         val wa = "https://wa.me/919876543211?text=Hello%2C%20I%20am%20using%20Rental%20Solution."
         val on = SupportInfo(enabled = true, configured = true, name = "Priya Support", phone = "98765 43210", whatsapp = "9876543211",

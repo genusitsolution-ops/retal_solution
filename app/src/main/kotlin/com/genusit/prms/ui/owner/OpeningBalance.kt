@@ -80,6 +80,10 @@ import javax.inject.Inject
 /* ═════════════════════════ 1.12.1 Existing tenant: previous outstanding balance ═════════════════════════ */
 
 /** Text the owner typed as an amount: blank / invalid → null, otherwise ≥ 0 rounded to paise. */
+/** The room's security deposit (Properties) as the default "Security deposit agreed" text; blank when the room has none. */
+fun roomDepositDefault(amount: Double): String =
+    if (amount > 0) java.math.BigDecimal.valueOf(amount).setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString() else ""
+
 fun previousAmount(text: String): Double? = Money.parse(text.trim())?.takeIf { it >= 0.0 && it <= 10_000_000.0 }
 
 /**

@@ -268,7 +268,7 @@ fun TenantFormScreen(id: Int, onBack: () -> Unit, onSaved: () -> Unit) {
                 } else {
                     ExistingTenantSection(
                         rooms = rooms.filter { it.status == "available" }, charges = charges,
-                        propertyId = model.propertyId, onProperty = { model.propertyId = it },
+                        propertyId = model.propertyId, onProperty = { id -> model.selectRoom(id, rooms.firstOrNull { it.id == id }) },
                         tenantSince = model.joiningDate, onTenantSince = { model.joiningDate = it },
                         chosen = model.chargeChoices, onCharge = { cid, on -> model.chargeChoices[cid] = on },
                         previous = model.previousOutstanding, onPrevious = { model.previousOutstanding = it }, tried = tried,

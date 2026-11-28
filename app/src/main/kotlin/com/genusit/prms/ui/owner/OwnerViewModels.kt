@@ -191,6 +191,11 @@ class TenantFormViewModel @Inject constructor(
     var depositCollected by androidx.compose.runtime.mutableStateOf("")
     fun depositCollectedValue(): Double? = if (depositCollected.isBlank()) 0.0 else previousAmount(depositCollected)
     fun depositAgreedValue(): Double? = if (depositAgreed.isBlank()) depositCollectedValue() else previousAmount(depositAgreed)
+    /** Room chosen: its security deposit (from Properties) becomes the editable default "agreed" amount; "collected" is never touched. */
+    fun selectRoom(id: Int, room: com.genusit.prms.domain.model.Property?) {
+        propertyId = id
+        depositAgreed = roomDepositDefault(room?.depositAmount ?: 0.0)
+    }
     fun depositOk(): Boolean { val a = depositAgreedValue(); val c = depositCollectedValue(); return a != null && c != null && c <= a + 0.005 }
     val rooms = loadable(autoLoad = false) { getProperties() }
     val charges = loadable(autoLoad = false) { getCharges() }
