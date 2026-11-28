@@ -48,6 +48,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +67,7 @@ import kotlinx.coroutines.flow.SharedFlow
 val LocalSnack = staticCompositionLocalOf { SnackbarHostState() }
 val LocalApp = staticCompositionLocalOf<AdminApp> { error("no app") }
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,7 +78,8 @@ class MainActivity : ComponentActivity() {
             AdminTheme {
                 CompositionLocalProvider(LocalApp provides app) {
                     val signedIn by app.session.signedIn.collectAsState()
-                    if (signedIn) Home() else LoginScreen()
+                    // test tags readable by the emulator walkthrough (uiautomator); no effect for users
+                    Box(Modifier.semantics { testTagsAsResourceId = true }) { if (signedIn) Home() else LoginScreen() }
                 }
             }
         }

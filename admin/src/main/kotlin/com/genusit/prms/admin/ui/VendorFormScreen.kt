@@ -32,8 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -73,7 +71,6 @@ internal fun vendorFormErrors(v: Map<String, String>, creating: Boolean): Map<St
  * Add a new independent vendor (own sign-in, VEN… code) or edit one. Uses the server's create_independent /
  * update_independent actions; the server checks everything again.
  */
-@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun VendorFormScreen(nav: NavHostController, id: Int?) {
     val api = appApi(); val session = appSession()
@@ -139,8 +136,7 @@ fun VendorFormScreen(nav: NavHostController, id: Int?) {
             keyboardOptions = KeyboardOptions(keyboardType = keyboard, capitalization = caps), modifier = Modifier.fillMaxWidth().testTag("vf_$key"))
     }
 
-    // test tags are exposed as resource ids so the emulator walkthrough can find each field (no effect for users)
-    Box(Modifier.semantics { testTagsAsResourceId = true }) {
+    Box {
     Page(if (creating) "Add vendor" else "Edit vendor", nav, subtitle = if (creating) "Independent vendor with own sign-in" else values["full_name"]) {
         if (!loaded) {
             item { if (loadError != null) AppCard { SmallText(loadError!!, C.Danger) } else LoadContent<Unit>(Load.Loading, {}) {} }

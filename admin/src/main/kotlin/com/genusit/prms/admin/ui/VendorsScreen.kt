@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -72,7 +73,7 @@ fun VendorsScreen(nav: NavHostController) {
             Chips(listOf("" to "All", "active" to "Active", "inactive" to "Inactive", "suspended" to "Suspended"), filter) { filter = it }
         }
     }, fab = {
-        ExtendedFloatingActionButton(onClick = { nav.navigate("vendor/new") }, containerColor = C.BrandDark, contentColor = Color.White,
+        ExtendedFloatingActionButton(onClick = { nav.navigate("vendor/new") }, modifier = Modifier.testTag("add_vendor"), containerColor = C.BrandDark, contentColor = Color.White,
             icon = { Icon(Icons.Filled.AddBusiness, null) }, text = { Text("Add vendor") })
     }) {
         when (val s = state) {
@@ -98,12 +99,13 @@ fun VendorsScreen(nav: NavHostController) {
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun VendorCard(v: Vendor, onClick: () -> Unit) {
     AppCard(onClick = onClick, padding = 14) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             PersonRow(v.fullName, listOfNotNull(v.phone?.takeIf { it.isNotBlank() }, v.email?.takeIf { it.isNotBlank() }).joinToString(" · ").ifBlank { null }) { StatusChip(v.status) }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 v.code?.let { Tag(it) }
                 if (v.isIndependent) Tag("Independent", C.Teal, C.TealSoft) else Tag("Owner account", C.Muted, C.Bg)
                 Tag(pct(v.commissionPercent) + " commission", C.BrandDark, C.Bg)
@@ -265,7 +267,7 @@ fun VendorDetailScreen(nav: NavHostController, id: Int) {
                                 Spacer(Modifier.width(12.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(v.fullName, style = MaterialTheme.typography.titleMedium, color = C.Ink)
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         if (v.isIndependent) Tag("Independent", C.Teal, C.TealSoft) else Tag("Owner account", C.Muted, C.Bg)
                                         Tag(pct(v.commissionPercent) + " commission", C.BrandDark, C.Bg)
                                     }

@@ -72,7 +72,7 @@ def hide_kb():
     if "mInputShown=true" in sh("dumpsys", "input_method"): sh("input", "keyevent", "4"); time.sleep(0.6)
 def shot(name): subprocess.run(f"adb exec-out screencap -p > shots/{name}.png", shell=True); time.sleep(0.3)
 def check(name, ok, info=""):
-    results.append(bool(ok)); print(("PASS " if ok else "FAIL ") + name + ("" if ok else f" — {info}"[:400]), flush=True)
+    results.append(bool(ok)); print(("PASS " if ok else "FAIL ") + name + ("" if ok else f" — {info}"[:900]), flush=True)
 def posts():
     try: return [json.loads(l) for l in open("admin-replay-posts.txt")]
     except FileNotFoundError: return []
@@ -94,6 +94,19 @@ def fill(rid, value, clear=False, tries=10):
             sh("input", "text", value.replace(" ", "%s")); time.sleep(0.4); return True
         swipe_up()
     return False
+def tap_id(rid, timeout=10):
+    end = time.time() + timeout
+    while time.time() < end:
+        m = by_id(rid)
+        if m: x, y = center(m[0]); sh("input", "tap", str(x), str(y)); time.sleep(0.9); return True
+        time.sleep(0.7)
+    print("not found: " + rid, flush=True); return False
+def save_form():
+    hide_kb()
+    for _ in range(10):
+        if by_id("vf_save"): break
+        swipe_up()
+    return tap_id("vf_save", timeout=3)
 def field_text(rid):
     m = by_id(rid)
     if not m: return None
@@ -121,7 +134,7 @@ time.sleep(1.5); shot("02-dashboard")
 t = texts()
 check("dashboard: pending approvals 1, payments to verify 2, owners 7, vendors 1/1",
       "Pending approvals" in t and "Payments to verify" in t and "7" in t and "1 / 1" in t, t)
-check("dashboard: quick actions", find("Add vendor") and find("Verify payments", timeout=3), texts())
+check("dashboard: quick actions", scroll_to("Verify payments") and find("Add vendor", timeout=3), texts())
 check("dashboard: owners by status + self-registration", scroll_to("Owners by status") and scroll_to("Self-registration"), texts())
 check("dashboard: vendor commission block", scroll_to("Approved, to pay")); shot("03-dashboard-more")
 to_top()
@@ -164,19 +177,17 @@ def wait_snack_gone():
         time.sleep(1)
 tap("Vendors", nth=0); time.sleep(1.5); shot("12-vendors")
 check("vendors list: independent Sunita Deshpande (VEN10101) and old owner-account vendor Ramesh Patel",
-      find("Sunita Deshpande") and find("VEN10101") and scroll_to("Ramesh Patel") and find("Owner account"), texts())
+      scroll_to("Sunita Deshpande") and scroll_to("VEN10101") and scroll_to("Ramesh Patel") and scroll_to("Owner account"), texts())
+to_top()
 to_top(); chip("Suspended", "All"); time.sleep(1.5)
 check("filter Suspended: Kiran Traders only", find("Kiran Traders") and not find("Sunita Deshpande", timeout=2), texts())
 chip("All", "Active"); time.sleep(1.5)
 
 # add vendor: checks, server error, success with the sign-in details
-tap("Add vendor"); time.sleep(1.5)
+tap_id("add_vendor"); time.sleep(1.5)
 check("add vendor form opens", find("Independent vendor with own sign-in", timeout=6), texts())
 shot("13-add-vendor-empty")
-for _ in range(8):
-    if by_id("vf_save"): break
-    swipe_up()
-x, y = center(by_id("vf_save")[0]); sh("input", "tap", str(x), str(y)); time.sleep(1); to_top()
+save_form(); time.sleep(1); to_top()
 check("empty form: fields marked, nothing sent", find("Please correct the", exact=False) and last_post().get("action") != "create_independent", texts())
 shot("14-add-vendor-errors")
 for rid, val in [("vf_full_name", "Meena Joshi"), ("vf_mobile", "9000000001"), ("vf_email", "meena@example.test"), ("vf_address", "Shop 4 Station Road"),
@@ -186,17 +197,11 @@ hide_kb(); scroll_to("Bank transfer"); tap("Bank transfer"); time.sleep(0.5)
 for rid, val in [("vf_upi_id", "meena@okbank"), ("vf_account_holder", "Meena Joshi"), ("vf_bank_name", "Test Bank"), ("vf_account_number", "123456789"), ("vf_ifsc", "test0001234")]:
     check(f"typed {rid}", fill(rid, val))
 hide_kb(); shot("15-add-vendor-payment")
-for _ in range(8):
-    if by_id("vf_save"): break
-    swipe_up()
-x, y = center(by_id("vf_save")[0]); sh("input", "tap", str(x), str(y)); time.sleep(2)
+save_form(); time.sleep(2)
 to_top(); check("duplicate mobile: server's message shown", find("Another vendor already uses this mobile number.", timeout=6), texts())
 to_top(); check("fix mobile", fill("vf_mobile", "9876501234", clear=True))
 hide_kb()
-for _ in range(8):
-    if by_id("vf_save"): break
-    swipe_up()
-x, y = center(by_id("vf_save")[0]); sh("input", "tap", str(x), str(y)); time.sleep(2)
+save_form(); time.sleep(2)
 p = last_post()
 check("create_independent sent with every detail", p.get("action") == "create_independent" and p.get("full_name") == "Meena Joshi" and p.get("mobile") == "9876501234"
       and p.get("commission_percent") == "12.5" and p.get("payout_method") == "bank" and p.get("ifsc") == "TEST0001234" and p.get("account_number") == "123456789"
@@ -224,10 +229,7 @@ check("new temporary password shown once", find("New temporary password") and fi
 wait_snack_gone(); to_top(); tap("Edit"); time.sleep(2)
 check("edit form loads the saved details", find("Sunita Deshpande", exact=False, timeout=8), texts())
 check("change commission to 11", fill("vf_commission_percent", "11", clear=True)); hide_kb(); shot("21-vendor-edit")
-for _ in range(10):
-    if by_id("vf_save"): break
-    swipe_up()
-x, y = center(by_id("vf_save")[0]); sh("input", "tap", str(x), str(y)); time.sleep(2)
+save_form(); time.sleep(2)
 p = last_post(); check("update_independent sent; account number kept in full", p.get("action") == "update_independent" and p.get("id") == 101 and p.get("commission_percent") == "11"
                        and p.get("account_number") == "123456789012" and p.get("upi_id") == "sunita@okbank" and p.get("remarks") == "Field partner, Pune"
                        and p.get("address") == "12 MG Road" and p.get("full_name") == "Sunita Deshpande", p)

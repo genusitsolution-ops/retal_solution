@@ -166,10 +166,9 @@ private fun OwnersByStatus(d: Dashboard, open: () -> Unit) {
             MetricRow("Active", o.active.toString(), C.Success, dot = C.Success)
             MetricRow("Inactive", o.inactive.toString(), C.Warning, dot = Color(0xFFF59E0B))
             MetricRow("Suspended", o.suspended.toString(), C.Danger, dot = C.Danger)
-            Row(Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(10.dp)).background(C.Bg).padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                Text("Self-registration", color = C.Muted, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                Spacer(Modifier.width(8.dp))
+            Column(Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(10.dp)).background(C.Bg).padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Owner self-registration", color = C.Muted, style = MaterialTheme.typography.bodyMedium)
                 when (d.signupMode) {
                     "approval" -> StatusChip("pending", "On, after approval")
                     "instant" -> StatusChip("active", "On, active immediately")

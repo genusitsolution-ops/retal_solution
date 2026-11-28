@@ -107,7 +107,6 @@ private val AdminType = Typography(
     titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold),
     titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold),
     titleSmall = base.titleSmall.copy(fontWeight = FontWeight.Bold),
-    labelSmall = base.labelSmall.copy(fontWeight = FontWeight.Medium),
 )
 
 @Composable
